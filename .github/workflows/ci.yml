@@ -1,12 +1,22 @@
-﻿name: ci
+name: ci
+
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Placeholder
-        run: echo "CI placeholder for later scaffold"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: |
+          npm install
+      - name: Validate project scaffold
+        run: |
+          npm run lint
+          npm run build

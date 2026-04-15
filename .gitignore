@@ -1,7 +1,9 @@
-﻿C:\Users\Pumba\Documents\codex\Motion
-node_modules
-dist
-build
+node_modules/
+dist/
+build/
+target/
 .env
 .DS_Store
 .vscode/
+.serde/
+ops/phase-0-build-manifest.json
