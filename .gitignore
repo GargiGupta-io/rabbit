@@ -6,4 +6,4 @@ target/
 .DS_Store
 .vscode/
 .serde/
-ops/phase-0-build-manifest.json
+ops/*.json
