@@ -213,9 +213,16 @@ That is the execution style so you never feel lost.
 
 ## Existing documents reference
 
-- `plans/motion-macos-production-app-plan-detailed.md`
-- `plans/motion-full-app-reverse-engineering.md`
-- `plans/motion-macos-production-app-plan.md`
+- `plans/phase-0-plan.md`
+- `planning.md`
 
-`planning.md` is now the main combined learning + execution document for this phase.
+`planning.md` remains the main combined learning + execution document for this phase.
 
+---
+
+### Phase 0 detailed plan
+- Step-by-step execution has been expanded in:
+  - [phase-0-plan](/C:/Users/Pumba/Documents/codex/Motion/plans/phase-0-plan.md)
+- Current state:
+  - Step 1 complete
+  - Step 2 pending
