@@ -1,34 +1,38 @@
-import { buildSeedData } from './state.js';
+import { CURRENT_SCHEMA_VERSION, APP_DATA_DEFAULT, normalizePersistedPayload } from './contracts.js';
 
 const STORAGE_KEY = 'motion_clone_phase1_app_data';
 
-const FALLBACK = {
-  version: '1.0.0',
-  updatedAt: new Date().toISOString(),
-  projects: [
-    { id: 'inbox', name: 'Inbox', color: '#3b82f6', archived: false },
-    { id: 'work', name: 'Work', color: '#10b981', archived: false },
-    { id: 'personal', name: 'Personal', color: '#f59e0b', archived: false }
-  ],
-  tasks: []
-};
+function fallbackPayload() {
+  return {
+    ...APP_DATA_DEFAULT,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    lastLoadedAt: new Date().toISOString()
+  };
+}
 
 export function loadStoredData() {
   const raw = localStorage?.getItem?.(STORAGE_KEY);
-  if (!raw) return buildSeedData(FALLBACK);
+  if (!raw) {
+    return fallbackPayload();
+  }
 
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return buildSeedData(FALLBACK);
-    return buildSeedData(parsed);
+    if (!parsed || typeof parsed !== 'object') {
+      return fallbackPayload();
+    }
+    return normalizePersistedPayload(parsed);
   } catch {
-    return buildSeedData(FALLBACK);
+    return fallbackPayload();
   }
 }
 
 export function saveStoredData(data = {}) {
-  const normalized = buildSeedData(data);
+  const normalized = normalizePersistedPayload(data);
+  normalized.schemaVersion = CURRENT_SCHEMA_VERSION;
   normalized.updatedAt = new Date().toISOString();
+  normalized.lastSavedAt = normalized.updatedAt;
+  normalized.revision = `r_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
   if (!localStorage) {
     return;
   }
