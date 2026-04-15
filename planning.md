@@ -227,6 +227,8 @@ That is the execution style so you never feel lost.
   - Step 1 complete
   - Step 2 complete
   - Step 3 complete
+  - Step 4 complete
+  - Step 5 complete
 
 ### Phase 0 checkpoint lock (2026-04-15)
 
@@ -235,3 +237,5 @@ That is the execution style so you never feel lost.
 - P1 scope (must wait until Phase 0 completion): task/project data model, scheduling engine, AI workflow, calendar + reminders integrations.
 - No undocumented feature drift was added during Phase 0.
 - Security baseline v1 is established in docs/contracts/release-security-contract.md.
+
+

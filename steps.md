@@ -70,3 +70,14 @@ You now have a runnable baseline. The repo no longer has fake one-line commands.
 
 **In plain English**
 You now have a clear go/no-go boundary for Phase 0. We won’t start core product features until this foundation is stable, so the project stays controlled and reviewable.
+## ✅ Step 5 — Phase 0 Acceptance Gate
+*Completed: 2026-04-15*
+
+**What was built**
+- Verified baseline presence of key planning/docs/code artifacts.
+- Ran `npm run lint` and `npm run build` successfully.
+- Confirmed git working tree is clean after build.
+- Confirmed no undocumented files were introduced outside the planned scaffold.
+
+**In plain English**
+Your Phase 0 is now officially done. The repo is in a known-good state with a clear scope boundary and a runnable baseline. You can start Feature Phase 1 next without changing the foundation rules.
