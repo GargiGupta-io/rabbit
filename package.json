@@ -1,11 +1,13 @@
-﻿{
+{
   "name": "motion-clone",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "echo \"Build placeholder\"",
-    "lint": "echo \"Lint placeholder\"",
-    "test": "echo \"Tests placeholder\""
+    "build": "node ./scripts/build.mjs",
+    "lint": "node ./scripts/lint.mjs",
+    "test": "node ./scripts/test.mjs",
+    "desktop:build": "npm --prefix ./apps/desktop run build",
+    "desktop:lint": "npm --prefix ./apps/desktop run lint"
   }
 }
