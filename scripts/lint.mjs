@@ -1,4 +1,5 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
 const REQUIRED = [
   'package.json',
@@ -14,7 +15,13 @@ const REQUIRED = [
   'apps/desktop/src-tauri/tauri.conf.json',
   'apps/desktop/src-tauri/src/main.rs',
   'apps/desktop/index.html',
-  'apps/desktop/src/main.tsx'
+  'apps/desktop/src/main.tsx',
+  'apps/desktop/src/state.js',
+  'apps/desktop/src/storage.js',
+  'apps/desktop/src/entitlement.js',
+  'scripts/lint.mjs',
+  'scripts/build.mjs',
+  'scripts/test.mjs'
 ];
 
 for (const file of REQUIRED) {
@@ -24,4 +31,27 @@ for (const file of REQUIRED) {
   }
 }
 
+const jsFiles = [
+  'apps/desktop/src/state.js',
+  'apps/desktop/src/storage.js',
+  'apps/desktop/src/entitlement.js',
+  'scripts/test.mjs',
+  'scripts/lint.mjs',
+  'scripts/build.mjs',
+  'apps/desktop/scripts/build.mjs',
+  'apps/desktop/scripts/lint.mjs'
+];
+
+for (const file of jsFiles) {
+  execSync(`node --check ${file}`, {
+    stdio: 'ignore'
+  });
+}
+
+execSync('npx tsc --noEmit --pretty false', {
+  stdio: 'ignore'
+});
+
 console.log('PASS: baseline file checklist complete');
+console.log('PASS: script syntax checks complete');
+console.log('PASS: TypeScript compile checks complete');

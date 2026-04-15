@@ -1,4 +1,4 @@
-# Motion Clone App - Learning & Execution Plan (Beginner-Friendly)
+﻿# Motion Clone App - Learning & Execution Plan (Beginner-Friendly)
 
 ## What you are building
 
@@ -237,5 +237,27 @@ That is the execution style so you never feel lost.
 - P1 scope (must wait until Phase 0 completion): task/project data model, scheduling engine, AI workflow, calendar + reminders integrations.
 - No undocumented feature drift was added during Phase 0.
 - Security baseline v1 is established in docs/contracts/release-security-contract.md.
+
+
+
+## Phase 1 implementation lock (2026-04-15)
+
+### Phase 1 feature matrix
+- Task CRUD with validation (title required, duplicate prevention within project)
+- Today/upcoming/overdue summary
+- Search + status filters
+- Recurrence metadata (none/daily/weekly) stored per task
+- Basic conflict detection using time overlap windows
+- Entitlement snapshot and feature-gate checks for AI/calendar
+
+### Phase 1 implementation done
+- Added executable task domain model in `apps/desktop/src/state.js`
+- Added local persistence (`apps/desktop/src/storage.js`)
+- Added entitlement baseline (`apps/desktop/src/entitlement.js`)
+- Replaced shell with MVP task UI and planner shell (`apps/desktop/src/main.tsx`, `apps/desktop/index.html`)
+- Added baseline checks (`scripts/lint.mjs`, `scripts/build.mjs`, `scripts/test.mjs`)
+- Updated `.gitignore` for phase manifests
+
+Decision: keep this MVP shell intentionally minimal and feature-limited now; full React migration and advanced scheduling engine are Phase 2+.
 
 

@@ -2,7 +2,7 @@
 
 ---
 
-## ✅ Step 1 — Phase 0 Foundation Scaffold
+## ? Step 1 — Phase 0 Foundation Scaffold
 *Completed: 2026-04-15*
 
 **What was built**
@@ -29,7 +29,7 @@ You now have a real project folder you can actually work in. It has a standard a
 + created: `docs/`
 + created: `ops/`
 
-## ✅ Step 2 — Platform and Security Contracts
+## ? Step 2 — Platform and Security Contracts
 *Completed: 2026-04-15*
 
 **What was built**
@@ -48,7 +48,7 @@ You now have a rulebook for your project. It clearly says where to do each kind 
 ---
 
 
-## ✅ Step 3 — Executable Shell Placeholder
+## ? Step 3 — Executable Shell Placeholder
 *Completed: 2026-04-15*
 
 **What was built**
@@ -60,7 +60,7 @@ You now have a rulebook for your project. It clearly says where to do each kind 
 
 **In plain English**
 You now have a runnable baseline. The repo no longer has fake one-line commands. It can actually verify that the app shell shape exists, and your CI will run those checks automatically. This is the first step from planning docs into executable project state.
-## ✅ Step 4 — Scope Freeze Sync
+## ? Step 4 — Scope Freeze Sync
 *Completed: 2026-04-15*
 
 **What was built**
@@ -70,7 +70,7 @@ You now have a runnable baseline. The repo no longer has fake one-line commands.
 
 **In plain English**
 You now have a clear go/no-go boundary for Phase 0. We won’t start core product features until this foundation is stable, so the project stays controlled and reviewable.
-## ✅ Step 5 — Phase 0 Acceptance Gate
+## ? Step 5 — Phase 0 Acceptance Gate
 *Completed: 2026-04-15*
 
 **What was built**
@@ -81,3 +81,17 @@ You now have a clear go/no-go boundary for Phase 0. We won’t start core produc
 
 **In plain English**
 Your Phase 0 is now officially done. The repo is in a known-good state with a clear scope boundary and a runnable baseline. You can start Feature Phase 1 next without changing the foundation rules.
+## ? Step 6 — Phase 1 Product Kernel
+*Completed: 2026-04-15*
+
+**What was built**
+- Implemented MVP domain model for tasks, recurrence, summary counters, search/filter, and conflict detection in `apps/desktop/src/state.js`.
+- Added local persistence contract in `apps/desktop/src/storage.js`.
+- Added entitlement baseline and route/feature gates in `apps/desktop/src/entitlement.js`.
+- Replaced desktop shell UI with first-use task workflows in `apps/desktop/src/main.tsx` and updated `apps/desktop/index.html`.
+- Added functional lint/build/test checks for new app kernel contracts.
+
+**In plain English**
+You now have a real usable app surface: create/search/filter tasks, see today/upcoming/overdue, and mark complete/delete. Data is stored locally and feature boundaries are in place for Phase 2 hardening.
+
+
