@@ -1,0 +1,12 @@
+﻿name: ci
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "CI placeholder for later scaffold"
