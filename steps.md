@@ -60,3 +60,13 @@ You now have a rulebook for your project. It clearly says where to do each kind 
 
 **In plain English**
 You now have a runnable baseline. The repo no longer has fake one-line commands. It can actually verify that the app shell shape exists, and your CI will run those checks automatically. This is the first step from planning docs into executable project state.
+## ✅ Step 4 — Scope Freeze Sync
+*Completed: 2026-04-15*
+
+**What was built**
+- `planning.md` now has explicit Phase 0 locks and a P0/P1 boundary.
+- Step 2 and Step 3 completion state is now reflected in the phase-0 references.
+- Confirmed no undocumented feature drift was introduced during scaffold work.
+
+**In plain English**
+You now have a clear go/no-go boundary for Phase 0. We won’t start core product features until this foundation is stable, so the project stays controlled and reviewable.

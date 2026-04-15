@@ -1,4 +1,4 @@
-﻿# Motion Clone App - Learning & Execution Plan (Beginner-Friendly)
+# Motion Clone App - Learning & Execution Plan (Beginner-Friendly)
 
 ## What you are building
 
@@ -225,4 +225,13 @@ That is the execution style so you never feel lost.
   - [phase-0-plan](/C:/Users/Pumba/Documents/codex/Motion/plans/phase-0-plan.md)
 - Current state:
   - Step 1 complete
-  - Step 2 pending
+  - Step 2 complete
+  - Step 3 complete
+
+### Phase 0 checkpoint lock (2026-04-15)
+
+- Phase 0 is now fully locked and ready for Phase 1.
+- P0 scope (must be done before Phase 1): repository foundation, platform/security contracts, executable shell placeholder.
+- P1 scope (must wait until Phase 0 completion): task/project data model, scheduling engine, AI workflow, calendar + reminders integrations.
+- No undocumented feature drift was added during Phase 0.
+- Security baseline v1 is established in docs/contracts/release-security-contract.md.
