@@ -115,3 +115,20 @@ Your app now starts from a safe, predictable data shape every time, even if old 
 + created: `phase-2.md`
 + modified: `apps/desktop/src/storage.js`
 + modified: `scripts/test.mjs`
+
+## ? Step 8 — Phase 2 Seed Fixtures and Deterministic Assertions
+*Completed: 2026-04-17*
+
+**What was built**
+- `apps/desktop/src/fixtures.js` — added deterministic seeded projects and tasks.
+- `scripts/test.mjs` — now uses fixed fixture timelines to validate filters, summaries, and conflict detection deterministically.
+- Storage contract tests were updated to run against deterministic fixture payloads.
+
+**In plain English**
+Your test suite now has fixed sample data, so results no longer depend on current time or randomly created tasks. This gives you stable pass/fail behavior for core product flows like filters, summaries, and conflict detection.
+
+**Files changed**
++ created: `apps/desktop/src/fixtures.js`
++ modified: `scripts/test.mjs`
+
+---
