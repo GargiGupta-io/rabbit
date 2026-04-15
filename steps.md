@@ -48,3 +48,15 @@ You now have a rulebook for your project. It clearly says where to do each kind 
 ---
 
 
+## ✅ Step 3 — Executable Shell Placeholder
+*Completed: 2026-04-15*
+
+**What was built**
+- Added desktop scaffold layout under `apps/desktop` with: `src/main.tsx`, `index.html`, and `src-tauri` Rust placeholder files (`Cargo.toml`, `tauri.conf.json`, `src/main.rs`).
+- Added root validation scripts in `scripts/lint.mjs` and `scripts/build.mjs` to make `npm run lint` and `npm run build` perform real checks.
+- Added per-app scripts in `apps/desktop/scripts` so desktop shell checks are runnable from repo root.
+- Replaced CI placeholder with a real verify pipeline that runs `npm run lint` and `npm run build`.
+- Updated `.gitignore` for build artifacts used by the desktop path.
+
+**In plain English**
+You now have a runnable baseline. The repo no longer has fake one-line commands. It can actually verify that the app shell shape exists, and your CI will run those checks automatically. This is the first step from planning docs into executable project state.
