@@ -95,3 +95,23 @@ Your Phase 0 is now officially done. The repo is in a known-good state with a cl
 You now have a real usable app surface: create/search/filter tasks, see today/upcoming/overdue, and mark complete/delete. Data is stored locally and feature boundaries are in place for Phase 2 hardening.
 
 
+
+---
+
+## ? Step 7 — Phase 2 Contract and Migration Baseline
+*Completed: 2026-04-17*
+
+**What was built**
+- `apps/desktop/src/contracts.js` — added strict persisted-data schema contracts, migration detection, and normalization helpers.
+- `apps/desktop/src/storage.js` — updated load/save to always pass through contract normalization and revision markers.
+- `scripts/test.mjs` — added contract migration and payload validation tests for legacy/invalid persisted data.
+- `phase-2.md` — generated a deep learning reference document for Phase 2 architecture baseline.
+
+**In plain English**
+Your app now starts from a safe, predictable data shape every time, even if old or partially broken saves exist. If stored data is missing fields, the app repairs it to the current format and records what changed. That means future features can run on a stable foundation instead of guessing what was in storage.
+
+**Files changed**
++ created: `apps/desktop/src/contracts.js`
++ created: `phase-2.md`
++ modified: `apps/desktop/src/storage.js`
++ modified: `scripts/test.mjs`
