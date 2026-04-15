@@ -1,0 +1,11 @@
+[package]
+name = "motion-clone-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+
+[build-dependencies]
+tauri-build = { version = "2" }

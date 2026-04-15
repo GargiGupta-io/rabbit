@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MotionClone",
+  "version": "0.1.0",
+  "identifier": "com.motionclone.desktop",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devUrl": "../",
+    "frontendDist": "../"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Motion Clone",
+        "width": 1200,
+        "height": 800
+      }
+    ]
+  }
+}
