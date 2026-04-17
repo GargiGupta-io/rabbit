@@ -320,3 +320,36 @@ const safeState = normalized;
 *Generated: 2026-04-17 | Project: Motion Clone | Files: `apps/desktop/src/contracts.js`, `apps/desktop/src/storage.js`, `scripts/test.mjs`*
 
 
+## What Changed in Step 3
+
+### [apps/desktop/src/taskService.js]
+
+This now owns all task domain operations formerly in `state.js`.
+- `TASK_STATUSES` constant and state mutation/query helpers (`normalizeTask`, `upsertTask`, `resolveTaskAction`, etc.).
+- Filtering/summaries/conflict generation now run from one cohesive file so they can be tested and evolved independently.
+
+### [apps/desktop/src/projectService.js]
+
+This now owns project defaults/normalization and project lookup helpers.
+- Project seed fallback and dedupe.
+- `getProjectById`, `decorateTaskWithProject` for UI composition.
+
+### [apps/desktop/src/state.js]
+
+Now a thin orchestrator:
+- Re-exports both services.
+- Keeps `buildSeedData` as the single place composing normalized projects + tasks when needed.
+
+### [apps/desktop/src/main.tsx]
+
+UI imports are now moved toward service-level helpers for project enrichment.
+- Uses `getProjectById` to set draft project names.
+- Uses `decorateTaskWithProject` when rendering tasks.
+
+### Outcome
+
+- Existing behavior is unchanged from a user perspective.
+- The core is now testable as separate service modules.
+- Next step can safely add scheduling/sync features without moving UI-related wiring again.
+
+- 2026-04-17: Step 3 implemented the service split for kernel/domain logic (`taskService`, `projectService`) and made `state.js` orchestration-only.

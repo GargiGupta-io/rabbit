@@ -132,3 +132,22 @@ Your test suite now has fixed sample data, so results no longer depend on curren
 + modified: `scripts/test.mjs`
 
 ---
+## ? Step 9 — Phase 2 Service Split
+*Completed: 2026-04-17*
+
+**What was built**
+- Added `apps/desktop/src/taskService.js` and moved task-level operations (normalize/upsert/filter/summary/action/conflict) out of the monolithic state file.
+- Added `apps/desktop/src/projectService.js` to own project seed normalization and project lookups.
+- Slimmed `apps/desktop/src/state.js` into a thin orchestration/export layer that composes both services.
+- Updated `apps/desktop/src/main.tsx` to consume project/task service helpers (`decorateTaskWithProject`, `getProjectById`) so UI behavior stays same with cleaner separation.
+
+**In plain English**
+Your domain logic moved from one big `state.js` to small, focused service modules. This keeps the app behavior intact but makes it much easier to evolve without breaking existing flows.
+
+**Files changed**
++ created: `apps/desktop/src/taskService.js`
++ created: `apps/desktop/src/projectService.js`
++ modified: `apps/desktop/src/state.js`
++ modified: `apps/desktop/src/main.tsx`
+
+---
