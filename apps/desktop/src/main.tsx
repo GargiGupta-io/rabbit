@@ -1,4 +1,4 @@
-﻿import { getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime, generatePlanSlice } from './state.js';
+﻿import { buildProjectSeedData, decorateTaskWithProject, getProjectById, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime, generatePlanSlice } from './state.js';
 import { loadStoredData, saveStoredData } from './storage.js';
 import { getEntitlementSnapshot, resolveFeatureGate } from './entitlement.js';
 
@@ -201,20 +201,12 @@ const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 
 function hydrateProjects() {
   projectEl.innerHTML = '';
-  appData.projects.forEach((project) => {
+  buildProjectSeedData(appData.projects).forEach((project) => {
     const option = document.createElement('option');
     option.value = project.id;
     option.textContent = project.name;
     projectEl.appendChild(option);
   });
-}
-
-function withProjectName(task) {
-  const project = appData.projects.find((item) => item.id === task.projectId);
-  return {
-    ...task,
-    projectName: project?.name || 'Inbox'
-  };
 }
 
 function updateSummary() {
@@ -241,10 +233,12 @@ function buildTaskDraft() {
   const dueAt = dueEl.value ? new Date(dueEl.value).toISOString() : null;
   const durationMinutes = Number(durationEl.value || 30);
   const recurrence = { pattern: recurrenceEl.value };
+  const project = getProjectById(appData.projects, projectId);
 
   return {
     title,
     projectId,
+    projectName: project?.name || 'Inbox',
     dueAt,
     durationMinutes,
     recurrence
@@ -268,7 +262,9 @@ function showError(message) {
 }
 
 function renderTasks() {
-  const filtered = getTaskFilters(tasks, { statusFilter: activeFilter, query: search }).map(withProjectName);
+  const filtered = getTaskFilters(tasks, { statusFilter: activeFilter, query: search }).map((task) => {
+    return decorateTaskWithProject(task, appData.projects);
+  });
   const { overlaps } = generatePlanSlice(filtered);
   taskListEl.innerHTML = '';
 
@@ -304,7 +300,7 @@ function renderAll() {
 
 addBtn.addEventListener('click', () => {
   const draft = buildTaskDraft();
-  const result = upsertTask(tasks, { ...draft, projectName: appData.projects.find((project) => project.id === draft.projectId)?.name || 'Inbox' });
+  const result = upsertTask(tasks, draft);
   if (!result.ok) {
     showError(result.error);
     return;
@@ -364,4 +360,3 @@ function run() {
 }
 
 run();
-
