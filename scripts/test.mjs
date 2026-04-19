@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createTaskId, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, generatePlanSlice, normalizeTask } from '../apps/desktop/src/state.js';
 import { getEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
+import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { FIXTURE_NOW, FIXTURE_TASKS_RAW, getFixtureState } from '../apps/desktop/src/fixtures.js';
 
 function runTest(name, fn) {
@@ -17,6 +18,38 @@ function runTest(name, fn) {
 
 const baseTasks = FIXTURE_TASKS_RAW.map((task) => normalizeTask(task));
 const fixtureState = getFixtureState();
+
+function createLocalStorageMock() {
+  const store = {};
+  return {
+    getItem(key) {
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
+    },
+    setItem(key, value) {
+      store[key] = String(value);
+    },
+    removeItem(key) {
+      delete store[key];
+    },
+    clear() {
+      Object.keys(store).forEach((key) => delete store[key]);
+    }
+  };
+}
+
+function withLocalStorage(storage, fn) {
+  const previous = globalThis.localStorage;
+  globalThis.localStorage = storage;
+  try {
+    return fn();
+  } finally {
+    if (previous) {
+      globalThis.localStorage = previous;
+    } else {
+      delete globalThis.localStorage;
+    }
+  }
+}
 
 runTest('fixture set is deterministic and parseable', () => {
   const normalized = getFixtureState();
@@ -114,6 +147,52 @@ runTest('storage contract removes malformed payload rows while retaining valid f
   assert.equal(result.value.tasks.some((task) => task.title === 'Valid task'), true);
   assert.equal(result.value.tasks.some((task) => task.title === 'Another valid task'), true);
   assert.equal(result.value.tasks.some((task) => task.projectId === 'inbox'), true);
+});
+
+runTest('storage load/save path keeps metadata and revision-safe data shape', () => {
+  const storage = createLocalStorageMock();
+  withLocalStorage(storage, () => {
+    const payload = {
+      schemaVersion: 1,
+      version: '0.9.0',
+      projects: getFixtureState().projects,
+      tasks: getFixtureState().tasks,
+      metadata: { source: 'desktop', syncState: 'local' }
+    };
+    saveStoredData(payload);
+    const raw = storage.getItem('motion_clone_phase1_app_data');
+    assert.equal(typeof raw, 'string');
+    const saved = JSON.parse(raw);
+    assert.equal(saved.schemaVersion, CURRENT_SCHEMA_VERSION);
+    assert.equal(typeof saved.metadata, 'object');
+    assert.equal(saved.metadata.app, 'rabbit');
+    assert.equal(saved.metadata.source, 'desktop');
+
+    const loaded = loadStoredData();
+    assert.equal(Array.isArray(loaded.tasks), true);
+    assert.equal(loaded.schemaVersion, CURRENT_SCHEMA_VERSION);
+    assert.equal(Array.isArray(loaded.metadata?.revision) || typeof loaded.metadata?.revision === 'string', true);
+  });
+});
+
+runTest('storage handles future schema payload by applying an upgrade compatibility shim', () => {
+  const storage = createLocalStorageMock();
+  withLocalStorage(storage, () => {
+    const futurePayload = {
+      schemaVersion: CURRENT_SCHEMA_VERSION + 1,
+      version: '1.2.0',
+      projects: getFixtureState().projects,
+      tasks: getFixtureState().tasks
+    };
+    storage.setItem('motion_clone_phase1_app_data', JSON.stringify(futurePayload));
+
+    const loaded = loadStoredData();
+    assert.equal(loaded.schemaVersion, CURRENT_SCHEMA_VERSION);
+    assert.equal(loaded.migration?.hasMigration, true);
+    assert.equal(loaded.migration?.fromVersion, CURRENT_SCHEMA_VERSION + 1);
+    assert.equal(Array.isArray(loaded.migration?.steps), true);
+    assert.equal(loaded.migration?.steps.length > 0, true);
+  });
 });
 
 console.log(`PASS: Phase 2 baseline test suite completed (${baseTasks.length} fixture tasks)`);

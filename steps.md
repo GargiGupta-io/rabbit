@@ -150,4 +150,15 @@ Your domain logic moved from one big `state.js` to small, focused service module
 + modified: `apps/desktop/src/state.js`
 + modified: `apps/desktop/src/main.tsx`
 
+## ? Step 10 — Phase 2 Persistence Metadata and Upgrade Guard
+*Completed: 2026-04-17*
+
+**What was built**
+- Extended storage persistence to keep upgrade metadata, sync state, platform/device fingerprint, and revision stamps.
+- Added compatibility handling for future-version payloads in the load path.
+- Added deterministic storage tests for `saveStoredData` and `loadStoredData` with mocked localStorage and migration markers.
+
+**In plain English**
+Your app now treats saved local data like a versioned contract: when schema changes happen, the app can safely normalize old/newer shapes, track what changed, and keep reading without breaking.
+
 ---
