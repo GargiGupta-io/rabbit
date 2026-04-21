@@ -1,4 +1,5 @@
-﻿import { buildProjectSeedData, decorateTaskWithProject, getProjectById, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime, generatePlanSlice } from './state.js';
+﻿import { buildProjectSeedData, decorateTaskWithProject, getProjectById, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
+import { generatePlanSlice } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
 import { getEntitlementSnapshot, resolveFeatureGate } from './entitlement.js';
 
@@ -360,3 +361,4 @@ function run() {
 }
 
 run();
+
