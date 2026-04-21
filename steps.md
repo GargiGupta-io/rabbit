@@ -162,3 +162,23 @@ Your domain logic moved from one big `state.js` to small, focused service module
 Your app now treats saved local data like a versioned contract: when schema changes happen, the app can safely normalize old/newer shapes, track what changed, and keep reading without breaking.
 
 ---
+## ? Step 11 — Phase 2 Scheduling Primitives Baseline
+*Completed: 2026-04-17*
+
+**What was built**
+- Added `apps/desktop/src/scheduler.js` with planning-window and conflict-overlap primitives.
+- Moved plan slice/conflict generation out of `taskService.js` into `scheduler.js`.
+- Rewired `state.js` exports so scheduling primitives are available via `main` orchestration layer.
+- Updated `main.tsx` to consume `generatePlanSlice` from `scheduler.js`.
+- Expanded `scripts/test.mjs` with deterministic window/ranking assertions using fixture data.
+
+**In plain English**
+Your scheduling behavior now has its own module instead of being buried inside task logic. The app can now answer: "what tasks should be visible in a planning window" and "which tasks conflict" in one reusable place.
+
+**Files changed**
++ created: `apps/desktop/src/scheduler.js`
++ modified: `apps/desktop/src/taskService.js`
++ modified: `apps/desktop/src/state.js`
++ modified: `apps/desktop/src/main.tsx`
++ modified: `scripts/test.mjs`
++ modified: `steps.md`

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { createTaskId, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, generatePlanSlice, normalizeTask } from '../apps/desktop/src/state.js';
+import { createTaskId, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { getEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
@@ -97,6 +98,19 @@ runTest('conflict detector uses deterministic overlapping fixture tasks', () => 
   assert.equal(Boolean(plan.overlaps.f1), true);
   assert.equal(plan.overlaps.f1.includes('f4'), true);
   assert.equal(plan.overlaps.f4.includes('f1'), true);
+  assert.equal(Array.isArray(plan.rankedOverlaps), true);
+});
+
+runTest('planning window and overlap ranking are deterministic', () => {
+  const window = buildPlanWindow(baseTasks, { now: FIXTURE_NOW, horizonMinutes: 60 * 24 * 7 });
+  const ranked = rankConflicts(window.overlaps);
+  assert.equal(Boolean(window.overlaps?.f1?.includes('f4')), true);
+  assert.equal(window.visible.length >= 3, true);
+  assert.equal(window.today.length >= 2, true);
+  assert.equal(ranked.length >= 1, true);
+  assert.equal(window.rankedOverlaps[0]?.taskId, 'f1');
+  assert.equal(window.rankedOverlaps[0]?.count >= 1, true);
+  assert.equal(window.week.length >= 2, true);
 });
 
 runTest('feature gate keeps AI disabled by default', () => {
