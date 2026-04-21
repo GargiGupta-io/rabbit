@@ -63,6 +63,53 @@ export const FIXTURE_TASKS_RAW = [
   }
 ];
 
+export const FIXTURE_CALENDAR_EVENTS_RAW = [
+  {
+    id: 'cal_evt_1',
+    externalId: 'google_evt_1',
+    title: 'Customer kickoff',
+    provider: 'google',
+    calendarId: 'team-primary',
+    status: 'busy',
+    startAt: '2026-04-17T13:00:00.000Z',
+    endAt: '2026-04-17T14:00:00.000Z',
+    location: 'Meet',
+    notes: 'Primary busy block from calendar'
+  },
+  {
+    id: 'cal_evt_2',
+    externalId: 'google_evt_2',
+    title: 'Focus block',
+    provider: 'google',
+    calendarId: 'team-primary',
+    status: 'busy',
+    startAt: '2026-04-17T15:00:00.000Z',
+    endAt: '2026-04-17T16:30:00.000Z'
+  },
+  {
+    id: 'cal_evt_3',
+    externalId: 'google_evt_3',
+    title: 'Company holiday',
+    provider: 'google',
+    calendarId: 'company-shared',
+    status: 'busy',
+    startAt: '2026-04-18T00:00:00.000Z',
+    allDay: true
+  }
+];
+
+export const FIXTURE_CALENDAR_OVERLAY = {
+  importedEvents: FIXTURE_CALENDAR_EVENTS_RAW,
+  source: {
+    provider: 'google',
+    accountId: 'acct_team',
+    calendarIds: ['team-primary', 'company-shared'],
+    syncToken: 'sync_fixture_google'
+  },
+  refreshedAt: '2026-04-17T12:05:00.000Z',
+  permissionStatus: 'granted'
+};
+
 export const FIXTURE_PAYLOAD = {
   version: '1.0.0',
   schemaVersion: 1,
@@ -74,6 +121,14 @@ export function getFixtureState() {
   return {
     ...FIXTURE_PAYLOAD,
     projects: FIXTURE_PROJECTS.map((project) => ({ ...project })),
-    tasks: FIXTURE_TASKS_RAW.map((task) => ({ ...task }))
+    tasks: FIXTURE_TASKS_RAW.map((task) => ({ ...task })),
+    calendarOverlay: {
+      ...FIXTURE_CALENDAR_OVERLAY,
+      source: {
+        ...FIXTURE_CALENDAR_OVERLAY.source,
+        calendarIds: FIXTURE_CALENDAR_OVERLAY.source.calendarIds.slice()
+      },
+      importedEvents: FIXTURE_CALENDAR_EVENTS_RAW.map((event) => ({ ...event }))
+    }
   };
 }
