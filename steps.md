@@ -182,3 +182,19 @@ Your scheduling behavior now has its own module instead of being buried inside t
 + modified: `apps/desktop/src/main.tsx`
 + modified: `scripts/test.mjs`
 + modified: `steps.md`
+
+## ? Step 12 — Phase 2 UI Plan Window Wiring
+*Completed: 2026-04-17*
+
+**What was built**
+- Added plan-window controls (`All`, `Today`, `Week`) to `apps/desktop/src/main.tsx`.
+- Wired plan rendering through scheduling window output from `buildPlanWindow`.
+- Kept existing status/search filters and added a dedicated window slice filter state.
+- Preserved current task actions, editing flow, and conflict badges.
+
+**In plain English**
+The task list now shows what should be in your planning horizon instead of only a raw status filter. This gives you a real schedule-first planning view before moving to entitlement hardening and runtime guards.
+
+**Files changed**
++ modified: `apps/desktop/src/main.tsx`
++ modified: `steps.md`

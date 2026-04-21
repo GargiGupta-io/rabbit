@@ -1,5 +1,5 @@
 ﻿import { buildProjectSeedData, decorateTaskWithProject, getProjectById, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
-import { generatePlanSlice } from './scheduler.js';
+import { buildPlanWindow, generatePlanSlice } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
 import { getEntitlementSnapshot, resolveFeatureGate } from './entitlement.js';
 
@@ -7,6 +7,7 @@ const entitlement = getEntitlementSnapshot();
 const appData = loadStoredData();
 let tasks = appData.tasks.slice();
 let activeFilter = 'all';
+let activePlanWindow = 'all';
 let search = '';
 
 const root = document.getElementById('root');
@@ -34,6 +35,11 @@ shell.innerHTML = `
       <button type="button" class="filter" data-status="todo">Todo</button>
       <button type="button" class="filter" data-status="done">Done</button>
       <button type="button" class="filter" data-status="overdue">Overdue</button>
+    </div>
+    <div class="btn-group" id="plan-window-group">
+      <button type="button" class="plan-window active" data-window="all">Window: All</button>
+      <button type="button" class="plan-window" data-window="today">Today</button>
+      <button type="button" class="plan-window" data-window="week">Week</button>
     </div>
   </section>
 
@@ -191,6 +197,7 @@ document.head.appendChild(style);
 const metricsEl = shell.querySelector('#metrics') as HTMLDivElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
+const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
 const titleEl = shell.querySelector('#title') as HTMLInputElement;
 const projectEl = shell.querySelector('#project') as HTMLSelectElement;
 const dueEl = shell.querySelector('#due') as HTMLInputElement;
@@ -225,6 +232,14 @@ function setFilter(filter) {
   filterContainer.querySelectorAll('.filter').forEach((button) => {
     const buttonEl = button as HTMLButtonElement;
     buttonEl.classList.toggle('active', buttonEl.dataset.status === filter);
+  });
+}
+
+function setPlanWindowFilter(windowFilter) {
+  activePlanWindow = windowFilter;
+  planWindowContainer.querySelectorAll('.plan-window').forEach((button) => {
+    const buttonEl = button as HTMLButtonElement;
+    buttonEl.classList.toggle('active', buttonEl.dataset.window === windowFilter);
   });
 }
 
@@ -266,15 +281,22 @@ function renderTasks() {
   const filtered = getTaskFilters(tasks, { statusFilter: activeFilter, query: search }).map((task) => {
     return decorateTaskWithProject(task, appData.projects);
   });
-  const { overlaps } = generatePlanSlice(filtered);
+  const planWindow = buildPlanWindow(filtered);
+  let visibleTasks = planWindow.visible.map((entry) => entry.task);
+  if (activePlanWindow === 'today') {
+    visibleTasks = planWindow.today.map((entry) => entry.task);
+  } else if (activePlanWindow === 'week') {
+    visibleTasks = planWindow.week.map((entry) => entry.task);
+  }
+  const { overlaps } = activePlanWindow === 'all' ? { overlaps: planWindow.overlaps } : generatePlanSlice(visibleTasks);
   taskListEl.innerHTML = '';
 
-  if (!filtered.length) {
+  if (!visibleTasks.length) {
     taskListEl.innerHTML = '<p class="muted">No matching tasks.</p>';
     return;
   }
 
-  filtered.forEach((task) => {
+  visibleTasks.forEach((task) => {
     const conflictIds = overlaps[task.id] || [];
     const item = document.createElement('article');
     item.className = 'task-item';
@@ -334,6 +356,19 @@ filterContainer.addEventListener('click', (event) => {
   renderTasks();
 });
 
+planWindowContainer.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+  const windowFilter = target.dataset.window;
+  if (!windowFilter) {
+    return;
+  }
+  setPlanWindowFilter(windowFilter);
+  renderTasks();
+});
+
 taskListEl.addEventListener('click', (event) => {
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
@@ -357,8 +392,10 @@ taskListEl.addEventListener('click', (event) => {
 
 function run() {
   hydrateProjects();
+  setPlanWindowFilter('all');
   renderAll();
 }
 
 run();
+
 
