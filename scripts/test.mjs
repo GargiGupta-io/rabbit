@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { createTaskId, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applyTaskMutation, createTaskId, getSyncStateSummary, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
-import { FIXTURE_NOW, FIXTURE_TASKS_RAW, getFixtureState } from '../apps/desktop/src/fixtures.js';
+import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
+import { buildCalendarBusyBlocks, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
+import { FIXTURE_CALENDAR_EVENTS_RAW, FIXTURE_CALENDAR_OVERLAY, FIXTURE_NOW, FIXTURE_TASKS_RAW, getFixtureState } from '../apps/desktop/src/fixtures.js';
 
 function runTest(name, fn) {
   try {
@@ -72,12 +74,134 @@ runTest('task action flow marks task done', () => {
   assert.equal(result.tasks.find((task) => task.id === 'f1')?.status, 'done');
 });
 
+runTest('task mutations emit normalized sync events for create and complete actions', () => {
+  const created = upsertTask([], { title: 'Sync contract baseline', projectId: 'inbox', durationMinutes: 25 });
+  assert.equal(created.ok, true);
+  assert.equal(created.syncEvent?.action, 'create');
+  assert.equal(created.syncEvent?.entityType, 'task');
+  assert.equal(created.syncEvent?.entityId, created.tasks[0].id);
+  assert.equal(created.syncEvent?.payload?.task?.title, 'Sync contract baseline');
+
+  const completed = resolveTaskAction(created.tasks, created.tasks[0].id, 'complete');
+  assert.equal(completed.ok, true);
+  assert.equal(completed.syncEvent?.action, 'complete');
+  assert.equal(completed.syncEvent?.payload?.previousTask?.status, 'todo');
+  assert.equal(completed.syncEvent?.payload?.task?.status, 'done');
+});
+
+runTest('sync outbox normalization deduplicates repeated revision entries', () => {
+  const previousTask = normalizeTask(FIXTURE_TASKS_RAW[0]);
+  const nextTask = normalizeTask({
+    ...FIXTURE_TASKS_RAW[0],
+    title: 'Draft weekly plan v2',
+    updatedAt: '2026-04-17T12:30:00.000Z'
+  });
+
+  const event = createTaskSyncEvent({
+    action: 'update',
+    task: nextTask,
+    previousTask,
+    revision: 'mut_fixed_revision',
+    occurredAt: '2026-04-17T12:30:00.000Z'
+  });
+
+  const outbox = normalizeOutbox([event, event, { ...event, id: 'duplicate-by-revision' }], {
+    deviceId: 'dev_test'
+  });
+
+  assert.equal(outbox.length, 1);
+  assert.equal(outbox[0].action, 'update');
+  assert.equal(outbox[0].deviceId, 'dev_test');
+  assert.equal(outbox[0].payload?.previousTask?.title, previousTask.title);
+});
+
+runTest('app state mutation helper appends outbox events and marks sync as pending', () => {
+  const created = upsertTask([], { title: 'Queue me for sync', projectId: 'inbox', durationMinutes: 30 });
+  const nextState = applyTaskMutation(
+    {
+      ...getFixtureState(),
+      tasks: [],
+      outbox: [],
+      lastSyncAt: '2026-04-17T12:00:00.000Z',
+      syncCursor: 'cursor_before',
+      deviceId: 'dev_runtime',
+      syncStatus: 'local'
+    },
+    created
+  );
+
+  assert.equal(Array.isArray(nextState.tasks), true);
+  assert.equal(nextState.tasks.length, 1);
+  assert.equal(nextState.outbox.length, 1);
+  assert.equal(nextState.outbox[0]?.action, 'create');
+  assert.equal(nextState.syncStatus, 'pending');
+  assert.equal(nextState.lastSyncAt, '2026-04-17T12:00:00.000Z');
+});
+
+runTest('sync state summary exposes pending local-only runtime status', () => {
+  const summary = getSyncStateSummary({
+    outbox: [
+      createTaskSyncEvent({
+        action: 'create',
+        task: normalizeTask({
+          id: 'queue-summary-1',
+          title: 'Queued summary task',
+          projectId: 'inbox',
+          durationMinutes: 30
+        }),
+        revision: 'mut_summary_1',
+        occurredAt: '2026-04-17T12:15:00.000Z'
+      })
+    ],
+    deviceId: 'dev_summary',
+    syncStatus: 'local'
+  });
+
+  assert.equal(summary.pendingCount, 1);
+  assert.equal(summary.hasPendingChanges, true);
+  assert.equal(summary.isDegraded, true);
+  assert.equal(summary.syncStatus, 'pending');
+});
+
+runTest('calendar overlay normalization keeps deterministic busy blocks and derives all-day end time', () => {
+  const overlay = normalizeCalendarOverlay(FIXTURE_CALENDAR_OVERLAY);
+  const busyBlocks = buildCalendarBusyBlocks(overlay.importedEvents);
+
+  assert.equal(Array.isArray(overlay.importedEvents), true);
+  assert.equal(overlay.importedEvents.length, 3);
+  assert.equal(overlay.permissionStatus, 'granted');
+  assert.equal(overlay.source.provider, 'google');
+  assert.equal(overlay.importedEvents[2]?.allDay, true);
+  assert.equal(overlay.importedEvents[2]?.endAt, '2026-04-19T00:00:00.000Z');
+  assert.equal(busyBlocks.length, 3);
+});
+
+runTest('calendar overlay normalization drops invalid calendar rows safely', () => {
+  const overlay = normalizeCalendarOverlay({
+    importedEvents: [
+      ...FIXTURE_CALENDAR_EVENTS_RAW,
+      { id: 'bad_1', title: 'Missing end', startAt: '2026-04-17T18:00:00.000Z' },
+      { id: 'bad_2', title: 'Reverse range', startAt: '2026-04-17T20:00:00.000Z', endAt: '2026-04-17T19:00:00.000Z' },
+      { title: 'No id', startAt: '2026-04-17T10:00:00.000Z', endAt: '2026-04-17T11:00:00.000Z' }
+    ],
+    permissionStatus: 'prompt',
+    source: {
+      provider: 'google',
+      calendarIds: ['team-primary', 'team-primary', 'company-shared']
+    }
+  });
+
+  assert.equal(overlay.importedEvents.length, 3);
+  assert.equal(overlay.permissionStatus, 'prompt');
+  assert.deepEqual(overlay.source.calendarIds, ['team-primary', 'company-shared']);
+});
+
 runTest('task filter supports search and status windows', () => {
   const todaySearch = getTaskFilters(baseTasks, { statusFilter: 'all', query: 'draft' });
   assert.equal(todaySearch.length, 1);
   assert.equal(todaySearch[0].id, 'f1');
 
-  const overdue = getTaskFilters(baseTasks, { statusFilter: 'overdue' });
+  const overdue = getTaskFilters(baseTasks, { statusFilter: 'overdue', now: FIXTURE_NOW });
   assert.equal(overdue.length, 1);
   assert.equal(overdue[0].id, 'f3');
 
@@ -86,7 +210,7 @@ runTest('task filter supports search and status windows', () => {
 });
 
 runTest('summary aligns with deterministic fixture timeline', () => {
-  const summary = getTaskStateSummary(baseTasks);
+  const summary = getTaskStateSummary(baseTasks, { now: FIXTURE_NOW });
   assert.equal(summary.today, 3);
   assert.equal(summary.upcoming, 0);
   assert.equal(summary.overdue, 1);
@@ -111,6 +235,33 @@ runTest('planning window and overlap ranking are deterministic', () => {
   assert.equal(window.rankedOverlaps[0]?.taskId, 'f1');
   assert.equal(window.rankedOverlaps[0]?.count >= 1, true);
   assert.equal(window.week.length >= 2, true);
+});
+
+runTest('calendar-aware planning window reports busy blocks, blocked tasks, and available minutes', () => {
+  const window = buildPlanWindow(baseTasks, {
+    now: FIXTURE_NOW,
+    horizonMinutes: 60 * 24 * 7,
+    calendarOverlay: FIXTURE_CALENDAR_OVERLAY
+  });
+
+  assert.equal(window.busyBlocks.length, 3);
+  assert.deepEqual(window.blockedTaskIds, ['f1', 'f4']);
+  assert.equal(window.availableMinutes, 8490);
+  assert.equal(Boolean(window.overlaps?.f1?.includes('f4')), true);
+});
+
+runTest('calendar-aware plan slice preserves task overlap output while layering calendar conflicts', () => {
+  const plan = generatePlanSlice(baseTasks, {
+    now: FIXTURE_NOW,
+    horizonMinutes: 60 * 24 * 7,
+    calendarOverlay: FIXTURE_CALENDAR_OVERLAY
+  });
+
+  assert.equal(plan.busyBlocks.length, 3);
+  assert.equal(plan.blockedTaskIds.includes('f1'), true);
+  assert.equal(plan.blockedTaskIds.includes('f4'), true);
+  assert.equal(plan.availableMinutes, 8490);
+  assert.equal(Boolean(plan.overlaps?.f1?.includes('f4')), true);
 });
 
 runTest('feature gate keeps AI disabled by default', () => {
@@ -211,6 +362,8 @@ runTest('storage contract migrates deterministic legacy payload', () => {
   assert.equal(Array.isArray(result.value.projects), true);
   assert.equal(result.value.projects.length, 3);
   assert.equal(result.value.tasks.length, 5);
+  assert.equal(Array.isArray(result.value.calendarOverlay.importedEvents), true);
+  assert.equal(result.value.calendarOverlay.importedEvents.length, 3);
 });
 
 runTest('storage contract removes malformed payload rows while retaining valid fixture-like rows', () => {
@@ -234,30 +387,71 @@ runTest('storage contract removes malformed payload rows while retaining valid f
   assert.equal(result.value.tasks.some((task) => task.title === 'Valid task'), true);
   assert.equal(result.value.tasks.some((task) => task.title === 'Another valid task'), true);
   assert.equal(result.value.tasks.some((task) => task.projectId === 'inbox'), true);
+  assert.equal(Array.isArray(result.value.calendarOverlay.importedEvents), true);
 });
 
-runTest('storage load/save path keeps metadata and revision-safe data shape', () => {
+runTest('storage load/save path keeps sync metadata, outbox, and revision-safe data shape', () => {
   const storage = createLocalStorageMock();
   withLocalStorage(storage, () => {
+    const outboxEvent = createTaskSyncEvent({
+      action: 'create',
+      task: normalizeTask({
+        id: 'sync-fixture-1',
+        title: 'Persist sync event',
+        projectId: 'inbox',
+        dueAt: '2026-04-17T12:05:00.000Z',
+        durationMinutes: 30
+      }),
+      revision: 'mut_fixture_create',
+      occurredAt: '2026-04-17T12:05:00.000Z'
+    });
+
     const payload = {
       schemaVersion: 1,
       version: '0.9.0',
       projects: getFixtureState().projects,
       tasks: getFixtureState().tasks,
+      calendarOverlay: getFixtureState().calendarOverlay,
+      outbox: [outboxEvent, outboxEvent],
+      lastSyncAt: '2026-04-17T12:00:00.000Z',
+      syncCursor: 'cursor_step15',
+      syncStatus: 'synced',
       metadata: { source: 'desktop', syncState: 'local' }
     };
-    saveStoredData(payload);
+
+    const savedSnapshot = saveStoredData(payload);
     const raw = storage.getItem('motion_clone_phase1_app_data');
     assert.equal(typeof raw, 'string');
+
     const saved = JSON.parse(raw);
     assert.equal(saved.schemaVersion, CURRENT_SCHEMA_VERSION);
     assert.equal(typeof saved.metadata, 'object');
     assert.equal(saved.metadata.app, 'rabbit');
     assert.equal(saved.metadata.source, 'desktop');
+    assert.equal(saved.metadata.syncState, 'pending');
+    assert.equal(Array.isArray(saved.outbox), true);
+    assert.equal(saved.outbox.length, 1);
+    assert.equal(saved.syncCursor, 'cursor_step15');
+    assert.equal(saved.syncStatus, 'pending');
+    assert.equal(typeof saved.deviceId, 'string');
+    assert.equal(saved.calendarOverlay.permissionStatus, 'granted');
+    assert.equal(saved.calendarOverlay.importedEvents.length, 3);
+    assert.equal(savedSnapshot.syncStatus, 'pending');
+    assert.equal(savedSnapshot.outbox.length, 1);
+    assert.equal(savedSnapshot.calendarOverlay.source.provider, 'google');
 
     const loaded = loadStoredData();
     assert.equal(Array.isArray(loaded.tasks), true);
     assert.equal(loaded.schemaVersion, CURRENT_SCHEMA_VERSION);
+    assert.equal(Array.isArray(loaded.outbox), true);
+    assert.equal(loaded.outbox.length, 1);
+    assert.equal(loaded.outbox[0]?.entityType, 'task');
+    assert.equal(loaded.syncCursor, 'cursor_step15');
+    assert.equal(loaded.syncStatus, 'pending');
+    assert.equal(loaded.deviceId, saved.deviceId);
+    assert.equal(loaded.calendarOverlay.permissionStatus, 'granted');
+    assert.equal(loaded.calendarOverlay.importedEvents.length, 3);
+    assert.equal(loaded.calendarOverlay.importedEvents[0]?.provider, 'google');
     assert.equal(Array.isArray(loaded.metadata?.revision) || typeof loaded.metadata?.revision === 'string', true);
   });
 });
@@ -282,5 +476,4 @@ runTest('storage handles future schema payload by applying an upgrade compatibil
   });
 });
 
-console.log(`PASS: Phase 2 baseline test suite completed (${baseTasks.length} fixture tasks)`);
-
+console.log(`PASS: Phase 3 Step 18 baseline test suite completed (${baseTasks.length} fixture tasks)`);
