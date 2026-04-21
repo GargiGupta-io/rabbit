@@ -1,3 +1,5 @@
+import { createEmptyCalendarOverlay, normalizeCalendarOverlay } from './calendarService.js';
+
 const CURRENT_SCHEMA_VERSION = 2;
 const EARLIEST_SCHEMA_VERSION = 1;
 const DEFAULT_APP_VERSION = '1.0.0';
@@ -207,6 +209,9 @@ function normalizeMigrationInfo(payload = {}, fromVersion = EARLIEST_SCHEMA_VERS
   if (fromVersion < toVersion) {
     steps.push(`migrated v${fromVersion} -> v${toVersion}`);
   }
+  if (!isPlainObject(payload?.calendarOverlay)) {
+    steps.push('injected calendar overlay snapshot');
+  }
   return {
     fromVersion,
     toVersion,
@@ -233,7 +238,8 @@ export function normalizePersistedPayload(raw = {}) {
     migration,
     revision: sanitizeText(payload.revision, `r_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`),
     projects,
-    tasks: normalizeTasks(Array.isArray(payload.tasks) ? payload.tasks : [], projectIds)
+    tasks: normalizeTasks(Array.isArray(payload.tasks) ? payload.tasks : [], projectIds),
+    calendarOverlay: normalizeCalendarOverlay(payload.calendarOverlay || createEmptyCalendarOverlay())
   };
 }
 
@@ -253,6 +259,10 @@ export function validatePersistedPayload(payload = {}) {
     errors.push('tasks must be an array');
   }
 
+  if (!Array.isArray(normalized.calendarOverlay?.importedEvents)) {
+    errors.push('calendarOverlay.importedEvents must be an array');
+  }
+
   return {
     ok: errors.length === 0,
     errors,
@@ -264,7 +274,8 @@ export const APP_DATA_DEFAULT = normalizePersistedPayload({
   version: DEFAULT_APP_VERSION,
   schemaVersion: CURRENT_SCHEMA_VERSION,
   projects: DEFAULT_PROJECTS,
-  tasks: []
+  tasks: [],
+  calendarOverlay: createEmptyCalendarOverlay()
 });
 
 export function createPersistedSeedData() {
