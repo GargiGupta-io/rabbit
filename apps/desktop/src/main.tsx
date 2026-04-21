@@ -1,9 +1,10 @@
 ﻿import { buildProjectSeedData, decorateTaskWithProject, getProjectById, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
 import { buildPlanWindow, generatePlanSlice } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
-import { getEntitlementSnapshot, resolveFeatureGate } from './entitlement.js';
+import { canMutateTasks, getEntitlementSnapshot, requireEntitlement, resolveFeatureGate } from './entitlement.js';
 
-const entitlement = getEntitlementSnapshot();
+let entitlement = getEntitlementSnapshot();
+let canMutate = canMutateTasks();
 const appData = loadStoredData();
 let tasks = appData.tasks.slice();
 let activeFilter = 'all';
@@ -22,8 +23,7 @@ root.appendChild(shell);
 shell.innerHTML = `
   <header class="app-header">
     <h1>Motion Clone</h1>
-    <p>Phase 1 working prototype: tasks, recurrence, plan view, and entitlements.</p>
-    <p class="entitlement">Plan: ${entitlement.plan} • AI: ${resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled'} • Calendar read: ${resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled'}</p>
+    <p class="entitlement" id="entitlement-status">Plan: ${entitlement.plan} • AI: ${resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled'} • Calendar read: ${resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled'} • Mutations: ${canMutate ? 'enabled' : 'read-only'}</p>
   </header>
 
   <section class="metrics" id="metrics"></section>
@@ -206,6 +206,30 @@ const recurrenceEl = shell.querySelector('#recurrence') as HTMLSelectElement;
 const addBtn = shell.querySelector('#add') as HTMLButtonElement;
 const editorEl = shell.querySelector('#editor') as HTMLElement;
 const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
+const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
+const warningEl = document.createElement('p');
+
+function refreshEntitlementState() {
+  entitlement = getEntitlementSnapshot({ allowPersistence: false });
+  const entitlementCheck = requireEntitlement('tasks_manage');
+  canMutate = entitlementCheck.allowed;
+  const aiStatus = resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled';
+  const calendarStatus = resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled';
+  const mutationState = canMutate ? 'enabled' : 'read-only';
+  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} • AI: ${aiStatus} • Calendar read: ${calendarStatus} • Mutations: ${mutationState}`;
+  addBtn.disabled = !canMutate;
+
+  if (!canMutate && entitlementCheck.reason) {
+    warningEl.className = 'error';
+    warningEl.textContent = `Read-only mode active: ${entitlementCheck.reason}`;
+    editorEl.prepend(warningEl);
+    return;
+  }
+
+  if (warningEl.parentElement === editorEl) {
+    warningEl.remove();
+  }
+}
 
 function hydrateProjects() {
   projectEl.innerHTML = '';
@@ -307,8 +331,8 @@ function renderTasks() {
       <div class="muted">${task.description ? task.description : 'No notes'}</div>
       ${conflictIds.length ? `<div class="conflict">Conflict with: ${conflictIds.join(', ')}</div>` : ''}
       <div class="task-actions">
-        <button data-action="complete" data-id="${task.id}">${task.status === 'done' ? 'Undo' : 'Done'}</button>
-        <button data-action="delete" data-id="${task.id}">Delete</button>
+        <button data-action="complete" data-id="${task.id}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
+        <button data-action="delete" data-id="${task.id}" ${canMutate ? '' : 'disabled'}>Delete</button>
       </div>
     `;
     taskListEl.appendChild(item);
@@ -316,12 +340,17 @@ function renderTasks() {
 }
 
 function renderAll() {
+  refreshEntitlementState();
   updateSummary();
   renderTasks();
   saveStoredData({ ...appData, tasks });
 }
 
 addBtn.addEventListener('click', () => {
+  if (!canMutate) {
+    showError('This install is currently read-only due to entitlement status.');
+    return;
+  }
   const draft = buildTaskDraft();
   const result = upsertTask(tasks, draft);
   if (!result.ok) {
@@ -380,6 +409,10 @@ taskListEl.addEventListener('click', (event) => {
     return;
   }
 
+  if (!canMutate) {
+    showError('This install is currently read-only due to entitlement status.');
+    return;
+  }
   const result = resolveTaskAction(tasks, id, action);
   if (!result.ok) {
     showError(result.error);
