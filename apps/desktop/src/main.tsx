@@ -1,11 +1,11 @@
-﻿import { buildProjectSeedData, decorateTaskWithProject, getProjectById, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
-import { buildPlanWindow, generatePlanSlice } from './scheduler.js';
+import { applyTaskMutation, buildProjectSeedData, decorateTaskWithProject, getProjectById, getSyncStateSummary, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
+import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
 import { canMutateTasks, getEntitlementSnapshot, requireEntitlement, resolveFeatureGate } from './entitlement.js';
 
 let entitlement = getEntitlementSnapshot();
 let canMutate = canMutateTasks();
-const appData = loadStoredData();
+let appData = loadStoredData();
 let tasks = appData.tasks.slice();
 let activeFilter = 'all';
 let activePlanWindow = 'all';
@@ -23,8 +23,10 @@ root.appendChild(shell);
 shell.innerHTML = `
   <header class="app-header">
     <h1>Motion Clone</h1>
-    <p class="entitlement" id="entitlement-status">Plan: ${entitlement.plan} • AI: ${resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled'} • Calendar read: ${resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled'} • Mutations: ${canMutate ? 'enabled' : 'read-only'}</p>
+    <p class="entitlement" id="entitlement-status">Plan: ${entitlement.plan} | AI: ${resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled'} | Calendar read: ${resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled'} | Mutations: ${canMutate ? 'enabled' : 'read-only'}</p>
   </header>
+
+  <section class="sync-panel" id="sync-panel" aria-live="polite"></section>
 
   <section class="metrics" id="metrics"></section>
 
@@ -108,7 +110,8 @@ style.textContent = `
   .toolbar,
   .form-row,
   .editor,
-  .task-list {
+  .task-list,
+  .sync-panel {
     background: #fff;
     border: 1px solid #d9deea;
     border-radius: 12px;
@@ -190,11 +193,82 @@ style.textContent = `
     color: #b91c1c;
     font-size: 12px;
   }
+  .sync-panel {
+    display: grid;
+    gap: 8px;
+    background: #f8fafc;
+  }
+  .sync-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sync-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .sync-pill.local-only {
+    background: #e2e8f0;
+    color: #334155;
+  }
+  .sync-pill.pending,
+  .sync-pill.offline {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .sync-pill.healthy {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .sync-pill.degraded {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .sync-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .sync-stat {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fff;
+  }
+  .sync-stat strong {
+    display: block;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+  .sync-value {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .sync-note {
+    margin: 0;
+    font-size: 12px;
+    color: #475569;
+  }
+  .calendar-summary {
+    display: grid;
+    gap: 8px;
+  }
 `;
 
 document.head.appendChild(style);
 
 const metricsEl = shell.querySelector('#metrics') as HTMLDivElement;
+const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
@@ -216,7 +290,7 @@ function refreshEntitlementState() {
   const aiStatus = resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled';
   const calendarStatus = resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled';
   const mutationState = canMutate ? 'enabled' : 'read-only';
-  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} • AI: ${aiStatus} • Calendar read: ${calendarStatus} • Mutations: ${mutationState}`;
+  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
   addBtn.disabled = !canMutate;
 
   if (!canMutate && entitlementCheck.reason) {
@@ -239,16 +313,6 @@ function hydrateProjects() {
     option.textContent = project.name;
     projectEl.appendChild(option);
   });
-}
-
-function updateSummary() {
-  const summary = getTaskStateSummary(tasks);
-  metricsEl.innerHTML = `
-    <strong>Today:</strong> ${summary.today} 
-    <strong>Upcoming:</strong> ${summary.upcoming} 
-    <strong>Overdue:</strong> ${summary.overdue} 
-    <strong>Done:</strong> ${summary.done}
-  `;
 }
 
 function setFilter(filter) {
@@ -301,18 +365,185 @@ function showError(message) {
   editorEl.appendChild(line);
 }
 
-function renderTasks() {
-  const filtered = getTaskFilters(tasks, { statusFilter: activeFilter, query: search }).map((task) => {
+function formatSyncDate(value) {
+  if (!value) {
+    return 'Not yet';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) {
+    return 'Not yet';
+  }
+
+  return parsed.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getSyncPresentation(sync) {
+  const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+  if (isOffline && sync.hasPendingChanges) {
+    return {
+      badgeClass: 'offline',
+      title: 'Offline',
+      detail: 'Changes are saved on this device and will stay queued until sync is available again.'
+    };
+  }
+
+  if (sync.isFailed) {
+    return {
+      badgeClass: 'degraded',
+      title: 'Degraded',
+      detail: 'The local outbox is preserved, but remote sync needs attention before these changes are confirmed elsewhere.'
+    };
+  }
+
+  if (sync.isSyncing) {
+    return {
+      badgeClass: 'healthy',
+      title: 'Syncing',
+      detail: 'The local outbox is actively being prepared for sync.'
+    };
+  }
+
+  if (sync.hasPendingChanges) {
+    return {
+      badgeClass: 'pending',
+      title: 'Pending',
+      detail: 'Changes are stored locally and waiting for the future remote sync path.'
+    };
+  }
+
+  if (sync.isSynced) {
+    return {
+      badgeClass: 'healthy',
+      title: 'Healthy',
+      detail: 'No pending local changes are waiting in the outbox.'
+    };
+  }
+
+  return {
+    badgeClass: 'local-only',
+    title: 'Local only',
+    detail: 'This install is ready for sync later, but no remote sync has run in this session yet.'
+  };
+}
+
+function updateSyncStatus() {
+  const sync = getSyncStateSummary(appData);
+  const presentation = getSyncPresentation(sync);
+
+  syncPanelEl.innerHTML = `
+    <div class="sync-header">
+      <strong>Sync health</strong>
+      <span class="sync-pill ${presentation.badgeClass}">${presentation.title}</span>
+    </div>
+    <div class="sync-grid">
+      <div class="sync-stat">
+        <strong>Pending changes</strong>
+        <div class="sync-value">${sync.pendingCount}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Last sync</strong>
+        <div class="sync-value">${formatSyncDate(sync.lastSyncAt)}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Cursor</strong>
+        <div class="sync-value">${sync.syncCursor || 'Not set'}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Device</strong>
+        <div class="sync-value">${sync.deviceId || 'Unknown'}</div>
+      </div>
+    </div>
+    <p class="sync-note">${presentation.detail}</p>
+  `;
+}
+
+function buildPlannerState() {
+  const filteredTasks = getTaskFilters(tasks, { statusFilter: activeFilter, query: search }).map((task) => {
     return decorateTaskWithProject(task, appData.projects);
   });
-  const planWindow = buildPlanWindow(filtered);
-  let visibleTasks = planWindow.visible.map((entry) => entry.task);
+  const planWindow = buildPlanWindow(filteredTasks, {
+    calendarOverlay: appData.calendarOverlay
+  });
+
+  let visibleEntries = planWindow.visible;
   if (activePlanWindow === 'today') {
-    visibleTasks = planWindow.today.map((entry) => entry.task);
+    visibleEntries = planWindow.today;
   } else if (activePlanWindow === 'week') {
-    visibleTasks = planWindow.week.map((entry) => entry.task);
+    visibleEntries = planWindow.week;
   }
-  const { overlaps } = activePlanWindow === 'all' ? { overlaps: planWindow.overlaps } : generatePlanSlice(visibleTasks);
+
+  const visibleTasks = visibleEntries.map((entry) => entry.task);
+  const visibleTaskIds = new Set(visibleTasks.map((task) => task.id));
+  const overlaps = Object.fromEntries(
+    Object.entries(planWindow.overlaps)
+      .filter(([taskId]) => visibleTaskIds.has(taskId))
+      .map(([taskId, peers]) => [taskId, peers.filter((peerId) => visibleTaskIds.has(peerId))])
+      .filter(([, peers]) => peers.length > 0)
+  );
+  const blockedTaskIds = planWindow.blockedTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
+
+  return {
+    planWindow,
+    visibleTasks,
+    overlaps,
+    blockedTaskIds
+  };
+}
+
+function updateSummary(plannerState) {
+  const summary = getTaskStateSummary(tasks);
+  const overlay = appData.calendarOverlay || {
+    importedEvents: [],
+    permissionStatus: 'unknown',
+    refreshedAt: null
+  };
+  const permissionLabel = overlay.permissionStatus === 'granted'
+    ? `${plannerState.planWindow.busyBlocks.length} busy blocks active`
+    : `Calendar overlay ${overlay.permissionStatus}`;
+
+  metricsEl.innerHTML = `
+    <div class="calendar-summary">
+      <div class="sync-grid">
+        <div class="sync-stat">
+          <strong>Today</strong>
+          <div class="sync-value">${summary.today}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Upcoming</strong>
+          <div class="sync-value">${summary.upcoming}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Overdue</strong>
+          <div class="sync-value">${summary.overdue}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Busy blocks</strong>
+          <div class="sync-value">${plannerState.planWindow.busyBlocks.length}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Blocked tasks</strong>
+          <div class="sync-value">${plannerState.blockedTaskIds.length}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Available minutes</strong>
+          <div class="sync-value">${plannerState.planWindow.availableMinutes}</div>
+        </div>
+      </div>
+      <p class="sync-note">${permissionLabel} | Refreshed: ${formatSyncDate(overlay.refreshedAt)}</p>
+    </div>
+  `;
+}
+
+function renderTasks(plannerState) {
+  const { visibleTasks, overlaps, blockedTaskIds } = plannerState;
+  const blockedTaskSet = new Set(blockedTaskIds);
   taskListEl.innerHTML = '';
 
   if (!visibleTasks.length) {
@@ -322,14 +553,16 @@ function renderTasks() {
 
   visibleTasks.forEach((task) => {
     const conflictIds = overlaps[task.id] || [];
+    const isCalendarBlocked = blockedTaskSet.has(task.id);
     const item = document.createElement('article');
     item.className = 'task-item';
     item.innerHTML = `
-      <div class="muted">${task.projectName} • status: ${task.status}</div>
+      <div class="muted">${task.projectName} | status: ${task.status}</div>
       <div class="task-title ${task.status === 'done' ? 'done' : ''}">${task.title}</div>
-      <div class="muted">Due: ${formatDisplayDateTime(task.dueAt)} • Duration: ${task.durationMinutes} min • Recurrence: ${task.recurrence.pattern}</div>
+      <div class="muted">Due: ${formatDisplayDateTime(task.dueAt)} | Duration: ${task.durationMinutes} min | Recurrence: ${task.recurrence.pattern}</div>
       <div class="muted">${task.description ? task.description : 'No notes'}</div>
-      ${conflictIds.length ? `<div class="conflict">Conflict with: ${conflictIds.join(', ')}</div>` : ''}
+      ${conflictIds.length ? `<div class="conflict">Task overlap with: ${conflictIds.join(', ')}</div>` : ''}
+      ${isCalendarBlocked ? '<div class="conflict">Calendar busy block overlaps this task.</div>' : ''}
       <div class="task-actions">
         <button data-action="complete" data-id="${task.id}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
         <button data-action="delete" data-id="${task.id}" ${canMutate ? '' : 'disabled'}>Delete</button>
@@ -339,11 +572,25 @@ function renderTasks() {
   });
 }
 
+function persistAppData() {
+  const saved = saveStoredData(appData);
+  if (saved) {
+    appData = saved;
+    tasks = appData.tasks.slice();
+  }
+}
+
+function renderPlannerViews() {
+  const plannerState = buildPlannerState();
+  updateSummary(plannerState);
+  renderTasks(plannerState);
+}
+
 function renderAll() {
   refreshEntitlementState();
-  updateSummary();
-  renderTasks();
-  saveStoredData({ ...appData, tasks });
+  persistAppData();
+  updateSyncStatus();
+  renderPlannerViews();
 }
 
 addBtn.addEventListener('click', () => {
@@ -358,7 +605,8 @@ addBtn.addEventListener('click', () => {
     return;
   }
 
-  tasks = result.tasks;
+  appData = applyTaskMutation(appData, result);
+  tasks = appData.tasks.slice();
   clearDraft();
   showError('');
   renderAll();
@@ -368,7 +616,7 @@ searchEl.addEventListener('input', (event) => {
   const target = event.target;
   if (target instanceof HTMLInputElement) {
     search = target.value.trim();
-    renderTasks();
+    renderPlannerViews();
   }
 });
 
@@ -382,7 +630,7 @@ filterContainer.addEventListener('click', (event) => {
     return;
   }
   setFilter(status);
-  renderTasks();
+  renderPlannerViews();
 });
 
 planWindowContainer.addEventListener('click', (event) => {
@@ -395,7 +643,7 @@ planWindowContainer.addEventListener('click', (event) => {
     return;
   }
   setPlanWindowFilter(windowFilter);
-  renderTasks();
+  renderPlannerViews();
 });
 
 taskListEl.addEventListener('click', (event) => {
@@ -418,10 +666,17 @@ taskListEl.addEventListener('click', (event) => {
     showError(result.error);
     return;
   }
-  tasks = result.tasks;
+
+  appData = applyTaskMutation(appData, result);
+  tasks = appData.tasks.slice();
   showError('');
   renderAll();
 });
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => updateSyncStatus());
+  window.addEventListener('offline', () => updateSyncStatus());
+}
 
 function run() {
   hydrateProjects();
@@ -430,5 +685,3 @@ function run() {
 }
 
 run();
-
-
