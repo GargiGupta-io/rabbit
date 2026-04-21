@@ -1,4 +1,6 @@
-﻿export const TASK_STATUSES = {
+import { createTaskSyncEvent } from './syncContract.js';
+
+export const TASK_STATUSES = {
   Todo: 'todo',
   Done: 'done',
   Deleted: 'deleted'
@@ -86,6 +88,26 @@ export function formatDisplayDateTime(value) {
   });
 }
 
+export function createTaskMutationEvent({
+  action,
+  task,
+  previousTask = null,
+  deviceId,
+  sessionId,
+  occurredAt,
+  revision
+} = {}) {
+  return createTaskSyncEvent({
+    action,
+    task,
+    previousTask,
+    deviceId,
+    sessionId,
+    occurredAt,
+    revision
+  });
+}
+
 export function upsertTask(tasks = [], draft = {}) {
   const validated = normalizeTask(draft);
   if (!validated) {
@@ -103,9 +125,24 @@ export function upsertTask(tasks = [], draft = {}) {
     };
   }
 
+  const occurredAt = new Date().toISOString();
+  const nextTask = {
+    ...validated,
+    createdAt: validated.createdAt || occurredAt,
+    updatedAt: occurredAt
+  };
+
   const next = tasks.slice();
-  next.unshift(validated);
-  return { ok: true, tasks: next };
+  next.unshift(nextTask);
+  return {
+    ok: true,
+    tasks: next,
+    syncEvent: createTaskMutationEvent({
+      action: 'create',
+      task: nextTask,
+      occurredAt
+    })
+  };
 }
 
 export function resolveTaskAction(tasks = [], taskId, action) {
@@ -125,27 +162,48 @@ export function resolveTaskAction(tasks = [], taskId, action) {
   }
 
   const next = tasks.slice();
+  const previousTask = { ...next[index] };
   const task = { ...next[index] };
 
   if (action === 'complete') {
     task.status = task.status === TASK_STATUSES.Done ? TASK_STATUSES.Todo : TASK_STATUSES.Done;
     task.updatedAt = new Date().toISOString();
     next[index] = task;
-    return { ok: true, tasks: next };
+    return {
+      ok: true,
+      tasks: next,
+      syncEvent: createTaskMutationEvent({
+        action: 'complete',
+        task,
+        previousTask,
+        occurredAt: task.updatedAt
+      })
+    };
   }
 
   if (action === 'delete') {
     task.status = TASK_STATUSES.Deleted;
     task.updatedAt = new Date().toISOString();
     next[index] = task;
-    return { ok: true, tasks: next };
+    return {
+      ok: true,
+      tasks: next,
+      syncEvent: createTaskMutationEvent({
+        action: 'delete',
+        task,
+        previousTask,
+        occurredAt: task.updatedAt
+      })
+    };
   }
 
   return { ok: false, error: 'Unsupported task action.' };
 }
 
-export function getTaskFilters(tasks = [], { statusFilter = 'all', query = '' } = {}) {
+export function getTaskFilters(tasks = [], { statusFilter = 'all', query = '', now = Date.now() } = {}) {
   const normalized = sanitizeText(query).toLowerCase();
+  const reference = new Date(now);
+  const currentTime = Number.isNaN(reference.valueOf()) ? Date.now() : reference.valueOf();
 
   return tasks
     .filter((task) => {
@@ -153,7 +211,7 @@ export function getTaskFilters(tasks = [], { statusFilter = 'all', query = '' } 
         return task.status !== TASK_STATUSES.Deleted;
       }
       if (statusFilter === 'overdue') {
-        return task.status !== TASK_STATUSES.Done && task.status !== TASK_STATUSES.Deleted && isOverdue(task);
+        return task.status !== TASK_STATUSES.Done && task.status !== TASK_STATUSES.Deleted && isOverdue(task, currentTime);
       }
       return task.status === statusFilter;
     })
@@ -169,9 +227,10 @@ export function getTaskFilters(tasks = [], { statusFilter = 'all', query = '' } 
     });
 }
 
-export function getTaskStateSummary(tasks = []) {
-  const now = Date.now();
-  const todayStart = startOfDay(new Date()).valueOf();
+export function getTaskStateSummary(tasks = [], { now = Date.now() } = {}) {
+  const reference = new Date(now);
+  const currentTime = Number.isNaN(reference.valueOf()) ? Date.now() : reference.valueOf();
+  const todayStart = startOfDay(Number.isNaN(reference.valueOf()) ? new Date() : reference).valueOf();
   const todayEnd = todayStart + 24 * 60 * MINUTE;
 
   const active = tasks.filter((task) => task.status !== TASK_STATUSES.Deleted);
@@ -189,7 +248,7 @@ export function getTaskStateSummary(tasks = []) {
       const value = due.valueOf();
       return value >= todayEnd && value <= todayEnd + 6 * 24 * 60 * MINUTE;
     }).length,
-    overdue: active.filter((task) => isOverdue(task, now)).length,
+    overdue: active.filter((task) => isOverdue(task, currentTime)).length,
     done: tasks.filter((task) => task.status === TASK_STATUSES.Done).length
   };
 }

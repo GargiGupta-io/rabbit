@@ -1,9 +1,10 @@
 import { CURRENT_SCHEMA_VERSION, APP_DATA_DEFAULT, normalizePersistedPayload } from './contracts.js';
+import { createStableDeviceId, getCurrentSyncSessionId, normalizeSyncState } from './syncContract.js';
 
 const STORAGE_KEY = 'motion_clone_phase1_app_data';
 const DEVICE_ID_KEY = `${STORAGE_KEY}:device_id`;
 const DEFAULT_APP_VERSION = '1.0.0';
-const DEFAULT_SYNC_STATE = 'local';
+const DEFAULT_SYNC_STATUS = 'local';
 
 function nowIso() {
   return new Date().toISOString();
@@ -42,13 +43,6 @@ function ensureSafeText(value, fallback = '') {
   return trimmed.length ? trimmed : fallback;
 }
 
-function sanitizeSyncState(value) {
-  if (value === 'synced' || value === 'pending' || value === 'failed') {
-    return value;
-  }
-  return DEFAULT_SYNC_STATE;
-}
-
 function detectPlatform() {
   if (typeof navigator !== 'undefined' && navigator?.platform) {
     return ensureSafeText(navigator.platform, 'unknown');
@@ -65,14 +59,16 @@ function detectPlatform() {
   return 'unknown';
 }
 
-function createStableDeviceId() {
-  return `dev_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 10)}`;
-}
-
-function getOrCreateDeviceId() {
+function getOrCreateDeviceId(preferred = '') {
   const existing = ensureSafeText(readStoredValue(DEVICE_ID_KEY), '');
   if (existing) {
     return existing;
+  }
+
+  const seeded = ensureSafeText(preferred, '');
+  if (seeded) {
+    writeStoredValue(DEVICE_ID_KEY, seeded);
+    return seeded;
   }
 
   const next = createStableDeviceId();
@@ -80,16 +76,16 @@ function getOrCreateDeviceId() {
   return next;
 }
 
-function normalizeStorageMetadata(payload, now, { incomingSchemaVersion, syncState }) {
+function normalizeStorageMetadata(payload, now, { incomingSchemaVersion, syncStatus, deviceId, source }) {
   return {
     app: 'rabbit',
     appVersion: ensureSafeText(payload.version, DEFAULT_APP_VERSION),
     schemaVersion: CURRENT_SCHEMA_VERSION,
     observedSchemaVersion: Number.isInteger(incomingSchemaVersion) ? incomingSchemaVersion : CURRENT_SCHEMA_VERSION,
     platform: detectPlatform(),
-    deviceId: getOrCreateDeviceId(),
-    syncState: sanitizeSyncState(syncState),
-    source: ensureSafeText(payload.source || 'desktop'),
+    deviceId,
+    syncState: ensureSafeText(syncStatus, DEFAULT_SYNC_STATUS),
+    source: ensureSafeText(source || payload.source, 'desktop'),
     revision: ensureSafeText(payload.revision, `r_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`),
     lastLoadedAt: now,
     lastSavedAt: ensureSafeText(payload.lastSavedAt, null),
@@ -97,12 +93,34 @@ function normalizeStorageMetadata(payload, now, { incomingSchemaVersion, syncSta
   };
 }
 
+function attachSyncState(payload, raw = {}, options = {}) {
+  const deviceId = getOrCreateDeviceId(raw?.deviceId || raw?.metadata?.deviceId || options.deviceId);
+  const sync = normalizeSyncState(raw, {
+    deviceId,
+    sessionId: getCurrentSyncSessionId()
+  });
+
+  return {
+    ...payload,
+    outbox: sync.outbox,
+    lastSyncAt: sync.lastSyncAt,
+    syncCursor: sync.syncCursor,
+    deviceId: sync.deviceId,
+    syncStatus: sync.syncStatus
+  };
+}
+
 function fallbackPayload() {
   const now = nowIso();
-  const fallback = normalizePersistedPayload(APP_DATA_DEFAULT);
-  fallback.lastLoadedAt = now;
-  fallback.metadata = normalizeStorageMetadata(fallback, now, { syncState: DEFAULT_SYNC_STATE });
-  return fallback;
+  const normalized = attachSyncState(normalizePersistedPayload(APP_DATA_DEFAULT), {}, {});
+  normalized.lastLoadedAt = now;
+  normalized.metadata = normalizeStorageMetadata(normalized, now, {
+    incomingSchemaVersion: normalized.schemaVersion,
+    syncStatus: normalized.syncStatus,
+    deviceId: normalized.deviceId,
+    source: 'desktop'
+  });
+  return normalized;
 }
 
 function withUpgradeGuard(raw) {
@@ -116,7 +134,7 @@ function withUpgradeGuard(raw) {
       }
     : raw;
 
-  const normalized = normalizePersistedPayload(normalizedInput);
+  const normalized = attachSyncState(normalizePersistedPayload(normalizedInput), raw, {});
   if (isIncomingFuture) {
     normalized.migration.steps.push(`downgraded payload schema v${incomingSchemaVersion} -> v${CURRENT_SCHEMA_VERSION} (compatibility read)`);
     normalized.migration.fromVersion = incomingSchemaVersion;
@@ -129,7 +147,9 @@ function withUpgradeGuard(raw) {
   normalized.metadata = {
     ...normalizeStorageMetadata(normalized, now, {
       incomingSchemaVersion,
-      syncState: raw?.metadata?.syncState || DEFAULT_SYNC_STATE,
+      syncStatus: normalized.syncStatus,
+      deviceId: normalized.deviceId,
+      source: raw?.metadata?.source || 'desktop'
     }),
     version: `restore:${normalized.revision}`
   };
@@ -162,10 +182,14 @@ export function loadStoredData() {
 
 export function saveStoredData(data = {}) {
   if (!hasStorage()) {
-    return;
+    return attachSyncState(normalizePersistedPayload(data), data, {
+      deviceId: data?.deviceId
+    });
   }
 
-  const normalized = normalizePersistedPayload(data);
+  const normalized = attachSyncState(normalizePersistedPayload(data), data, {
+    deviceId: data?.deviceId
+  });
   const now = nowIso();
   normalized.schemaVersion = CURRENT_SCHEMA_VERSION;
   normalized.updatedAt = now;
@@ -175,11 +199,14 @@ export function saveStoredData(data = {}) {
   normalized.metadata = {
     ...normalizeStorageMetadata(normalized, now, {
       incomingSchemaVersion: normalized.schemaVersion,
-      syncState: data?.metadata?.syncState || DEFAULT_SYNC_STATE
+      syncStatus: normalized.syncStatus,
+      deviceId: normalized.deviceId,
+      source: data?.metadata?.source || 'desktop'
     }),
     source: ensureSafeText(data?.metadata?.source, 'desktop')
   };
   writeStoredValue(STORAGE_KEY, JSON.stringify(normalized));
+  return normalized;
 }
 
 export function resetStoredData() {
