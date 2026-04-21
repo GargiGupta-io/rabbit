@@ -1,0 +1,13 @@
+﻿#!/bin/sh
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [ -z "$branch" ]; then
+  echo "[auto-push] unable to resolve current branch"
+  exit 0
+fi
+
+git push origin "$branch" --set-upstream
+if [ $? -ne 0 ]; then
+  echo "[auto-push] push failed; commit saved locally. run \"git push\" after re-auth/network"
+fi
+
