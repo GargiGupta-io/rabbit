@@ -198,3 +198,40 @@ The task list now shows what should be in your planning horizon instead of only 
 **Files changed**
 + modified: `apps/desktop/src/main.tsx`
 + modified: `steps.md`
+
+## ? Step 13 — Phase 2 Entitlement Contract Hardening
+*Completed: 2026-04-17*
+
+**What was built**
+- Updated entitlement flow in `apps/desktop/src/entitlement.js` to use a clearer validation contract with snapshot defaults, token signature checks, expiry checks, and readable reasons.
+- Extended `scripts/test.mjs` with entitlement tests:
+  - default/missing snapshot should remain usable as safe read-write free mode,
+  - expired entitlements block mutation gates,
+  - tampered token blocks premium feature gates.
+- Wired `apps/desktop/src/main.tsx` imports to consume entitlement checks in one place.
+
+**In plain English**
+The app now has a hardened baseline rule: if entitlement data is bad or expired, premium mutations stop and the UI enters a clear read-only state instead of silently failing.
+
+**Files changed**
++ modified: `apps/desktop/src/entitlement.js`
++ modified: `scripts/test.mjs`
+
+## ? Step 14 — Phase 2 Runtime Entitlement Guards
+*Completed: 2026-04-17*
+
+**What was built**
+- Added runtime entitlement state refresh in `main.tsx` before render.
+- Disabled add/complete/delete actions when entitlement does not allow `tasks_manage`.
+- Added read-only warning message in the editor area when mutation checks fail.
+- Updated task action buttons to be disabled in read-only mode.
+- Removed duplicate entitlement refresh in `run()` so state checks are clean and consistent.
+
+**In plain English**
+Startup and user actions now enforce entitlement rules in real UI behavior. If entitlement is not valid, users still can view and inspect tasks, but mutation actions are blocked with an explicit reason.
+
+**Files changed**
++ modified: `apps/desktop/src/main.tsx`
+
+---
+*Next: Step 15 (if you want) would start adding persistence + entitlement integration tests for upgrade/revocation paths.*

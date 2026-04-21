@@ -353,3 +353,22 @@ UI imports are now moved toward service-level helpers for project enrichment.
 - Next step can safely add scheduling/sync features without moving UI-related wiring again.
 
 - 2026-04-17: Step 3 implemented the service split for kernel/domain logic (`taskService`, `projectService`) and made `state.js` orchestration-only.
+
+## What Changed in Step 7
+
+- Hardened entitlement contract checks:
+  - `apps/desktop/src/entitlement.js` now validates snapshot shape (user/plan/flags/token/expiry), keeps `validation` metadata, and exposes `requireEntitlement`/`canMutateTasks`.
+  - Added fallback behavior for missing snapshots so app still boots in safe free-mode defaults.
+- Added runtime gating intent:
+  - `apps/desktop/src/main.tsx` now checks task mutation allowance before write actions (add/complete/delete) and disables those controls in read-only state.
+  - Entitlement summary line now reflects AI/calendar/mutation mode.
+
+- 2026-04-17: Step 7 implemented the entitlement hardening contract and tests for default/expired/tampered token behavior (`scripts/test.mjs`).
+
+## What Changed in Step 8
+
+- Added startup/runtime guard behavior:
+  - `apps/desktop/src/main.tsx` now updates entitlement state before each render and shows explicit read-only reason text in the editor area when mutation is blocked.
+  - Action buttons are conditionally disabled based on entitlement.
+  - Removed redundant refresh call in `run()` so guard evaluation flows through the existing render pipeline once.
+- 2026-04-17: Step 8 implemented runtime entitlement guardrails and graceful mutation fallback (`read-only` UX path).

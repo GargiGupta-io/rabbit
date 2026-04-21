@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createTaskId, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
-import { getEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
+import { ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { FIXTURE_NOW, FIXTURE_TASKS_RAW, getFixtureState } from '../apps/desktop/src/fixtures.js';
@@ -118,6 +118,79 @@ runTest('feature gate keeps AI disabled by default', () => {
   const check = requireEntitlement('ai_suggest');
   assert.equal(entitlement.plan, 'free');
   assert.equal(check.allowed, false);
+});
+
+runTest('missing entitlement snapshot remains usable and safe default', () => {
+  const storage = createLocalStorageMock();
+  withLocalStorage(storage, () => {
+    storage.removeItem(ENTITLEMENT_STORAGE_KEY);
+    const check = requireEntitlement('tasks_manage');
+    assert.equal(check.allowed, true);
+    assert.equal(check.plan, 'free');
+    assert.equal(check.reason, null);
+  });
+});
+
+runTest('expired entitlement disables task mutations', () => {
+  const storage = createLocalStorageMock();
+  const now = new Date('2026-04-17T13:00:00.000Z').valueOf();
+  withLocalStorage(storage, () => {
+    storage.setItem(
+      ENTITLEMENT_STORAGE_KEY,
+      JSON.stringify({
+        userId: 'user-1',
+        plan: 'pro',
+        featureFlags: {
+          ai_suggest: true,
+          calendar_read: true,
+          calendar_write: true,
+          advanced_recurrence: true,
+          tasks_manage: true
+        },
+        entitlements: ['tasks.basic', 'calendar.read'],
+        source: 'test',
+        token: 'rabbit-signature:test-token',
+        issuedAt: new Date(now - 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(now - 60 * 1000).toISOString()
+      })
+    );
+
+    const snapshot = getEntitlementSnapshot({ now });
+    const check = requireEntitlement('tasks_manage', now);
+
+    assert.equal(snapshot.validation?.isExpired, true);
+    assert.equal(check.allowed, false);
+    assert.equal(check.reason.includes('entitlement expired'), true);
+  });
+});
+
+runTest('tampered entitlement token blocks premium feature gates', () => {
+  const storage = createLocalStorageMock();
+  withLocalStorage(storage, () => {
+    storage.setItem(
+      ENTITLEMENT_STORAGE_KEY,
+      JSON.stringify({
+        userId: 'user-1',
+        plan: 'pro',
+        featureFlags: {
+          ai_suggest: true,
+          calendar_read: true,
+          calendar_write: true,
+          advanced_recurrence: true,
+          tasks_manage: true
+        },
+        entitlements: ['tasks.basic', 'calendar.read'],
+        source: 'test',
+        token: 'bad-token',
+        issuedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      })
+    );
+
+    const check = requireEntitlement('ai_suggest');
+    assert.equal(check.allowed, false);
+    assert.equal(check.reason.includes('token signature'), true);
+  });
 });
 
 runTest('task IDs are stable unique shape', () => {
