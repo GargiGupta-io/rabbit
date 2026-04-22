@@ -1,6 +1,14 @@
 import { createEmptyCalendarOverlay, normalizeCalendarOverlay } from './calendarService.js';
+import {
+  buildAgendaSnapshot,
+  buildSidebarSections,
+  createDefaultShellState,
+  normalizeSavedViews,
+  normalizeShellTabs,
+  normalizeShellTheme
+} from './shellService.js';
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 const EARLIEST_SCHEMA_VERSION = 1;
 const DEFAULT_APP_VERSION = '1.0.0';
 
@@ -193,6 +201,42 @@ function normalizeTasks(tasks = [], projectIds = new Set()) {
     .map(({ _seedIndex, ...task }) => task);
 }
 
+function normalizeShellState(raw = {}, context = {}) {
+  const shell = isPlainObject(raw) ? raw : {};
+  const defaults = createDefaultShellState();
+  const savedViews = normalizeSavedViews(Array.isArray(shell.savedViews) ? shell.savedViews : defaults.savedViews);
+  const tabs = normalizeShellTabs(Array.isArray(shell.tabs) ? shell.tabs : defaults.tabs);
+  const projects = Array.isArray(context.projects) ? context.projects : [];
+  const tasks = Array.isArray(context.tasks) ? context.tasks : [];
+  const calendarOverlay = isPlainObject(context.calendarOverlay) ? context.calendarOverlay : createEmptyCalendarOverlay();
+  const activeTabIdCandidate = sanitizeText(shell.activeTabId, sanitizeText(defaults.activeTabId, tabs[0]?.id));
+  const activeViewIdCandidate = sanitizeText(shell.activeViewId, sanitizeText(defaults.activeViewId, savedViews[0]?.id));
+  const agendaReference = normalizeDate(shell.agenda?.generatedAt) || normalizeDate(context.updatedAt) || nowIso();
+  const activeTabId = tabs.some((tab) => tab.id === activeTabIdCandidate)
+    ? activeTabIdCandidate
+    : tabs.find((tab) => tab.active)?.id || tabs[0]?.id || defaults.activeTabId;
+  const activeViewId = savedViews.some((view) => view.id === activeViewIdCandidate)
+    ? activeViewIdCandidate
+    : savedViews[0]?.id || defaults.activeViewId;
+
+  return {
+    theme: normalizeShellTheme(shell.theme || defaults.theme),
+    tabs,
+    savedViews,
+    activeTabId,
+    activeViewId,
+    sidebarSections: buildSidebarSections({
+      savedViews,
+      projects
+    }),
+    agenda: buildAgendaSnapshot(tasks, {
+      projects,
+      calendarOverlay,
+      now: agendaReference
+    })
+  };
+}
+
 function detectSchemaVersion(payload = {}) {
   const value = Number(payload?.schemaVersion);
   if (Number.isInteger(value) && value > 0) {
@@ -212,6 +256,9 @@ function normalizeMigrationInfo(payload = {}, fromVersion = EARLIEST_SCHEMA_VERS
   if (!isPlainObject(payload?.calendarOverlay)) {
     steps.push('injected calendar overlay snapshot');
   }
+  if (!isPlainObject(payload?.shell)) {
+    steps.push('injected shell state snapshot');
+  }
   return {
     fromVersion,
     toVersion,
@@ -226,6 +273,8 @@ export function normalizePersistedPayload(raw = {}) {
   const fromVersion = detectSchemaVersion(payload);
   const projects = normalizeProjects(Array.isArray(payload.projects) ? payload.projects : []);
   const projectIds = new Set(projects.map((project) => project.id));
+  const tasks = normalizeTasks(Array.isArray(payload.tasks) ? payload.tasks : [], projectIds);
+  const calendarOverlay = normalizeCalendarOverlay(payload.calendarOverlay || createEmptyCalendarOverlay());
 
   const migration = normalizeMigrationInfo(payload, fromVersion, CURRENT_SCHEMA_VERSION);
 
@@ -238,8 +287,14 @@ export function normalizePersistedPayload(raw = {}) {
     migration,
     revision: sanitizeText(payload.revision, `r_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`),
     projects,
-    tasks: normalizeTasks(Array.isArray(payload.tasks) ? payload.tasks : [], projectIds),
-    calendarOverlay: normalizeCalendarOverlay(payload.calendarOverlay || createEmptyCalendarOverlay())
+    tasks,
+    calendarOverlay,
+    shell: normalizeShellState(payload.shell, {
+      projects,
+      tasks,
+      calendarOverlay,
+      updatedAt: payload.updatedAt
+    })
   };
 }
 
@@ -263,6 +318,22 @@ export function validatePersistedPayload(payload = {}) {
     errors.push('calendarOverlay.importedEvents must be an array');
   }
 
+  if (!Array.isArray(normalized.shell?.tabs)) {
+    errors.push('shell.tabs must be an array');
+  }
+
+  if (!Array.isArray(normalized.shell?.savedViews)) {
+    errors.push('shell.savedViews must be an array');
+  }
+
+  if (!Array.isArray(normalized.shell?.sidebarSections)) {
+    errors.push('shell.sidebarSections must be an array');
+  }
+
+  if (!Array.isArray(normalized.shell?.agenda?.upcoming)) {
+    errors.push('shell.agenda.upcoming must be an array');
+  }
+
   return {
     ok: errors.length === 0,
     errors,
@@ -275,7 +346,8 @@ export const APP_DATA_DEFAULT = normalizePersistedPayload({
   schemaVersion: CURRENT_SCHEMA_VERSION,
   projects: DEFAULT_PROJECTS,
   tasks: [],
-  calendarOverlay: createEmptyCalendarOverlay()
+  calendarOverlay: createEmptyCalendarOverlay(),
+  shell: createDefaultShellState()
 });
 
 export function createPersistedSeedData() {

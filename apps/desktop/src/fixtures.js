@@ -1,3 +1,6 @@
+import { CURRENT_SCHEMA_VERSION } from './contracts.js';
+import { buildAgendaSnapshot, buildSidebarSections, createDefaultShellState } from './shellService.js';
+
 export const FIXTURE_NOW = '2026-04-17T12:00:00.000Z';
 
 export const FIXTURE_PROJECTS = [
@@ -110,11 +113,79 @@ export const FIXTURE_CALENDAR_OVERLAY = {
   permissionStatus: 'granted'
 };
 
+function cloneGroupBy(groupBy = []) {
+  return groupBy.map((entry) => ({ ...entry }));
+}
+
+function cloneSavedViews(savedViews = []) {
+  return savedViews.map((view) => ({
+    ...view,
+    groupBy: cloneGroupBy(view.groupBy || []),
+    sort: { ...view.sort }
+  }));
+}
+
+function cloneSidebarSections(sidebarSections = []) {
+  return sidebarSections.map((section) => ({
+    ...section,
+    items: Array.isArray(section.items) ? section.items.map((item) => ({ ...item })) : []
+  }));
+}
+
+function cloneAgendaEntries(entries = []) {
+  return entries.map((entry) => ({ ...entry }));
+}
+
+function cloneAgendaSnapshot(agenda = {}) {
+  return {
+    generatedAt: agenda.generatedAt || FIXTURE_NOW,
+    ongoing: cloneAgendaEntries(agenda.ongoing || []),
+    upcoming: cloneAgendaEntries(agenda.upcoming || []),
+    timeless: cloneAgendaEntries(agenda.timeless || []),
+    counts: {
+      ...agenda.counts
+    }
+  };
+}
+
+function createFixtureShellState() {
+  const base = createDefaultShellState();
+
+  return {
+    ...base,
+    theme: {
+      ...base.theme,
+      mode: 'dark',
+      dataTheme: 'dark',
+      accent: 'motion',
+      density: 'comfortable',
+      useSystem: false
+    },
+    tabs: base.tabs.map((tab) => ({ ...tab })),
+    savedViews: cloneSavedViews(base.savedViews),
+    activeTabId: 'tab_calendar',
+    activeViewId: 'view_my_tasks',
+    sidebarSections: buildSidebarSections({
+      savedViews: base.savedViews,
+      projects: FIXTURE_PROJECTS
+    }),
+    agenda: buildAgendaSnapshot(FIXTURE_TASKS_RAW, {
+      projects: FIXTURE_PROJECTS,
+      calendarOverlay: FIXTURE_CALENDAR_OVERLAY,
+      now: FIXTURE_NOW
+    })
+  };
+}
+
+export const FIXTURE_SHELL_STATE = createFixtureShellState();
+
 export const FIXTURE_PAYLOAD = {
   version: '1.0.0',
-  schemaVersion: 1,
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   projects: FIXTURE_PROJECTS,
-  tasks: FIXTURE_TASKS_RAW
+  tasks: FIXTURE_TASKS_RAW,
+  calendarOverlay: FIXTURE_CALENDAR_OVERLAY,
+  shell: FIXTURE_SHELL_STATE
 };
 
 export function getFixtureState() {
@@ -129,6 +200,14 @@ export function getFixtureState() {
         calendarIds: FIXTURE_CALENDAR_OVERLAY.source.calendarIds.slice()
       },
       importedEvents: FIXTURE_CALENDAR_EVENTS_RAW.map((event) => ({ ...event }))
+    },
+    shell: {
+      ...FIXTURE_SHELL_STATE,
+      theme: { ...FIXTURE_SHELL_STATE.theme },
+      tabs: FIXTURE_SHELL_STATE.tabs.map((tab) => ({ ...tab })),
+      savedViews: cloneSavedViews(FIXTURE_SHELL_STATE.savedViews),
+      sidebarSections: cloneSidebarSections(FIXTURE_SHELL_STATE.sidebarSections),
+      agenda: cloneAgendaSnapshot(FIXTURE_SHELL_STATE.agenda)
     }
   };
 }
