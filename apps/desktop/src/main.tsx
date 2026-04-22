@@ -5,6 +5,7 @@ import {
   buildProjectSeedData,
   decorateTaskWithProject,
   formatDisplayDateTime,
+  getInboxStateSummary,
   getProjectById,
   getShellState,
   getShellThemeClassName,
@@ -161,6 +162,7 @@ shell.innerHTML = `
 
       <aside class="shell-rail">
         <section class="panel agenda-panel" id="agenda-panel"></section>
+        <section class="panel inbox-panel" id="inbox-panel"></section>
         <section class="panel sync-panel" id="sync-panel" aria-live="polite"></section>
         <section class="panel entitlement-panel" id="entitlement-panel" aria-live="polite"></section>
       </aside>
@@ -846,10 +848,104 @@ style.textContent = `
   }
 
   .agenda-panel,
+  .inbox-panel,
   .sync-panel,
   .entitlement-panel {
     display: grid;
     gap: 14px;
+  }
+
+  .inbox-summary-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  }
+
+  .inbox-summary-card {
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .inbox-summary-card strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .inbox-summary-card span {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+
+  .inbox-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .inbox-item {
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    display: grid;
+    gap: 10px;
+  }
+
+  .inbox-item.unread {
+    border-color: rgba(96, 165, 250, 0.4);
+    background: rgba(96, 165, 250, 0.08);
+  }
+
+  .inbox-item-head,
+  .inbox-item-foot {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .inbox-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-strong);
+    line-height: 1.35;
+  }
+
+  .inbox-item-subtitle,
+  .inbox-item-note,
+  .inbox-item-time {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .inbox-item-note {
+    margin: 0;
+  }
+
+  .inbox-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .inbox-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .rail-header,
@@ -1026,6 +1122,7 @@ const tabStripEl = shell.querySelector('#tab-strip') as HTMLDivElement;
 const viewHeaderEl = shell.querySelector('#view-header') as HTMLDivElement;
 const metricsEl = shell.querySelector('#metrics') as HTMLDivElement;
 const agendaPanelEl = shell.querySelector('#agenda-panel') as HTMLDivElement;
+const inboxPanelEl = shell.querySelector('#inbox-panel') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
 const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
@@ -1561,6 +1658,53 @@ function renderAgenda(shellState) {
   `;
 }
 
+function renderInboxPanel() {
+  const inboxState = getInboxStateSummary(appData);
+  const items = inboxState.items.length
+    ? inboxState.items.map((item) => `
+        <article class="inbox-item ${item.read ? '' : 'unread'}">
+          <div class="inbox-item-head">
+            <div>
+              <div class="inbox-item-title">${escapeHtml(item.title)}</div>
+              <div class="inbox-item-subtitle">${escapeHtml(item.targetSubtitle || item.sourceLabel)}</div>
+            </div>
+            <div class="inbox-item-time">${escapeHtml(formatCompactDate(item.createdTime))}</div>
+          </div>
+          <p class="inbox-item-note">${escapeHtml(item.description || 'No additional details are available yet.')}</p>
+          <div class="inbox-item-foot">
+            <div class="inbox-pill-row">
+              <span class="inbox-pill">${escapeHtml(item.sourceLabel)}</span>
+              <span class="inbox-pill">${escapeHtml(item.actionLabel)}</span>
+            </div>
+            <div class="inbox-item-time">${escapeHtml(item.targetTitle || 'Inbox item')}</div>
+          </div>
+        </article>
+      `).join('')
+    : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`;
+
+  inboxPanelEl.innerHTML = `
+    <div class="rail-header">
+      <strong>${escapeHtml(inboxState.activeInboxLabel)}</strong>
+      <span class="rail-count">${escapeHtml(String(inboxState.unreadCount))} unread</span>
+    </div>
+    <div class="inbox-summary-grid">
+      <div class="inbox-summary-card">
+        <strong>Total</strong>
+        <span>${escapeHtml(String(inboxState.totalCount))}</span>
+      </div>
+      <div class="inbox-summary-card">
+        <strong>Needs action</strong>
+        <span>${escapeHtml(String(inboxState.needsActionCount))}</span>
+      </div>
+      <div class="inbox-summary-card">
+        <strong>Sources</strong>
+        <span>${escapeHtml(String(inboxState.sourceCount))}</span>
+      </div>
+    </div>
+    <div class="inbox-list">${items}</div>
+  `;
+}
+
 function renderTasks(plannerState, shellState) {
   const { visibleTasks, overlaps, blockedTaskIds } = plannerState;
   const meta = plannerState.viewState.meta;
@@ -1645,6 +1789,7 @@ function renderWorkspace() {
   updateSummary(plannerState, shellState);
   renderTasks(plannerState, shellState);
   renderAgenda(shellState);
+  renderInboxPanel();
 }
 
 function renderAll() {
