@@ -349,4 +349,28 @@ The app can now act like entitlement access comes from a real authority instead 
 ~ modified: `learnings/steps.md`
 
 ---
-*Next: Step 20 finishes Phase 3 with the acceptance pass in `learnings/plans/phase-3-plan.md`.*
+
+## ? Step 20 — Phase 3 Acceptance Pass
+*Completed: 2026-04-22*
+
+**What was built**
+- `scripts/lint.mjs` — updated the acceptance gate to validate the moved `learnings/` docs and the full Phase 3 desktop runtime file set.
+- `scripts/build.mjs` — updated the build manifest generation from the old Phase 1 baseline to the current Phase 3 artifact set.
+- `ops/phase-3-build-manifest.json` — generated the Phase 3 build manifest from the refreshed build script.
+- `scripts/test.mjs` — updated the suite completion line so the test output reflects the full Phase 3 acceptance pass.
+- `learnings/planning.md` and `learnings/plans/phase-3-plan.md` — marked Phase 3 complete and recorded the acceptance gate results.
+
+**In plain English**
+Phase 3 is now closed out instead of half-finished. The repo's own checks finally match where the docs and runtime files actually live, the build manifest describes the current product slice, and the full validation pass succeeded from start to finish.
+
+**Files changed**
+~ modified: `scripts/lint.mjs`
+~ modified: `scripts/build.mjs`
++ created: `ops/phase-3-build-manifest.json`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-3-plan.md`
+~ modified: `learnings/steps.md`
+
+---
+*Next: Phase 3 is complete. The next detailed phase has not been defined yet.*

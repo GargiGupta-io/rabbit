@@ -213,12 +213,12 @@ That is the execution style so you never feel lost.
 
 ## Document map
 
-- `plans/phase-0-plan.md` - Phase 0 foundation, contracts, and acceptance gate
-- `plans/phase-1-plan.md` - Phase 1 MVP product-kernel plan and completion record
-- `plans/phase-2-plan.md` - Phase 2 architecture, scheduling, hardening, and detailed execution notes
-- `plans/phase-3-plan.md` - Phase 3 sync, calendar overlay, and server-authority entitlement baseline
+- `learnings/plans/phase-0-plan.md` - Phase 0 foundation, contracts, and acceptance gate
+- `learnings/plans/phase-1-plan.md` - Phase 1 MVP product-kernel plan and completion record
+- `learnings/plans/phase-2-plan.md` - Phase 2 architecture, scheduling, hardening, and detailed execution notes
+- `learnings/plans/phase-3-plan.md` - Phase 3 sync, calendar overlay, and server-authority entitlement baseline
 - `learnings/steps.md` - chronological step log across all phases
-- `planning.md` - this high-level roadmap and project summary
+- `learnings/planning.md` - this high-level roadmap and project summary
 
 ## Current phase summary
 
@@ -232,8 +232,9 @@ That is the execution style so you never feel lost.
 
 ### Phase 2
 - Locked and completed in the execution log.
-- Contracts, fixtures, service split, scheduler baseline, entitlement hardening, and runtime guards are documented in `plans/phase-2-plan.md`.
+- Contracts, fixtures, service split, scheduler baseline, entitlement hardening, and runtime guards are documented in `learnings/plans/phase-2-plan.md`.
 
 ### Phase 3
-- Current detailed working phase.
-- Sync contracts, calendar overlay ingestion, and server-authority entitlement refresh are defined in `plans/phase-3-plan.md`.
+- Locked and completed in the acceptance pass.
+- Sync contracts, calendar overlay ingestion, server-authority entitlement refresh, and the acceptance gate are documented in `learnings/plans/phase-3-plan.md`.
+- `npm run lint`, `npm run build`, and `npm run test` passed on April 22, 2026.

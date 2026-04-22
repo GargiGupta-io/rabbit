@@ -153,7 +153,7 @@ The app now keeps a structured record of each task change instead of only storin
 
 **Verification**
 - `npm.cmd run test` - passed.
-- `npm.cmd run lint` - blocked by the existing doc-path move in the working tree (`planning.md` is currently missing at the repo root, with docs moved under `learnings/`).
+- `npm.cmd run lint` - was blocked at the time by the pre-Step-20 doc-path mismatch.
 
 ### Step 16 - Sync queue wiring in UI and state
 *Completed: 2026-04-21*
@@ -171,7 +171,7 @@ The app now shows you when changes are still only on this device. After a task i
 **Verification**
 - `npm.cmd run test` - passed.
 - `npm.cmd run typecheck` - passed.
-- `npm.cmd run lint` - still blocked by the existing repo doc-path mismatch (`planning.md` is expected at the repo root by the current lint script).
+- `npm.cmd run lint` - was blocked at the time by the pre-Step-20 doc-path mismatch.
 
 ### Step 17 - Calendar event contracts and busy-block ingestion
 *Completed: 2026-04-21*
@@ -190,7 +190,7 @@ The app now knows what imported calendar data should look like before the schedu
 - `npm.cmd run test` - passed.
 - `node --check apps/desktop/src/calendarService.js` - passed.
 - `node --check apps/desktop/src/contracts.js` - passed.
-- `npm.cmd run lint` - still blocked by the existing repo doc-path mismatch (`planning.md` is expected at the repo root by the current lint script).
+- `npm.cmd run lint` - was blocked at the time by the pre-Step-20 doc-path mismatch.
 
 ### Step 18 - Calendar-aware scheduler output
 *Completed: 2026-04-22*
@@ -208,7 +208,7 @@ The planner no longer acts like the day is empty just because tasks exist locall
 - `npm.cmd run test` - passed.
 - `npm.cmd run typecheck` - passed.
 - `node --check apps/desktop/src/scheduler.js` - passed.
-- `npm.cmd run lint` - still blocked by the existing repo doc-path mismatch (`planning.md` is expected at the repo root by the current lint script).
+- `npm.cmd run lint` - was blocked at the time by the pre-Step-20 doc-path mismatch.
 
 ### Step 19 - Authority entitlement refresh contract
 *Completed: 2026-04-22*
@@ -220,18 +220,37 @@ The planner no longer acts like the day is empty just because tasks exist locall
 - Expanded `scripts/test.mjs` with deterministic authority refresh coverage for malformed responses, stale freshness windows, upgrade refreshes, offline fallback, and revocation handling.
 
 **In plain English**
-The app no longer treats local entitlement data like the final word. It can now simulate a real authority refresh, show whether access is freshly confirmed, stale, offline, or revoked, and safely fall back to a read-only experience without losing the user’s local data. That gives the product a real entitlement lifecycle instead of a one-time local snapshot.
+The app no longer treats local entitlement data like the final word. It can now simulate a real authority refresh, show whether access is freshly confirmed, stale, offline, or revoked, and safely fall back to a read-only experience without losing the user's local data. That gives the product a real entitlement lifecycle instead of a one-time local snapshot.
 
 **Verification**
 - `npm.cmd run test` - passed.
 - `npm.cmd run typecheck` - passed.
 - `node --check apps/desktop/src/entitlementClient.js` - passed.
 - `node --check apps/desktop/src/entitlement.js` - passed.
-- `npm.cmd run lint` - still blocked by the existing repo doc-path mismatch (`planning.md` is expected at the repo root by the current lint script).
+- `npm.cmd run lint` - was blocked at the time by the pre-Step-20 doc-path mismatch.
+
+### Step 20 - Phase 3 acceptance pass
+*Completed: 2026-04-22*
+
+**What was built**
+- Updated `scripts/lint.mjs` so the acceptance gate now validates the moved `learnings/` docs and the full Phase 3 desktop runtime file set.
+- Updated `scripts/build.mjs` so the build manifest now records the Phase 3 artifact set instead of the old Phase 1 baseline.
+- Generated `ops/phase-3-build-manifest.json` from the refreshed build script.
+- Updated `scripts/test.mjs` so the suite completion line reflects the Phase 3 acceptance pass.
+- Updated `learnings/planning.md` to mark Phase 3 complete and note that the acceptance gate passed.
+
+**In plain English**
+This step closes Phase 3 for real. The repo's own quality checks now match the current project layout, the build output records the actual Phase 3 artifact set, and the acceptance gate passed end to end instead of being partially blocked by outdated scripts.
+
+**Verification**
+- `npm.cmd run lint` - passed.
+- `npm.cmd run build` - passed.
+- `npm.cmd run test` - passed.
+- Generated `ops/phase-3-build-manifest.json`.
 
 ## References
-- `plans/phase-0-plan.md` - foundation, release contracts, and acceptance gate
-- `plans/phase-1-plan.md` - MVP kernel and usable task shell
-- `plans/phase-2-plan.md` - contracts, scheduler baseline, and runtime entitlement guards
+- `learnings/plans/phase-0-plan.md` - foundation, release contracts, and acceptance gate
+- `learnings/plans/phase-1-plan.md` - MVP kernel and usable task shell
+- `learnings/plans/phase-2-plan.md` - contracts, scheduler baseline, and runtime entitlement guards
 - `learnings/steps.md` - chronological execution log across phases
-- `planning.md` - overall roadmap and current phase summary
+- `learnings/planning.md` - overall roadmap and current phase summary
