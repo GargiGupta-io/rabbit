@@ -7,8 +7,9 @@ import {
   normalizeShellTabs,
   normalizeShellTheme
 } from './shellService.js';
+import { normalizeTask as normalizeDomainTask } from './taskService.js';
 
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 const EARLIEST_SCHEMA_VERSION = 1;
 const DEFAULT_APP_VERSION = '1.0.0';
 
@@ -18,18 +19,10 @@ const DEFAULT_PROJECTS = [
   { id: 'personal', name: 'Personal', color: '#f59e0b', archived: false }
 ];
 
-const ALLOWED_TASK_STATUSES = new Set(['todo', 'done', 'deleted']);
 const ALLOWED_RECURRENCE_PATTERNS = new Set(['none', 'daily', 'weekly']);
-const DEFAULT_TASK_DURATION_MINUTES = 30;
-const MIN_TASK_DURATION_MINUTES = 5;
-const MAX_TASK_DURATION_MINUTES = 720;
 
 function isPlainObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function isFiniteNumber(value) {
-  return typeof value === 'number' && Number.isFinite(value);
 }
 
 function sanitizeText(value, fallback = '') {
@@ -59,25 +52,6 @@ function createTaskId() {
 
 function nowIso() {
   return new Date().toISOString();
-}
-
-function toPositiveInteger(value, fallback) {
-  const parsed = Number(value);
-  if (!isFiniteNumber(parsed) || Number.isNaN(parsed)) {
-    return fallback;
-  }
-  return Math.max(1, Math.floor(parsed));
-}
-
-function clampDuration(value = DEFAULT_TASK_DURATION_MINUTES) {
-  const parsed = Number(value);
-  if (!isFiniteNumber(parsed) || parsed <= 0) {
-    return DEFAULT_TASK_DURATION_MINUTES;
-  }
-  return Math.min(
-    MAX_TASK_DURATION_MINUTES,
-    Math.max(MIN_TASK_DURATION_MINUTES, Math.floor(parsed / MIN_TASK_DURATION_MINUTES) * MIN_TASK_DURATION_MINUTES)
-  );
 }
 
 function normalizeDate(value) {
@@ -118,7 +92,8 @@ function normalizeRecurrence(input = {}) {
     return { pattern: 'none', interval: 1, endAt: null };
   }
   const pattern = sanitizeText(input.pattern);
-  const interval = toPositiveInteger(input.interval, 1);
+  const parsedInterval = Number(input.interval);
+  const interval = Number.isFinite(parsedInterval) ? Math.max(1, Math.floor(parsedInterval)) : 1;
   const endAt = normalizeDate(input.endAt);
   return {
     pattern: ALLOWED_RECURRENCE_PATTERNS.has(pattern) ? pattern : 'none',
@@ -128,32 +103,17 @@ function normalizeRecurrence(input = {}) {
 }
 
 function normalizeTask(input = {}, index = 0, projectIds = new Set()) {
-  if (!isPlainObject(input)) {
+  const task = normalizeDomainTask(input, {
+    projectIds
+  });
+
+  if (!task) {
     return null;
   }
-
-  const title = sanitizeText(input.title);
-  if (!title) {
-    return null;
-  }
-
-  const status = ALLOWED_TASK_STATUSES.has(sanitizeText(input.status)) ? sanitizeText(input.status) : 'todo';
-  const projectId = sanitizeText(input.projectId) || 'inbox';
-  const resolvedProjectId = projectIds.has(projectId) ? projectId : 'inbox';
 
   return {
-    id: sanitizeText(input.id) || createTaskId(),
-    title,
-    description: sanitizeText(input.description),
-    projectId: resolvedProjectId,
-    projectName: sanitizeText(input.projectName),
-    status,
-    dueAt: normalizeDate(input.dueAt),
-    startAt: normalizeDate(input.startAt),
-    durationMinutes: clampDuration(Number(input.durationMinutes)),
-    recurrence: normalizeRecurrence(input.recurrence),
-    createdAt: normalizeDate(input.createdAt) || nowIso(),
-    updatedAt: normalizeDate(input.updatedAt) || nowIso(),
+    ...task,
+    recurrence: normalizeRecurrence(task.recurrence),
     _seedIndex: index
   };
 }
@@ -258,6 +218,9 @@ function normalizeMigrationInfo(payload = {}, fromVersion = EARLIEST_SCHEMA_VERS
   }
   if (!isPlainObject(payload?.shell)) {
     steps.push('injected shell state snapshot');
+  }
+  if (fromVersion < 4) {
+    steps.push('expanded task domain defaults');
   }
   return {
     fromVersion,
