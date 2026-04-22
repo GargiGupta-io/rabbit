@@ -1,13 +1,13 @@
 import { CURRENT_SCHEMA_VERSION } from './contracts.js';
+import { buildProjectDomainSeedData } from './projectService.js';
 import { buildAgendaSnapshot, buildSidebarSections, createDefaultShellState } from './shellService.js';
 
 export const FIXTURE_NOW = '2026-04-17T12:00:00.000Z';
 
-export const FIXTURE_PROJECTS = [
-  { id: 'inbox', name: 'Inbox', color: '#3b82f6', archived: false },
-  { id: 'work', name: 'Work', color: '#10b981', archived: false },
-  { id: 'personal', name: 'Personal', color: '#f59e0b', archived: false }
-];
+const FIXTURE_PROJECT_DOMAIN = buildProjectDomainSeedData();
+export const FIXTURE_WORKSPACES = FIXTURE_PROJECT_DOMAIN.workspaces;
+export const FIXTURE_PROJECT_DEFINITIONS = FIXTURE_PROJECT_DOMAIN.projectDefinitions;
+export const FIXTURE_PROJECTS = FIXTURE_PROJECT_DOMAIN.projects;
 
 export const FIXTURE_TASKS_RAW = [
   {
@@ -15,7 +15,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'Draft weekly plan',
     projectId: 'work',
     projectName: 'Work',
-    workspaceId: 'ws_motion',
+    workspaceId: 'ws_motion_team',
     description: 'Prepare agenda for sprint planning.',
     status: 'todo',
     statusId: 'status_todo',
@@ -53,7 +53,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'Reply to team',
     projectId: 'inbox',
     projectName: 'Inbox',
-    workspaceId: 'ws_motion',
+    workspaceId: 'ws_private_my_tasks',
     description: 'Clear follow-ups from yesterday.',
     status: 'done',
     statusId: 'status_done',
@@ -91,7 +91,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'Design review',
     projectId: 'personal',
     projectName: 'Personal',
-    workspaceId: 'ws_motion',
+    workspaceId: 'ws_private_my_tasks',
     status: 'todo',
     statusId: 'status_todo',
     priorityLevel: 'ASAP',
@@ -125,7 +125,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'Overlapping call',
     projectId: 'work',
     projectName: 'Work',
-    workspaceId: 'ws_motion',
+    workspaceId: 'ws_motion_team',
     status: 'todo',
     statusId: 'status_todo',
     priorityLevel: 'HIGH',
@@ -162,7 +162,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'No-date notes',
     projectId: 'inbox',
     projectName: 'Inbox',
-    workspaceId: 'ws_motion',
+    workspaceId: 'ws_private_my_tasks',
     status: 'todo',
     statusId: 'status_todo',
     priorityLevel: 'LOW',
@@ -256,6 +256,61 @@ function cloneSidebarSections(sidebarSections = []) {
   }));
 }
 
+function cloneTaskDefinition(task = {}) {
+  return {
+    ...task,
+    blockedByTaskIds: Array.isArray(task.blockedByTaskIds) ? task.blockedByTaskIds.slice() : [],
+    labelIds: Array.isArray(task.labelIds) ? task.labelIds.slice() : [],
+    customFieldValues: { ...(task.customFieldValues || {}) },
+    startRelativeInterval: task.startRelativeInterval
+      ? {
+          ...task.startRelativeInterval,
+          duration: { ...(task.startRelativeInterval.duration || {}) }
+        }
+      : null,
+    dueRelativeInterval: task.dueRelativeInterval
+      ? {
+          ...task.dueRelativeInterval,
+          duration: { ...(task.dueRelativeInterval.duration || {}) }
+        }
+      : null
+  };
+}
+
+function cloneProjectDefinitions(projectDefinitions = []) {
+  return projectDefinitions.map((definition) => ({
+    ...definition,
+    labelIds: Array.isArray(definition.labelIds) ? definition.labelIds.slice() : [],
+    stageDefinitionReferences: Array.isArray(definition.stageDefinitionReferences)
+      ? definition.stageDefinitionReferences.map((reference) => ({ ...reference }))
+      : [],
+    stages: Array.isArray(definition.stages)
+      ? definition.stages.map((stage) => ({
+          ...stage,
+          duration: { ...(stage.duration || {}) },
+          variables: Array.isArray(stage.variables) ? stage.variables.map((entry) => ({ ...entry })) : [],
+          tasks: Array.isArray(stage.tasks) ? stage.tasks.map((task) => cloneTaskDefinition(task)) : []
+        }))
+      : [],
+    variables: Array.isArray(definition.variables) ? definition.variables.map((entry) => ({ ...entry })) : [],
+    customFieldValues: { ...(definition.customFieldValues || {}) }
+  }));
+}
+
+function cloneProjectStages(stages = []) {
+  return stages.map((stage) => ({ ...stage }));
+}
+
+function cloneProjects(projects = []) {
+  return projects.map((project) => ({
+    ...project,
+    labelIds: Array.isArray(project.labelIds) ? project.labelIds.slice() : [],
+    variableInstances: Array.isArray(project.variableInstances) ? project.variableInstances.map((entry) => ({ ...entry })) : [],
+    customFieldValues: { ...(project.customFieldValues || {}) },
+    stages: cloneProjectStages(project.stages || [])
+  }));
+}
+
 function cloneAgendaEntries(entries = []) {
   return entries.map((entry) => ({ ...entry }));
 }
@@ -306,6 +361,8 @@ export const FIXTURE_SHELL_STATE = createFixtureShellState();
 export const FIXTURE_PAYLOAD = {
   version: '1.0.0',
   schemaVersion: CURRENT_SCHEMA_VERSION,
+  workspaces: FIXTURE_WORKSPACES,
+  projectDefinitions: FIXTURE_PROJECT_DEFINITIONS,
   projects: FIXTURE_PROJECTS,
   tasks: FIXTURE_TASKS_RAW,
   calendarOverlay: FIXTURE_CALENDAR_OVERLAY,
@@ -315,7 +372,9 @@ export const FIXTURE_PAYLOAD = {
 export function getFixtureState() {
   return {
     ...FIXTURE_PAYLOAD,
-    projects: FIXTURE_PROJECTS.map((project) => ({ ...project })),
+    workspaces: FIXTURE_WORKSPACES.map((workspace) => ({ ...workspace })),
+    projectDefinitions: cloneProjectDefinitions(FIXTURE_PROJECT_DEFINITIONS),
+    projects: cloneProjects(FIXTURE_PROJECTS),
     tasks: FIXTURE_TASKS_RAW.map((task) => ({ ...task })),
     calendarOverlay: {
       ...FIXTURE_CALENDAR_OVERLAY,
