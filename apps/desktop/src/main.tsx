@@ -1,7 +1,27 @@
-import { applyTaskMutation, buildProjectSeedData, decorateTaskWithProject, getProjectById, getSyncStateSummary, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
+import {
+  applyTaskMutation,
+  buildProjectSeedData,
+  decorateTaskWithProject,
+  formatDisplayDateTime,
+  getProjectById,
+  getShellState,
+  getShellThemeClassName,
+  getSyncStateSummary,
+  getTaskFilters,
+  getTaskStateSummary,
+  resolveTaskAction,
+  upsertTask
+} from './state.js';
 import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
-import { canMutateTasks, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement, resolveFeatureGate } from './entitlement.js';
+import {
+  canMutateTasks,
+  getEntitlementSnapshot,
+  getEntitlementStateSummary,
+  refreshEntitlementSnapshot,
+  requireEntitlement,
+  resolveFeatureGate
+} from './entitlement.js';
 import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
 
 let entitlement = getEntitlementSnapshot();
@@ -20,66 +40,130 @@ if (!root) {
 }
 
 const shell = document.createElement('main');
-shell.className = 'app-shell';
+shell.className = 'desktop-shell';
 root.appendChild(shell);
 
 shell.innerHTML = `
-  <header class="app-header">
-    <h1>Motion Clone</h1>
-    <p class="entitlement" id="entitlement-status">Plan: ${entitlement.plan} | AI: ${resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled'} | Calendar read: ${resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled'} | Mutations: ${canMutate ? 'enabled' : 'read-only'}</p>
-  </header>
-
-  <section class="sync-panel" id="sync-panel" aria-live="polite"></section>
-  <section class="entitlement-panel" id="entitlement-panel" aria-live="polite"></section>
-
-  <section class="metrics" id="metrics"></section>
-
-  <section class="toolbar">
-    <input id="search" type="text" placeholder="Search tasks" />
-    <div class="btn-group" id="filter-group">
-      <button type="button" class="filter active" data-status="all">All</button>
-      <button type="button" class="filter" data-status="todo">Todo</button>
-      <button type="button" class="filter" data-status="done">Done</button>
-      <button type="button" class="filter" data-status="overdue">Overdue</button>
+  <aside class="shell-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">R</div>
+      <div class="brand-copy">
+        <strong>Rabbit</strong>
+        <p>Reverse-engineered desktop shell baseline</p>
+      </div>
     </div>
-    <div class="btn-group" id="plan-window-group">
-      <button type="button" class="plan-window active" data-window="all">Window: All</button>
-      <button type="button" class="plan-window" data-window="today">Today</button>
-      <button type="button" class="plan-window" data-window="week">Week</button>
+
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+
+    <div class="sidebar-footer">
+      <span class="sidebar-foot-label">Phase 4</span>
+      <strong>Shell parity in progress</strong>
+    </div>
+  </aside>
+
+  <section class="shell-workspace">
+    <header class="workspace-header">
+      <div class="workspace-heading">
+        <span class="workspace-kicker">Desktop shell</span>
+        <h1>Motion-style planner shell</h1>
+      </div>
+      <p class="workspace-status" id="entitlement-status"></p>
+    </header>
+
+    <div id="tab-strip" class="tab-strip"></div>
+
+    <div class="workspace-body">
+      <section class="content-surface">
+        <header class="panel view-header" id="view-header"></header>
+
+        <section class="panel metrics" id="metrics"></section>
+
+        <section class="panel toolbar-panel">
+          <div class="toolbar-search">
+            <label class="field-label" for="search">Quick filter</label>
+            <input id="search" type="text" placeholder="Search tasks, projects, notes" />
+          </div>
+
+          <div class="toolbar-stacks">
+            <div class="toolbar-stack">
+              <span class="stack-label">Status</span>
+              <div class="btn-group" id="filter-group">
+                <button type="button" class="filter active" data-status="all">All</button>
+                <button type="button" class="filter" data-status="todo">Todo</button>
+                <button type="button" class="filter" data-status="done">Done</button>
+                <button type="button" class="filter" data-status="overdue">Overdue</button>
+              </div>
+            </div>
+
+            <div class="toolbar-stack">
+              <span class="stack-label">Planning window</span>
+              <div class="btn-group" id="plan-window-group">
+                <button type="button" class="plan-window active" data-window="all">All</button>
+                <button type="button" class="plan-window" data-window="today">Today</button>
+                <button type="button" class="plan-window" data-window="week">Week</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel composer-panel">
+          <div class="composer-header">
+            <div>
+              <strong>Quick add</strong>
+              <p>Capture a task into the current planning surface.</p>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Title
+              <input id="title" type="text" placeholder="Task title" />
+            </label>
+            <label>
+              Project
+              <select id="project"></select>
+            </label>
+            <label>
+              Due
+              <input id="due" type="datetime-local" />
+            </label>
+            <label>
+              Duration
+              <input id="duration" type="number" min="5" max="720" step="5" value="30" />
+            </label>
+            <label>
+              Recurrence
+              <select id="recurrence">
+                <option value="none">none</option>
+                <option value="daily">daily</option>
+                <option value="weekly">weekly</option>
+              </select>
+            </label>
+            <button id="add" type="button">Add task</button>
+          </div>
+        </section>
+
+        <section class="panel editor-panel" id="editor" aria-live="polite"></section>
+
+        <section class="panel task-surface">
+          <div class="surface-header">
+            <div>
+              <strong>Task surface</strong>
+              <p id="surface-caption" class="surface-caption">Current planner output</p>
+            </div>
+            <span id="surface-count" class="surface-count"></span>
+          </div>
+          <section id="task-list" class="task-list"></section>
+        </section>
+      </section>
+
+      <aside class="shell-rail">
+        <section class="panel agenda-panel" id="agenda-panel"></section>
+        <section class="panel sync-panel" id="sync-panel" aria-live="polite"></section>
+        <section class="panel entitlement-panel" id="entitlement-panel" aria-live="polite"></section>
+      </aside>
     </div>
   </section>
-
-  <section class="form-row">
-    <label>
-      Title
-      <input id="title" type="text" placeholder="Task title" />
-    </label>
-    <label>
-      Project
-      <select id="project"></select>
-    </label>
-    <label>
-      Due
-      <input id="due" type="datetime-local" />
-    </label>
-    <label>
-      Duration
-      <input id="duration" type="number" min="5" max="720" step="5" value="30" />
-    </label>
-    <label>
-      Recurrence
-      <select id="recurrence">
-        <option value="none">none</option>
-        <option value="daily">daily</option>
-        <option value="weekly">weekly</option>
-      </select>
-    </label>
-    <button id="add" type="button">Add</button>
-  </section>
-
-  <section class="editor" id="editor" aria-live="polite"></section>
-
-  <section id="task-list" class="task-list"></section>
 `;
 
 const style = document.createElement('style');
@@ -87,223 +171,824 @@ style.textContent = `
   :root {
     color-scheme: light;
   }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
   body {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f6f7fb;
-    color: #111827;
+    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    background: #dfe4ec;
+    color: #172033;
   }
-  .app-shell {
-    max-width: 1140px;
-    margin: 0 auto;
-    padding: 20px;
+
+  .desktop-shell {
+    --workspace-bg: #eef2f7;
+    --panel-bg: #ffffff;
+    --panel-border: #dbe3ef;
+    --panel-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    --text-strong: #101828;
+    --text-muted: #556274;
+    --text-soft: #7a8796;
+    --accent: #3b82f6;
+    --accent-strong: #1d4ed8;
+    --sidebar-bg: #131722;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-text: #f8fafc;
+    --sidebar-muted: rgba(226, 232, 240, 0.72);
+    --sidebar-active: rgba(255, 255, 255, 0.12);
+    min-height: 100vh;
     display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    background: linear-gradient(180deg, #e8edf5 0%, #eef2f7 100%);
+  }
+
+  .desktop-shell.theme-light {
+    --workspace-bg: #f7f9fc;
+    --panel-bg: #ffffff;
+    --panel-border: #dbe3ef;
+    --panel-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #dbe3ef;
+    --sidebar-text: #172033;
+    --sidebar-muted: #5b677a;
+    --sidebar-active: #edf2fb;
+  }
+
+  .shell-sidebar {
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 22px 16px 18px;
+    display: grid;
+    gap: 18px;
+    grid-template-rows: auto 1fr auto;
+    border-right: 1px solid var(--sidebar-border);
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
     gap: 12px;
   }
-  .app-header h1 {
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
+    box-shadow: 0 12px 28px rgba(14, 165, 233, 0.28);
+  }
+
+  .brand-copy strong {
+    display: block;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+
+  .brand-copy p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--sidebar-muted);
+  }
+
+  .sidebar-nav {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+    overflow: auto;
+  }
+
+  .sidebar-section {
+    display: grid;
+    gap: 8px;
+  }
+
+  .sidebar-section h2 {
     margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sidebar-muted);
+    padding: 0 10px;
   }
-  .app-header p {
-    margin: 6px 0;
+
+  .sidebar-items {
+    display: grid;
+    gap: 4px;
   }
-  .entitlement {
-    color: #4b5563;
-    font-size: 13px;
+
+  .nav-item,
+  .nav-item-passive {
+    width: 100%;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: inherit;
+    padding: 10px 12px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font: inherit;
   }
-  .metrics,
-  .toolbar,
-  .form-row,
-  .editor,
-  .task-list,
-  .sync-panel,
-  .entitlement-panel {
-    background: #fff;
-    border: 1px solid #d9deea;
-    border-radius: 12px;
-    padding: 12px;
+
+  .nav-item {
+    cursor: pointer;
   }
-  .toolbar,
-  .form-row,
-  .task-item {
+
+  .nav-item:hover,
+  .nav-item:focus-visible {
+    background: var(--sidebar-active);
+    outline: none;
+  }
+
+  .nav-item.active {
+    background: var(--sidebar-active);
+  }
+
+  .nav-item-passive {
+    color: var(--sidebar-muted);
+  }
+
+  .nav-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .nav-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    flex: 0 0 auto;
+  }
+
+  .nav-kind {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sidebar-muted);
+  }
+
+  .sidebar-footer {
+    border: 1px solid var(--sidebar-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .sidebar-foot-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sidebar-muted);
+  }
+
+  .shell-workspace {
+    background: var(--workspace-bg);
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .workspace-header {
+    padding: 24px 24px 12px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .workspace-heading h1 {
+    margin: 4px 0 0;
+    font-size: 28px;
+    letter-spacing: -0.03em;
+    color: var(--text-strong);
+  }
+
+  .workspace-kicker {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-soft);
+  }
+
+  .workspace-status {
+    margin: 0;
+    max-width: 360px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .tab-strip {
+    display: flex;
+    gap: 10px;
+    padding: 0 24px 18px;
+    overflow: auto;
+  }
+
+  .tab-button {
+    border: 1px solid transparent;
+    border-radius: 16px;
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--text-muted);
+    padding: 10px 14px;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    font: inherit;
+  }
+
+  .tab-button:hover,
+  .tab-button:focus-visible {
+    border-color: #c5d0df;
+    outline: none;
+  }
+
+  .tab-button.active {
+    background: #ffffff;
+    border-color: #d3deeb;
+    color: var(--text-strong);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  }
+
+  .tab-label {
+    font-weight: 600;
+  }
+
+  .tab-kind {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .workspace-body {
+    padding: 0 24px 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 18px;
+    min-width: 0;
+  }
+
+  .content-surface,
+  .shell-rail {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 22px;
+    box-shadow: var(--panel-shadow);
+    padding: 18px;
+  }
+
+  .view-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .view-copy h2 {
+    margin: 6px 0 8px;
+    font-size: 26px;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--text-strong);
+  }
+
+  .view-copy p {
+    margin: 0;
+    max-width: 620px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .view-breadcrumb {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .view-chip-row {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .view-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #eef4fb;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .view-stat-grid {
     display: grid;
     gap: 10px;
+    grid-template-columns: repeat(3, minmax(88px, 1fr));
+    min-width: 260px;
+  }
+
+  .view-stat {
+    border: 1px solid #e4ebf4;
+    border-radius: 18px;
+    padding: 12px;
+    background: #f8fbff;
+  }
+
+  .view-stat strong,
+  .sync-stat strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .view-stat span,
+  .sync-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+
+  .metric-grid,
+  .sync-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .metric-card,
+  .sync-stat {
+    border: 1px solid #e4ebf4;
+    border-radius: 18px;
+    padding: 14px;
+    background: #fbfcfe;
+  }
+
+  .metric-card strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .metric-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+
+  .metric-note,
+  .sync-note {
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .toolbar-panel {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .toolbar-stacks {
+    display: grid;
+    gap: 14px;
+  }
+
+  .toolbar-stack {
+    display: grid;
+    gap: 8px;
+  }
+
+  .field-label,
+  .stack-label,
+  .form-row label {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .toolbar-search input,
+  .form-row input,
+  .form-row select,
+  .control-row select {
+    width: 100%;
+    border: 1px solid #d3dce9;
+    border-radius: 14px;
+    padding: 11px 12px;
+    background: #ffffff;
+    color: var(--text-strong);
+    font: inherit;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-group button,
+  .form-row button,
+  .task-actions button,
+  .control-row button {
+    border: 1px solid #d3dce9;
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: #ffffff;
+    color: var(--text-strong);
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .btn-group button.active,
+  .form-row button {
+    background: #111827;
+    border-color: #111827;
+    color: #ffffff;
+  }
+
+  .composer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .composer-header p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .form-row {
+    display: grid;
+    gap: 12px;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     align-items: end;
   }
-  .toolbar {
-    align-items: center;
+
+  .editor-panel:empty {
+    display: none;
   }
-  .btn-group {
+
+  .surface-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .surface-header p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .surface-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #eef4fb;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .task-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .task-item {
+    border: 1px solid #e4ebf4;
+    border-radius: 18px;
+    background: #fbfdff;
+    padding: 14px;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .task-main {
+    min-width: 0;
+  }
+
+  .task-meta-row {
     display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .project-chip,
+  .status-chip,
+  .agenda-type {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #eef4fb;
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
-  .toolbar input,
-  .toolbar button,
-  .form-row input,
-  .form-row select,
-  .form-row button,
-  .editor,
-  .task-actions button {
-    border: 1px solid #cfd3dc;
-    border-radius: 8px;
-    padding: 8px;
-  }
-  .toolbar button,
-  .form-row button,
-  .task-actions button {
-    background: #fff;
-    border-color: #cbd5e1;
-    cursor: pointer;
-  }
-  .toolbar button.active {
-    background: #111827;
-    color: #fff;
-  }
-  .form-row label {
-    display: grid;
-    gap: 5px;
-    font-size: 12px;
-    color: #334155;
-  }
-  .form-row button {
-    align-self: end;
-  }
-  .task-item {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 8px;
-  }
+
   .task-title {
+    font-size: 17px;
     font-weight: 700;
+    color: var(--text-strong);
+    line-height: 1.3;
   }
+
   .task-title.done {
+    color: var(--text-soft);
     text-decoration: line-through;
-    color: #64748b;
   }
-  .muted {
-    color: #64748b;
-    font-size: 12px;
+
+  .task-note {
+    margin-top: 8px;
+    color: var(--text-muted);
+    line-height: 1.5;
   }
-  .task-actions {
-    display: flex;
-    gap: 6px;
-  }
-  .conflict {
-    color: #b91c1c;
-    font-size: 12px;
-  }
-  .error {
-    color: #b91c1c;
-    font-size: 12px;
-  }
-  .sync-panel {
-    display: grid;
-    gap: 8px;
-    background: #f8fafc;
-  }
-  .entitlement-panel {
-    display: grid;
-    gap: 8px;
-    background: #f8fafc;
-  }
-  .sync-header {
+
+  .task-foot {
+    margin-top: 12px;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    color: var(--text-soft);
+    font-size: 12px;
+  }
+
+  .task-side {
+    width: 190px;
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    justify-items: end;
+  }
+
+  .task-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .muted {
+    color: var(--text-soft);
+    font-size: 13px;
+  }
+
+  .conflict,
+  .error {
+    margin-top: 10px;
+    color: #b42318;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .agenda-panel,
+  .sync-panel,
+  .entitlement-panel {
+    display: grid;
+    gap: 14px;
+  }
+
+  .rail-header,
+  .sync-header {
+    display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
   }
+
+  .rail-header strong,
+  .sync-header strong {
+    font-size: 14px;
+    color: var(--text-strong);
+  }
+
+  .rail-count,
   .sync-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
+    padding: 6px 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
+
+  .rail-count,
   .sync-pill.local-only {
-    background: #e2e8f0;
-    color: #334155;
+    background: #edf2f7;
+    color: #475467;
   }
+
   .sync-pill.pending,
   .sync-pill.offline {
-    background: #fef3c7;
-    color: #92400e;
+    background: #fff2d8;
+    color: #9a6700;
   }
+
   .sync-pill.healthy {
-    background: #dcfce7;
-    color: #166534;
+    background: #dcfae6;
+    color: #067647;
   }
+
   .sync-pill.degraded {
-    background: #fee2e2;
-    color: #991b1b;
+    background: #fee4e2;
+    color: #b42318;
   }
-  .sync-grid {
+
+  .agenda-groups {
     display: grid;
-    gap: 8px;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
   }
-  .sync-stat {
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 10px;
-    background: #fff;
-  }
-  .sync-stat strong {
-    display: block;
-    font-size: 12px;
-    color: #475569;
-    margin-bottom: 6px;
-  }
-  .sync-value {
-    font-size: 18px;
-    font-weight: 700;
-  }
-  .sync-note {
-    margin: 0;
-    font-size: 12px;
-    color: #475569;
-  }
-  .calendar-summary {
-    display: grid;
-    gap: 8px;
-  }
-  .control-row {
+
+  .agenda-group {
     display: grid;
     gap: 10px;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    align-items: end;
   }
-  .control-row label {
-    display: grid;
-    gap: 5px;
+
+  .agenda-group h3 {
+    margin: 0;
     font-size: 12px;
-    color: #334155;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
   }
-  .control-row select,
-  .control-row button {
-    border: 1px solid #cfd3dc;
-    border-radius: 8px;
-    padding: 8px;
-    background: #fff;
+
+  .agenda-items {
+    display: grid;
+    gap: 10px;
   }
-  .control-row button {
-    cursor: pointer;
+
+  .agenda-item {
+    border: 1px solid #e4ebf4;
+    border-radius: 16px;
+    padding: 12px;
+    background: #fbfcfe;
+    display: grid;
+    gap: 8px;
   }
+
+  .agenda-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .agenda-title {
+    font-weight: 700;
+    color: var(--text-strong);
+    line-height: 1.35;
+  }
+
+  .agenda-subtitle,
+  .agenda-time {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .control-row {
+    display: grid;
+    gap: 12px;
+  }
+
   .control-row button[disabled] {
-    cursor: not-allowed;
     opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 1180px) {
+    .workspace-body {
+      grid-template-columns: 1fr;
+    }
+
+    .shell-rail {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+  }
+
+  @media (max-width: 960px) {
+    .desktop-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .shell-sidebar {
+      grid-template-rows: auto auto auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--sidebar-border);
+    }
+
+    .workspace-header {
+      flex-direction: column;
+    }
+
+    .workspace-status {
+      max-width: none;
+      text-align: left;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .workspace-header,
+    .tab-strip,
+    .workspace-body {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .toolbar-panel,
+    .view-header,
+    .task-item {
+      grid-template-columns: 1fr;
+    }
+
+    .view-stat-grid,
+    .task-side {
+      width: auto;
+      justify-items: start;
+    }
+
+    .task-actions {
+      justify-content: flex-start;
+    }
   }
 `;
 
 document.head.appendChild(style);
 
+const sidebarNavEl = shell.querySelector('#sidebar-nav') as HTMLDivElement;
+const tabStripEl = shell.querySelector('#tab-strip') as HTMLDivElement;
+const viewHeaderEl = shell.querySelector('#view-header') as HTMLDivElement;
 const metricsEl = shell.querySelector('#metrics') as HTMLDivElement;
+const agendaPanelEl = shell.querySelector('#agenda-panel') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
 const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
@@ -318,7 +1003,36 @@ const addBtn = shell.querySelector('#add') as HTMLButtonElement;
 const editorEl = shell.querySelector('#editor') as HTMLElement;
 const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
+const surfaceCountEl = shell.querySelector('#surface-count') as HTMLSpanElement;
+const surfaceCaptionEl = shell.querySelector('#surface-caption') as HTMLParagraphElement;
 const warningEl = document.createElement('p');
+
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function formatCompactDate(value: unknown) {
+  if (!value) {
+    return 'No date';
+  }
+
+  const parsed = new Date(String(value));
+  if (Number.isNaN(parsed.valueOf())) {
+    return 'No date';
+  }
+
+  return parsed.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
 
 function getEntitlementPresentation(summary) {
   if (summary.isRevoked) {
@@ -358,135 +1072,6 @@ function getEntitlementPresentation(summary) {
     title: 'Cached',
     detail: summary.reason || 'The app is still using cached entitlement data until the first authority refresh runs.'
   };
-}
-
-function updateEntitlementPanel() {
-  const summary = getEntitlementStateSummary(entitlement);
-  const presentation = getEntitlementPresentation(summary);
-  const refreshOptions = ENTITLEMENT_REFRESH_SCENARIOS.map(({ id, label }) => {
-    const selected = id === entitlementRefreshMode ? 'selected' : '';
-    return `<option value="${id}" ${selected}>${label}</option>`;
-  }).join('');
-  const refreshButtonLabel = isRefreshingEntitlement ? 'Refreshing...' : 'Refresh entitlement';
-
-  entitlementPanelEl.innerHTML = `
-    <div class="sync-header">
-      <strong>Entitlement authority</strong>
-      <span class="sync-pill ${presentation.badgeClass}">${presentation.title}</span>
-    </div>
-    <div class="sync-grid">
-      <div class="sync-stat">
-        <strong>Plan</strong>
-        <div class="sync-value">${summary.plan}</div>
-      </div>
-      <div class="sync-stat">
-        <strong>Last success</strong>
-        <div class="sync-value">${formatSyncDate(summary.lastSuccessfulAt)}</div>
-      </div>
-      <div class="sync-stat">
-        <strong>Last attempt</strong>
-        <div class="sync-value">${formatSyncDate(summary.lastAttemptAt)}</div>
-      </div>
-      <div class="sync-stat">
-        <strong>Authority source</strong>
-        <div class="sync-value">${summary.source || 'Unknown'}</div>
-      </div>
-    </div>
-    <div class="control-row">
-      <label>
-        Mock authority response
-        <select id="entitlement-refresh-mode">
-          ${refreshOptions}
-        </select>
-      </label>
-      <button id="entitlement-refresh-btn" type="button" ${isRefreshingEntitlement ? 'disabled' : ''}>${refreshButtonLabel}</button>
-    </div>
-    <p class="sync-note">${presentation.detail}</p>
-  `;
-}
-
-function refreshEntitlementState() {
-  entitlement = getEntitlementSnapshot({ allowPersistence: false });
-  const entitlementSummary = getEntitlementStateSummary(entitlement);
-  const entitlementCheck = requireEntitlement('tasks_manage', Date.now(), entitlement);
-  canMutate = entitlementCheck.allowed;
-  const aiStatus = entitlementSummary.aiEnabled ? 'enabled' : 'disabled';
-  const calendarStatus = entitlementSummary.calendarReadEnabled ? 'enabled' : 'disabled';
-  const mutationState = canMutate ? 'enabled' : 'read-only';
-  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | Authority: ${entitlementSummary.authorityStatus} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
-  addBtn.disabled = !canMutate;
-  updateEntitlementPanel();
-
-  if (!canMutate && entitlementCheck.reason) {
-    warningEl.className = 'error';
-    warningEl.textContent = `Read-only mode active: ${entitlementCheck.reason}`;
-    editorEl.prepend(warningEl);
-    return;
-  }
-
-  if (warningEl.parentElement === editorEl) {
-    warningEl.remove();
-  }
-}
-
-function hydrateProjects() {
-  projectEl.innerHTML = '';
-  buildProjectSeedData(appData.projects).forEach((project) => {
-    const option = document.createElement('option');
-    option.value = project.id;
-    option.textContent = project.name;
-    projectEl.appendChild(option);
-  });
-}
-
-function setFilter(filter) {
-  activeFilter = filter;
-  filterContainer.querySelectorAll('.filter').forEach((button) => {
-    const buttonEl = button as HTMLButtonElement;
-    buttonEl.classList.toggle('active', buttonEl.dataset.status === filter);
-  });
-}
-
-function setPlanWindowFilter(windowFilter) {
-  activePlanWindow = windowFilter;
-  planWindowContainer.querySelectorAll('.plan-window').forEach((button) => {
-    const buttonEl = button as HTMLButtonElement;
-    buttonEl.classList.toggle('active', buttonEl.dataset.window === windowFilter);
-  });
-}
-
-function buildTaskDraft() {
-  const title = titleEl.value.trim();
-  const projectId = projectEl.value;
-  const dueAt = dueEl.value ? new Date(dueEl.value).toISOString() : null;
-  const durationMinutes = Number(durationEl.value || 30);
-  const recurrence = { pattern: recurrenceEl.value };
-  const project = getProjectById(appData.projects, projectId);
-
-  return {
-    title,
-    projectId,
-    projectName: project?.name || 'Inbox',
-    dueAt,
-    durationMinutes,
-    recurrence
-  };
-}
-
-function clearDraft() {
-  titleEl.value = '';
-  dueEl.value = '';
-  durationEl.value = '30';
-  recurrenceEl.value = 'none';
-}
-
-function showError(message) {
-  editorEl.textContent = '';
-  if (!message) return;
-  const line = document.createElement('p');
-  line.className = 'error';
-  line.textContent = message;
-  editorEl.appendChild(line);
 }
 
 function formatSyncDate(value) {
@@ -557,41 +1142,143 @@ function getSyncPresentation(sync) {
   };
 }
 
-function updateSyncStatus() {
-  const sync = getSyncStateSummary(appData);
-  const presentation = getSyncPresentation(sync);
+function hydrateProjects() {
+  projectEl.innerHTML = '';
+  buildProjectSeedData(appData.projects).forEach((project) => {
+    const option = document.createElement('option');
+    option.value = project.id;
+    option.textContent = project.name;
+    projectEl.appendChild(option);
+  });
+}
 
-  syncPanelEl.innerHTML = `
+function setFilter(filter) {
+  activeFilter = filter;
+  filterContainer.querySelectorAll('.filter').forEach((button) => {
+    const buttonEl = button as HTMLButtonElement;
+    buttonEl.classList.toggle('active', buttonEl.dataset.status === filter);
+  });
+}
+
+function setPlanWindowFilter(windowFilter) {
+  activePlanWindow = windowFilter;
+  planWindowContainer.querySelectorAll('.plan-window').forEach((button) => {
+    const buttonEl = button as HTMLButtonElement;
+    buttonEl.classList.toggle('active', buttonEl.dataset.window === windowFilter);
+  });
+}
+
+function buildTaskDraft() {
+  const title = titleEl.value.trim();
+  const projectId = projectEl.value;
+  const dueAt = dueEl.value ? new Date(dueEl.value).toISOString() : null;
+  const durationMinutes = Number(durationEl.value || 30);
+  const recurrence = { pattern: recurrenceEl.value };
+  const project = getProjectById(appData.projects, projectId);
+
+  return {
+    title,
+    projectId,
+    projectName: project?.name || 'Inbox',
+    dueAt,
+    durationMinutes,
+    recurrence
+  };
+}
+
+function clearDraft() {
+  titleEl.value = '';
+  dueEl.value = '';
+  durationEl.value = '30';
+  recurrenceEl.value = 'none';
+}
+
+function showError(message) {
+  editorEl.textContent = '';
+  if (!message) {
+    return;
+  }
+
+  const line = document.createElement('p');
+  line.className = 'error';
+  line.textContent = message;
+  editorEl.appendChild(line);
+}
+
+function updateEntitlementPanel() {
+  const summary = getEntitlementStateSummary(entitlement);
+  const presentation = getEntitlementPresentation(summary);
+  const refreshOptions = ENTITLEMENT_REFRESH_SCENARIOS.map(({ id, label }) => {
+    const selected = id === entitlementRefreshMode ? 'selected' : '';
+    return `<option value="${escapeHtml(id)}" ${selected}>${escapeHtml(label)}</option>`;
+  }).join('');
+  const refreshButtonLabel = isRefreshingEntitlement ? 'Refreshing...' : 'Refresh entitlement';
+
+  entitlementPanelEl.innerHTML = `
     <div class="sync-header">
-      <strong>Sync health</strong>
-      <span class="sync-pill ${presentation.badgeClass}">${presentation.title}</span>
+      <strong>Entitlement authority</strong>
+      <span class="sync-pill ${presentation.badgeClass}">${escapeHtml(presentation.title)}</span>
     </div>
     <div class="sync-grid">
       <div class="sync-stat">
-        <strong>Pending changes</strong>
-        <div class="sync-value">${sync.pendingCount}</div>
+        <strong>Plan</strong>
+        <div class="sync-value">${escapeHtml(summary.plan)}</div>
       </div>
       <div class="sync-stat">
-        <strong>Last sync</strong>
-        <div class="sync-value">${formatSyncDate(sync.lastSyncAt)}</div>
+        <strong>Last success</strong>
+        <div class="sync-value">${escapeHtml(formatSyncDate(summary.lastSuccessfulAt))}</div>
       </div>
       <div class="sync-stat">
-        <strong>Cursor</strong>
-        <div class="sync-value">${sync.syncCursor || 'Not set'}</div>
+        <strong>Last attempt</strong>
+        <div class="sync-value">${escapeHtml(formatSyncDate(summary.lastAttemptAt))}</div>
       </div>
       <div class="sync-stat">
-        <strong>Device</strong>
-        <div class="sync-value">${sync.deviceId || 'Unknown'}</div>
+        <strong>Authority source</strong>
+        <div class="sync-value">${escapeHtml(summary.source || 'Unknown')}</div>
       </div>
     </div>
-    <p class="sync-note">${presentation.detail}</p>
+    <div class="control-row">
+      <label class="field-label">
+        Mock authority response
+        <select id="entitlement-refresh-mode">
+          ${refreshOptions}
+        </select>
+      </label>
+      <button id="entitlement-refresh-btn" type="button" ${isRefreshingEntitlement ? 'disabled' : ''}>${escapeHtml(refreshButtonLabel)}</button>
+    </div>
+    <p class="sync-note">${escapeHtml(presentation.detail)}</p>
   `;
 }
 
+function refreshEntitlementState() {
+  entitlement = getEntitlementSnapshot({ allowPersistence: false });
+  const entitlementSummary = getEntitlementStateSummary(entitlement);
+  const entitlementCheck = requireEntitlement('tasks_manage', Date.now(), entitlement);
+  canMutate = entitlementCheck.allowed;
+  const aiStatus = entitlementSummary.aiEnabled ? 'enabled' : 'disabled';
+  const calendarStatus = entitlementSummary.calendarReadEnabled ? 'enabled' : 'disabled';
+  const mutationState = canMutate ? 'enabled' : 'read-only';
+  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | Authority: ${entitlementSummary.authorityStatus} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
+  addBtn.disabled = !canMutate;
+  updateEntitlementPanel();
+
+  if (!canMutate && entitlementCheck.reason) {
+    warningEl.className = 'error';
+    warningEl.textContent = `Read-only mode active: ${entitlementCheck.reason}`;
+    editorEl.prepend(warningEl);
+    return;
+  }
+
+  if (warningEl.parentElement === editorEl) {
+    warningEl.remove();
+  }
+}
+
 function buildPlannerState() {
-  const filteredTasks = getTaskFilters(tasks, { statusFilter: activeFilter, query: search }).map((task) => {
-    return decorateTaskWithProject(task, appData.projects);
-  });
+  const filteredTasks = getTaskFilters(tasks, {
+    statusFilter: activeFilter,
+    query: search
+  }).map((task) => decorateTaskWithProject(task, appData.projects));
   const planWindow = buildPlanWindow(filteredTasks, {
     calendarOverlay: appData.calendarOverlay
   });
@@ -621,46 +1308,212 @@ function buildPlannerState() {
   };
 }
 
-function updateSummary(plannerState) {
+function updateSyncStatus() {
+  const sync = getSyncStateSummary(appData);
+  const presentation = getSyncPresentation(sync);
+
+  syncPanelEl.innerHTML = `
+    <div class="sync-header">
+      <strong>Sync health</strong>
+      <span class="sync-pill ${presentation.badgeClass}">${escapeHtml(presentation.title)}</span>
+    </div>
+    <div class="sync-grid">
+      <div class="sync-stat">
+        <strong>Pending changes</strong>
+        <div class="sync-value">${escapeHtml(String(sync.pendingCount))}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Last sync</strong>
+        <div class="sync-value">${escapeHtml(formatSyncDate(sync.lastSyncAt))}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Cursor</strong>
+        <div class="sync-value">${escapeHtml(sync.syncCursor || 'Not set')}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Device</strong>
+        <div class="sync-value">${escapeHtml(sync.deviceId || 'Unknown')}</div>
+      </div>
+    </div>
+    <p class="sync-note">${escapeHtml(presentation.detail)}</p>
+  `;
+}
+
+function updateSummary(plannerState, shellState) {
   const summary = getTaskStateSummary(tasks);
   const overlay = appData.calendarOverlay || {
     importedEvents: [],
     permissionStatus: 'unknown',
     refreshedAt: null
   };
+  const activeLabel = shellState.activeTab?.title || shellState.activeView?.name || 'Calendar';
   const permissionLabel = overlay.permissionStatus === 'granted'
-    ? `${plannerState.planWindow.busyBlocks.length} busy blocks active`
+    ? `${plannerState.planWindow.busyBlocks.length} busy blocks active in ${activeLabel}`
     : `Calendar overlay ${overlay.permissionStatus}`;
 
   metricsEl.innerHTML = `
-    <div class="calendar-summary">
-      <div class="sync-grid">
-        <div class="sync-stat">
-          <strong>Today</strong>
-          <div class="sync-value">${summary.today}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Upcoming</strong>
-          <div class="sync-value">${summary.upcoming}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Overdue</strong>
-          <div class="sync-value">${summary.overdue}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Busy blocks</strong>
-          <div class="sync-value">${plannerState.planWindow.busyBlocks.length}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Blocked tasks</strong>
-          <div class="sync-value">${plannerState.blockedTaskIds.length}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Available minutes</strong>
-          <div class="sync-value">${plannerState.planWindow.availableMinutes}</div>
-        </div>
+    <div class="metric-grid">
+      <div class="metric-card">
+        <strong>Today</strong>
+        <div class="metric-value">${escapeHtml(String(summary.today))}</div>
       </div>
-      <p class="sync-note">${permissionLabel} | Refreshed: ${formatSyncDate(overlay.refreshedAt)}</p>
+      <div class="metric-card">
+        <strong>Upcoming</strong>
+        <div class="metric-value">${escapeHtml(String(summary.upcoming))}</div>
+      </div>
+      <div class="metric-card">
+        <strong>Overdue</strong>
+        <div class="metric-value">${escapeHtml(String(summary.overdue))}</div>
+      </div>
+      <div class="metric-card">
+        <strong>Busy blocks</strong>
+        <div class="metric-value">${escapeHtml(String(plannerState.planWindow.busyBlocks.length))}</div>
+      </div>
+      <div class="metric-card">
+        <strong>Blocked tasks</strong>
+        <div class="metric-value">${escapeHtml(String(plannerState.blockedTaskIds.length))}</div>
+      </div>
+      <div class="metric-card">
+        <strong>Available minutes</strong>
+        <div class="metric-value">${escapeHtml(String(plannerState.planWindow.availableMinutes))}</div>
+      </div>
+    </div>
+    <p class="metric-note">${escapeHtml(permissionLabel)} | Refreshed: ${escapeHtml(formatSyncDate(overlay.refreshedAt))}</p>
+  `;
+}
+
+function renderSidebar(shellState) {
+  sidebarNavEl.innerHTML = shellState.sidebarSections.map((section) => {
+    const items = section.items.map((item) => {
+      if (item.kind === 'project') {
+        const color = escapeHtml(item.color || '#94a3b8');
+        return `
+          <div class="nav-item-passive">
+            <span class="nav-label">
+              <span class="nav-dot" style="color: ${color}; background: ${color};"></span>
+              <span class="nav-title">${escapeHtml(item.label)}</span>
+            </span>
+            <span class="nav-kind">project</span>
+          </div>
+        `;
+      }
+
+      const isActive = item.kind === 'route'
+        ? shellState.activeTab?.route === item.route
+        : shellState.activeViewId === item.viewId || shellState.activeTab?.itemId === item.viewId;
+
+      return `
+        <button
+          type="button"
+          class="nav-item ${isActive ? 'active' : ''}"
+          data-kind="${escapeHtml(item.kind)}"
+          data-route="${escapeHtml(item.route || '')}"
+          data-view-id="${escapeHtml(item.viewId || '')}"
+        >
+          <span class="nav-label">
+            <span class="nav-dot"></span>
+            <span class="nav-title">${escapeHtml(item.label)}</span>
+          </span>
+          <span class="nav-kind">${escapeHtml(item.kind)}</span>
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <section class="sidebar-section">
+        <h2>${escapeHtml(section.title)}</h2>
+        <div class="sidebar-items">${items}</div>
+      </section>
+    `;
+  }).join('');
+}
+
+function renderTabStrip(shellState) {
+  tabStripEl.innerHTML = shellState.tabs.map((tab) => `
+    <button type="button" class="tab-button ${shellState.activeTabId === tab.id ? 'active' : ''}" data-tab-id="${escapeHtml(tab.id)}">
+      <span class="tab-label">${escapeHtml(tab.title)}</span>
+      <span class="tab-kind">${escapeHtml(tab.itemType)}</span>
+    </button>
+  `).join('');
+}
+
+function renderViewHeader(shellState, plannerState) {
+  const activeTab = shellState.activeTab;
+  const activeView = shellState.activeView;
+  const title = activeTab?.itemType === 'view'
+    ? activeView?.name || activeTab?.title || 'Task view'
+    : activeTab?.title || activeView?.name || 'Calendar';
+  const layout = activeView?.layout || (activeTab?.itemType === 'route' ? 'schedule' : 'kanban');
+  const route = activeTab?.route || activeView?.route || '/web/calendar';
+  const description = activeTab?.itemType === 'route'
+    ? 'This top-level shell is now sidebar-first and agenda-first, while the current planner logic continues to drive the underlying content.'
+    : 'Saved-view shell state is now shaping the workspace, so the current planner output sits inside a Motion-style content surface instead of a stacked page.';
+  const chips = [
+    `Route ${route}`,
+    `${layout} layout`,
+    `${plannerState.visibleTasks.length} visible tasks`
+  ]
+    .concat(Array.isArray(activeView?.groupBy) ? activeView.groupBy.map((entry) => `${entry.key}${entry.by ? ` by ${entry.by}` : ''}`) : [])
+    .map((chip) => `<span class="view-chip">${escapeHtml(chip)}</span>`)
+    .join('');
+
+  viewHeaderEl.innerHTML = `
+    <div class="view-copy">
+      <div class="view-breadcrumb">Workspace / ${escapeHtml(title)}</div>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
+      <div class="view-chip-row">${chips}</div>
+    </div>
+    <div class="view-stat-grid">
+      <div class="view-stat">
+        <strong>Visible</strong>
+        <span>${escapeHtml(String(plannerState.visibleTasks.length))}</span>
+      </div>
+      <div class="view-stat">
+        <strong>Conflicts</strong>
+        <span>${escapeHtml(String(Object.keys(plannerState.overlaps).length))}</span>
+      </div>
+      <div class="view-stat">
+        <strong>Agenda</strong>
+        <span>${escapeHtml(String(shellState.agenda.counts.total))}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderAgendaGroup(title, entries, emptyMessage) {
+  const items = entries.length
+    ? entries.map((entry) => `
+        <article class="agenda-item">
+          <div class="agenda-head">
+            <div class="agenda-title">${escapeHtml(entry.title)}</div>
+            <span class="agenda-type">${escapeHtml(entry.sourceType)}</span>
+          </div>
+          <div class="agenda-subtitle">${escapeHtml(entry.subtitle || 'Untitled source')}</div>
+          <div class="agenda-time">${escapeHtml(formatCompactDate(entry.startAt || entry.dueAt || entry.sortAt))}</div>
+        </article>
+      `).join('')
+    : `<p class="muted">${escapeHtml(emptyMessage)}</p>`;
+
+  return `
+    <section class="agenda-group">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="agenda-items">${items}</div>
+    </section>
+  `;
+}
+
+function renderAgenda(shellState) {
+  const agenda = shellState.agenda;
+  agendaPanelEl.innerHTML = `
+    <div class="rail-header">
+      <strong>Agenda rail</strong>
+      <span class="rail-count">${escapeHtml(String(agenda.counts.total))} items</span>
+    </div>
+    <div class="agenda-groups">
+      ${renderAgendaGroup('Ongoing', agenda.ongoing, 'Nothing is in progress right now.')}
+      ${renderAgendaGroup('Upcoming', agenda.upcoming, 'No scheduled items are queued next.')}
+      ${renderAgendaGroup('Timeless', agenda.timeless, 'No timeless tasks are waiting.')}
     </div>
   `;
 }
@@ -669,9 +1522,15 @@ function renderTasks(plannerState) {
   const { visibleTasks, overlaps, blockedTaskIds } = plannerState;
   const blockedTaskSet = new Set(blockedTaskIds);
   taskListEl.innerHTML = '';
+  surfaceCountEl.textContent = `${visibleTasks.length} visible`;
+  surfaceCaptionEl.textContent = activePlanWindow === 'today'
+    ? 'Planner output scoped to today.'
+    : activePlanWindow === 'week'
+      ? 'Planner output scoped to this week.'
+      : 'Planner output across the current horizon.';
 
   if (!visibleTasks.length) {
-    taskListEl.innerHTML = '<p class="muted">No matching tasks.</p>';
+    taskListEl.innerHTML = '<p class="muted">No matching tasks in this shell view.</p>';
     return;
   }
 
@@ -681,19 +1540,69 @@ function renderTasks(plannerState) {
     const item = document.createElement('article');
     item.className = 'task-item';
     item.innerHTML = `
-      <div class="muted">${task.projectName} | status: ${task.status}</div>
-      <div class="task-title ${task.status === 'done' ? 'done' : ''}">${task.title}</div>
-      <div class="muted">Due: ${formatDisplayDateTime(task.dueAt)} | Duration: ${task.durationMinutes} min | Recurrence: ${task.recurrence.pattern}</div>
-      <div class="muted">${task.description ? task.description : 'No notes'}</div>
-      ${conflictIds.length ? `<div class="conflict">Task overlap with: ${conflictIds.join(', ')}</div>` : ''}
-      ${isCalendarBlocked ? '<div class="conflict">Calendar busy block overlaps this task.</div>' : ''}
-      <div class="task-actions">
-        <button data-action="complete" data-id="${task.id}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
-        <button data-action="delete" data-id="${task.id}" ${canMutate ? '' : 'disabled'}>Delete</button>
+      <div class="task-main">
+        <div class="task-meta-row">
+          <span class="project-chip">${escapeHtml(task.projectName || 'Inbox')}</span>
+          <span class="status-chip">${escapeHtml(task.status)}</span>
+        </div>
+        <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
+        <div class="task-note">${escapeHtml(task.description || 'No notes')}</div>
+        <div class="task-foot">
+          <span>Due: ${escapeHtml(formatDisplayDateTime(task.dueAt))}</span>
+          <span>Duration: ${escapeHtml(String(task.durationMinutes))} min</span>
+          <span>Recurrence: ${escapeHtml(task.recurrence.pattern)}</span>
+        </div>
+        ${conflictIds.length ? `<div class="conflict">Task overlap with: ${escapeHtml(conflictIds.join(', '))}</div>` : ''}
+        ${isCalendarBlocked ? '<div class="conflict">Calendar busy block overlaps this task.</div>' : ''}
+      </div>
+      <div class="task-side">
+        <div class="task-time">${escapeHtml(formatCompactDate(task.startAt || task.dueAt))}</div>
+        <div class="task-actions">
+          <button data-action="complete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
+          <button data-action="delete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>Delete</button>
+        </div>
       </div>
     `;
     taskListEl.appendChild(item);
   });
+}
+
+function setActiveShellTab(tabId: string) {
+  const shellState = getShellState(appData);
+  const tabs = shellState.tabs.map((tab) => ({
+    ...tab,
+    active: tab.id === tabId
+  }));
+  const activeTab = tabs.find((tab) => tab.id === tabId) || tabs[0];
+
+  appData = {
+    ...appData,
+    shell: {
+      ...(appData.shell || {}),
+      tabs,
+      activeTabId: activeTab?.id || shellState.activeTabId,
+      activeViewId: activeTab?.itemType === 'view' ? activeTab.itemId : shellState.activeViewId
+    }
+  };
+}
+
+function setActiveShellView(viewId: string) {
+  const shellState = getShellState(appData);
+  const matchingTab = shellState.tabs.find((tab) => tab.itemType === 'view' && tab.itemId === viewId);
+  const tabs = shellState.tabs.map((tab) => ({
+    ...tab,
+    active: matchingTab ? tab.id === matchingTab.id : tab.active
+  }));
+
+  appData = {
+    ...appData,
+    shell: {
+      ...(appData.shell || {}),
+      tabs,
+      activeTabId: matchingTab?.id || shellState.activeTabId,
+      activeViewId: viewId
+    }
+  };
 }
 
 function persistAppData() {
@@ -704,17 +1613,24 @@ function persistAppData() {
   }
 }
 
-function renderPlannerViews() {
+function renderWorkspace() {
   const plannerState = buildPlannerState();
-  updateSummary(plannerState);
+  const shellState = getShellState(appData);
+
+  shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
+  renderSidebar(shellState);
+  renderTabStrip(shellState);
+  renderViewHeader(shellState, plannerState);
+  updateSummary(plannerState, shellState);
   renderTasks(plannerState);
+  renderAgenda(shellState);
 }
 
 function renderAll() {
   refreshEntitlementState();
   persistAppData();
   updateSyncStatus();
-  renderPlannerViews();
+  renderWorkspace();
 }
 
 addBtn.addEventListener('click', () => {
@@ -722,6 +1638,7 @@ addBtn.addEventListener('click', () => {
     showError('This install is currently read-only due to entitlement status.');
     return;
   }
+
   const draft = buildTaskDraft();
   const result = upsertTask(tasks, draft);
   if (!result.ok) {
@@ -740,7 +1657,7 @@ searchEl.addEventListener('input', (event) => {
   const target = event.target;
   if (target instanceof HTMLInputElement) {
     search = target.value.trim();
-    renderPlannerViews();
+    renderWorkspace();
   }
 });
 
@@ -754,7 +1671,7 @@ filterContainer.addEventListener('click', (event) => {
     return;
   }
   setFilter(status);
-  renderPlannerViews();
+  renderWorkspace();
 });
 
 planWindowContainer.addEventListener('click', (event) => {
@@ -767,7 +1684,54 @@ planWindowContainer.addEventListener('click', (event) => {
     return;
   }
   setPlanWindowFilter(windowFilter);
-  renderPlannerViews();
+  renderWorkspace();
+});
+
+sidebarNavEl.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const button = target.closest('button[data-kind]');
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const kind = button.dataset.kind;
+  const viewId = button.dataset.viewId;
+  const route = button.dataset.route;
+
+  if (kind === 'view' && viewId) {
+    setActiveShellView(viewId);
+    renderAll();
+    return;
+  }
+
+  if (kind === 'route' && route === '/web/calendar') {
+    setActiveShellTab('tab_calendar');
+    renderAll();
+  }
+});
+
+tabStripEl.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const button = target.closest('button[data-tab-id]');
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const tabId = button.dataset.tabId;
+  if (!tabId) {
+    return;
+  }
+
+  setActiveShellTab(tabId);
+  renderAll();
 });
 
 taskListEl.addEventListener('click', (event) => {
@@ -785,6 +1749,7 @@ taskListEl.addEventListener('click', (event) => {
     showError('This install is currently read-only due to entitlement status.');
     return;
   }
+
   const result = resolveTaskAction(tasks, id, action);
   if (!result.ok) {
     showError(result.error);
@@ -843,6 +1808,7 @@ if (typeof window !== 'undefined') {
 
 function run() {
   hydrateProjects();
+  setFilter('all');
   setPlanWindowFilter('all');
   renderAll();
 }
