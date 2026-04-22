@@ -379,4 +379,25 @@ Phase 3 is now closed out instead of half-finished. The repo's own checks finall
 - Execute future work with `/plan` and `/steps`: one numbered step at a time, stop after each completion block, then continue with `next`.
 
 ---
-*Next: Step 21 begins Phase 4 with the shell state model baseline described in `learnings/plans/phase-4-plan.md`.*
+## ? Step 21 — Phase 4 Shell State Model Baseline
+*Completed: 2026-04-23*
+
+**What was built**
+- `apps/desktop/src/shellService.js` — adds the first Motion-shaped shell state layer with default tabs, saved views, sidebar sections, theme normalization, and agenda grouping selectors.
+- `apps/desktop/src/state.js` — exports the shell helpers through the existing orchestration layer so the UI can consume shell state without importing a separate module directly.
+
+**In plain English**
+The app now has a brain for the shell before the shell itself gets redrawn. Instead of the future sidebar, tabs, and agenda rail being hard-coded directly into the page, there is now one place that decides what tabs exist, what views exist, how the left navigation should be grouped, what theme the shell should use, and how tasks and calendar items should be grouped into "now", "next", and "timeless" buckets. That means the next UI step can build the Motion-style shell on top of structured state instead of inventing layout behavior inline.
+
+**Files changed**
++ created: `apps/desktop/src/shellService.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/shellService.js`
+- `node --check apps/desktop/src/state.js`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+
+---
+*Next: Step 22 continues Phase 4 by seeding and persisting shell state in fixtures, contracts, and storage.*
