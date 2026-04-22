@@ -427,4 +427,23 @@ The app now saves the shell the same way it saves tasks. That means the Motion-l
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
 
 ---
-*Next: Step 23 continues Phase 4 by replacing the old planner-first layout with the Motion-like desktop shell layout.*
+## ? Step 23 — Phase 4 Motion-Like Shell Layout
+*Completed: 2026-04-23*
+
+**What was built**
+- `apps/desktop/src/main.tsx` — replaces the old stacked planner page with a real shell layout: left sidebar, top tab strip, central content surface, and right agenda rail, while keeping task mutations, sync status, entitlement refresh, and planner logic connected underneath.
+
+**In plain English**
+The app no longer opens like a plain form and task list page. It now behaves like a desktop shell, with navigation on the left, tabs across the top, the working surface in the middle, and the agenda plus system panels on the right. The existing planner logic is still there, but it is now sitting inside a Motion-like frame instead of being the whole app experience by itself.
+
+**Files changed**
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 24 continues Phase 4 by applying Motion-like shell skin and tightening view-driven navigation behavior.*
