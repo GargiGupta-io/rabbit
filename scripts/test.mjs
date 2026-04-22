@@ -8,6 +8,13 @@ import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncCo
 import { buildCalendarBusyBlocks, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
 import {
+  activateShellView,
+  buildSidebarSections,
+  deriveShellStateSnapshot,
+  getShellViewMeta,
+  selectTasksForShellView
+} from '../apps/desktop/src/shellService.js';
+import {
   FIXTURE_CALENDAR_EVENTS_RAW,
   FIXTURE_CALENDAR_OVERLAY,
   FIXTURE_NOW,
@@ -96,9 +103,57 @@ runTest('fixture shell state seeds Motion-like tabs, views, and agenda groups', 
   assert.equal(normalized.shell.savedViews.length, 4);
   assert.equal(normalized.shell.activeTabId, 'tab_calendar');
   assert.equal(normalized.shell.activeViewId, 'view_my_tasks');
-  assert.equal(normalized.shell.sidebarSections.length, 2);
+  assert.equal(normalized.shell.sidebarSections.length, 4);
   assert.equal(normalized.shell.agenda.counts.total, FIXTURE_SHELL_STATE.agenda.counts.total);
   assert.equal(normalized.shell.agenda.counts.total, 6);
+});
+
+runTest('saved views are grouped into workspace, private, team, and project sidebar sections', () => {
+  const sections = buildSidebarSections({
+    savedViews: fixtureState.shell.savedViews,
+    projects: fixtureState.projects
+  });
+
+  assert.deepEqual(sections.map((section) => section.id), ['workspace', 'my-views', 'team-views', 'projects']);
+  assert.equal(sections[1].items.length, 2);
+  assert.equal(sections[2].items.length, 2);
+  assert.equal(sections[3].items.length, 3);
+});
+
+runTest('activating a saved view syncs the matching tab and resolves Motion-like view metadata', () => {
+  const nextShell = activateShellView(fixtureState.shell, 'view_project_timelines');
+  const snapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: nextShell
+  });
+  const meta = getShellViewMeta(snapshot);
+
+  assert.equal(snapshot.activeTabId, 'tab_project_timelines');
+  assert.equal(snapshot.activeViewId, 'view_project_timelines');
+  assert.equal(meta.id, 'view_project_timelines');
+  assert.equal(meta.layout, 'gantt');
+  assert.equal(meta.collectionLabel, 'Project sequence');
+});
+
+runTest('active shell views change the base task collection before ad hoc filters run', () => {
+  const deadlineShell = activateShellView(fixtureState.shell, 'view_my_deadlines');
+  const deadlineSnapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: deadlineShell
+  });
+  const deadlineTasks = selectTasksForShellView(fixtureState.tasks, deadlineSnapshot);
+
+  assert.deepEqual(deadlineTasks.map((task) => task.id), ['f3', 'f4', 'f1']);
+
+  const timelineShell = activateShellView(fixtureState.shell, 'view_project_timelines');
+  const timelineSnapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: timelineShell
+  });
+  const timelineTasks = selectTasksForShellView(fixtureState.tasks, timelineSnapshot);
+
+  assert.equal(timelineTasks.every((task) => task.projectId !== 'inbox'), true);
+  assert.deepEqual(timelineTasks.map((task) => task.id), ['f3', 'f4', 'f1']);
 });
 
 runTest('create duplicate task guard rejects duplicate title in same project', () => {
@@ -569,7 +624,7 @@ runTest('storage contract keeps seeded shell state on current fixture payloads',
   assert.equal(result.value.schemaVersion, CURRENT_SCHEMA_VERSION);
   assert.equal(result.value.shell.theme.mode, 'dark');
   assert.equal(result.value.shell.savedViews.length, 4);
-  assert.equal(result.value.shell.sidebarSections.length, 2);
+  assert.equal(result.value.shell.sidebarSections.length, 4);
   assert.equal(result.value.shell.agenda.counts.total, 6);
 });
 

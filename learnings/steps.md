@@ -446,4 +446,29 @@ The app no longer opens like a plain form and task list page. It now behaves lik
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 24 continues Phase 4 by applying Motion-like shell skin and tightening view-driven navigation behavior.*
+## ? Step 24 — Phase 4 Motion-Like Skin and View Navigation
+*Completed: 2026-04-24*
+
+**What was built**
+- `apps/desktop/src/shellService.js` — upgraded shell state so saved views are grouped into Motion-like sidebar sections, non-tab views still resolve as real active views, and each active view now defines the task collection and descriptive metadata for the workspace.
+- `apps/desktop/src/main.tsx` — tightened the shell styling around dark Motion-like tokens and switched the central surface to read its title, chips, empty state, and task collection from the active shell view instead of a generic planner page.
+- `scripts/test.mjs` — added coverage for grouped sidebar sections, view-to-tab activation behavior, and view-driven task selection so the shell logic is pinned by tests instead of only by visuals.
+
+**In plain English**
+The shell now looks less like a dressed-up custom planner and more like a real Motion-style desktop app. The dark skin is much closer to the app we studied, and the center surface now changes based on which saved view is active instead of always showing the same generic task list with a different label on top. That means the shell is starting to behave like a real navigation system, not just a prettier frame.
+
+**Files changed**
+~ modified: `apps/desktop/src/shellService.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/shellService.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 25 closes Phase 4 with the shell verification gate and then the required deeplearn phase write-up.*
