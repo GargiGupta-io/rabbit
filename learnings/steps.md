@@ -326,4 +326,27 @@ The planner now sees calendar occupancy instead of pretending your day is empty.
 ~ modified: `learnings/steps.md`
 
 ---
-*Next: Step 19 continues Phase 3 with server-authority entitlement refresh in `learnings/plans/phase-3-plan.md`.*
+
+## ? Step 19 — Phase 3 Authority Entitlement Refresh
+*Completed: 2026-04-22*
+
+**What was built**
+- `apps/desktop/src/entitlementClient.js` — added authority refresh normalization and deterministic mock transport scenarios for active, upgrade, revoked, and offline responses.
+- `apps/desktop/src/entitlement.js` — entitlement snapshots now track refresh freshness metadata and expose cached, fresh, stale, offline, and revoked states with safe offline fallback behavior.
+- `apps/desktop/src/main.tsx` — added an entitlement authority panel with refresh state, last refresh timestamps, mock authority controls, and clearer read-only messaging when access is revoked.
+- `scripts/test.mjs` — added deterministic coverage for malformed authority responses, stale refresh windows, upgrade refreshes, offline fallback, and revoked access handling.
+- `learnings/plans/phase-3-plan.md` — updated with Step 19 execution evidence and verification notes.
+
+**In plain English**
+The app can now act like entitlement access comes from a real authority instead of only whatever was sitting in local storage. It shows whether access is freshly confirmed, cached, stale, offline, or revoked, and it can fall back safely when refresh fails without losing the user’s local work. That makes the read-only path explicit and gives the project a real entitlement lifecycle to build on.
+
+**Files changed**
++ created: `apps/desktop/src/entitlementClient.js`
+~ modified: `apps/desktop/src/entitlement.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/plans/phase-3-plan.md`
+~ modified: `learnings/steps.md`
+
+---
+*Next: Step 20 finishes Phase 3 with the acceptance pass in `learnings/plans/phase-3-plan.md`.*

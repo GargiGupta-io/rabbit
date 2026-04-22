@@ -210,6 +210,25 @@ The planner no longer acts like the day is empty just because tasks exist locall
 - `node --check apps/desktop/src/scheduler.js` - passed.
 - `npm.cmd run lint` - still blocked by the existing repo doc-path mismatch (`planning.md` is expected at the repo root by the current lint script).
 
+### Step 19 - Authority entitlement refresh contract
+*Completed: 2026-04-22*
+
+**What was built**
+- Added `apps/desktop/src/entitlementClient.js` with authority refresh normalization and deterministic mock transport scenarios for active, upgrade, revoked, and offline states.
+- Updated `apps/desktop/src/entitlement.js` so stored entitlement snapshots now track authority freshness metadata and distinguish cached, fresh, stale, offline, and revoked states while preserving a safe offline fallback.
+- Updated `apps/desktop/src/main.tsx` to render an entitlement authority panel with refresh state, last success and last attempt timestamps, mock refresh controls, and explicit read-only messaging when access is revoked.
+- Expanded `scripts/test.mjs` with deterministic authority refresh coverage for malformed responses, stale freshness windows, upgrade refreshes, offline fallback, and revocation handling.
+
+**In plain English**
+The app no longer treats local entitlement data like the final word. It can now simulate a real authority refresh, show whether access is freshly confirmed, stale, offline, or revoked, and safely fall back to a read-only experience without losing the user’s local data. That gives the product a real entitlement lifecycle instead of a one-time local snapshot.
+
+**Verification**
+- `npm.cmd run test` - passed.
+- `npm.cmd run typecheck` - passed.
+- `node --check apps/desktop/src/entitlementClient.js` - passed.
+- `node --check apps/desktop/src/entitlement.js` - passed.
+- `npm.cmd run lint` - still blocked by the existing repo doc-path mismatch (`planning.md` is expected at the repo root by the current lint script).
+
 ## References
 - `plans/phase-0-plan.md` - foundation, release contracts, and acceptance gate
 - `plans/phase-1-plan.md` - MVP kernel and usable task shell
