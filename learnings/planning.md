@@ -1,245 +1,200 @@
-# Motion Clone App - Learning & Execution Plan (Beginner-Friendly)
+# Motion Clone App - Reverse-Engineered Roadmap
 
-## What you are building
+## What this project is now
 
-- You are building a production-grade desktop app for macOS with Motion-like capabilities.
-- You are mostly on Windows and have limited time on a shared Mac.
-- You want to ship a polished product while reducing day-to-day dependence on a Mac.
-- You also want to make reverse-engineering/clone attempts harder.
+- This is no longer a "Motion-like app" plan.
+- This is now a reverse-engineering-led Motion clone project.
+- Windows Motion is the current behavior oracle.
+- macOS is still the final product target.
 
-The plan below is designed for non-linear learning: clear, practical, and hand-hold heavy.
-
----
-
-## Decision summary from this session
-
-- You do not need the Motion app installed right now to start reversing features.
-- Reverse engineering starts from public product behavior and web flows.
-- Native SwiftUI would give the best mac feel but needs more Mac build time.
-- With shared Mac constraints, the practical path is **Tauri + React/Next + Rust** first.
-- Final Mac tasks should be done by CI or short Mac sessions, not daily interactive work.
-- "Perfect clone-proof binary" is unrealistic; focus on **hardening + server authority**.
+The repo already contains useful baseline work from Phases 0 to 3, but from this point onward the roadmap is driven by observed Motion behavior, extracted code assets, authenticated local state, and typed API/sync research.
 
 ---
 
-## Stack meaning (simple)
+## Execution mode
 
-- `Tauri`: desktop shell that wraps a web UI and gives native app packaging.
-- `React/Next`: user interface and app workflows.
-- `Rust`: native bridge for OS actions (files, secure storage, notifications, menus).
+This project now uses the `plan` and `steps` workflow on purpose.
 
-This gives you:
-- Windows-first productivity.
-- Small native binaries.
-- Lower Mac dependency during development.
+- Use `/plan` to define or refresh the active phase before implementation changes.
+- Use `/steps` to execute exactly one numbered step at a time.
+- After each completed step:
+  - stop,
+  - summarize what changed in plain English,
+  - update `learnings/steps.md`,
+  - commit the step cleanly before moving on.
 
----
-
-## What can be done on Windows vs Mac
-
-- Windows-friendly:
-  - product planning and specs
-  - data model and sync design
-  - task/AI/business logic
-  - API clients, tests, and CI logic
-  - most web UI implementation
-- Mac-required:
-  - final native packaging build
-  - code signing and notarization
-  - mac-specific permission and entitlement checks
-  - final App Store or direct release artifact verification
-
-Recommended flow:
-- Keep local development and commits on Windows.
-- Use GitHub macOS runners or a remote Mac (on-demand) for release validation.
+Execution rule:
+- no batching future steps,
+- no "while we are here" extra work,
+- no preserving old architecture when it clearly diverges from Motion.
 
 ---
 
-## Reverse-engineering approach
+## Evidence base you have now
 
-You do not need to install the Motion app now.
-Start with public behavior:
+The roadmap below is based on real evidence, not guesses:
 
-1. Extract key user journeys: signup, onboarding, task creation, scheduling, reminders, conflicts.
-2. Capture flows by sections: today/forecast/calendar, task states, recurring setup, AI assist.
-3. Build your own feature inventory with priorities:
-  - P0: must-have for first release.
-  - P1: needed soon after.
-  - P2: later upgrades.
-4. Convert each feature into explicit acceptance tests.
+- installed Windows Motion desktop shell and runtime profile
+- authenticated user/cache findings from local storage and IndexedDB
+- `developer/motion-research/findings.md`
+- `developer/motion-research/FINAL_REPORT.md`
+- `developer/motion-research/ENGINEERING_LEARNINGS.md`
+- extracted code assets under `developer/motion-research/CODE_ASSETS/`
 
-Optional later: install Motion briefly for micro UX comparison only.
+High-value extracted asset groups:
+- `SHELL_LOGIC` - IPC provider, channels, app-bar settings, desktop event flow
+- `SYNC_ENGINE` - task schemas, event DTOs, sync/event primitives
+- `API_DEFINITIONS` - typed method wrappers for tasks, calendars, views, inbox, PowerSync, and more
+- `UI_LOGIC` - task form/update flows, project management logic, calendar/task utilities
+- `UI_SKIN` - component map and token-level visual clues
 
----
-
-## What you asked about "hard to decode / clone"
-
-Truth in plain terms:
-- A desktop binary cannot be made impossible to reverse engineer.
-- You can make it **hard enough** that casual copying/cloning is expensive.
-- The best defense is not only code hardening, but **moving business logic to server**.
-
-So this plan uses **Anti-Cloning Baseline v1**.
+This means the next phases should mirror Motion's actual shell, data model, views, and transport shape instead of extending the old custom planner structure.
 
 ---
 
-## Anti-Cloning Baseline v1 (plain version)
+## Historical phases
 
-### 1) Signed release builds + CI integrity checks
-- Build releases only from one controlled CI workflow.
-- Sign mac artifacts with your Apple identity.
-- Remove debug details and source maps from production artifacts.
-- CI rejects unsigned or malformed release artifacts.
+### Phase 0
+- Completed.
+- Repo scaffold, docs/contracts, CI baseline, and shell placeholder were established.
 
-### 2) Signed update chain + hash verification
-- Publish updates from one official channel only.
-- Include package hash/signature for each release.
-- App verifies update integrity before install.
+### Phase 1
+- Completed.
+- Local task kernel, persistence, and first usable desktop surface were built.
 
-### 3) Server-authoritative licensing + feature logic
-- Premium checks and sensitive business rules run on backend.
-- Client asks server for entitlement status at key points.
-- Local tampering cannot grant premium actions.
+### Phase 2
+- Completed.
+- Contracts, fixtures, service split, scheduler baseline, and entitlement hardening landed.
 
-### 4) Minified/obfuscated frontend and smaller attack surface
-- Minify JS bundle and do not ship source maps.
-- Expose only a small set of validated Rust commands in Tauri bridge.
-- Keep dangerous operations out of frontend-only logic.
+### Phase 3
+- Completed.
+- Sync outbox baseline, calendar overlay support, authority entitlement refresh, and acceptance checks landed.
 
-### 5) Secure local storage
-- Store tokens/keys in OS keychain/credential storage.
-- Encrypt sensitive local data where useful.
-- Never place API secrets in static app files.
-
-### 6) Runtime checks + tamper/abuse telemetry
-- Add startup/runtime sanity checks.
-- Log token abuse, repeated invalid checks, and signature anomalies.
-- Limit sensitive flows when checks fail.
-
-### 7) Incident controls and revocation
-- Server-side account/device revocation.
-- Immediate token invalidation capability.
-- Emergency kill-switch flow for compromised clients.
-
-This is practical protection, not magic.
+Important note:
+- Phases 0 to 3 remain valid as baseline engineering work.
+- They are no longer the source of truth for product structure.
+- Motion itself is now the source of truth for product structure.
 
 ---
 
-## Why "server-authoritative" matters for clone resistance
+## Roadmap reset
 
-- If all logic is in the app, a clone can copy behavior.
-- If core decisioning is server-side, copied binaries lose value.
-- Server can disable stolen tokens, invalidate clones, and patch behavior quickly.
+The old "connected sync first" Phase 4 is retired as the primary direction.
 
----
+Why:
+- we now have direct evidence that Motion's shell, views, agenda, and task model are richer than the current repo shape,
+- the current app still looks and behaves like a custom planner,
+- further transport work would deepen the wrong product structure.
 
-## Detailed roadmap by phase
-
-### Phase 0 - Product framing
-- Lock in goals, scope, and success criteria.
-- Pick architecture and define where logic runs (client vs backend).
-- Create release roadmap: v1 / v1.1 / v1.2.
-
-### Phase 1 - Reverse-engineering spec
-- Build a behavior matrix from Motion-inspired features.
-- Define explicit data entities and workflows.
-- Turn each major flow into acceptance requirements.
-
-### Phase 2 - Architecture and security model
-- Define task, project, schedule, workspace, sync, and license data model.
-- Add offline-first and sync conflict model.
-- Define permission boundaries and threat model.
-
-### Phase 3 - Build scaffolding
-- Create repo structure.
-- Set up lint, format, tests, and CI.
-- Add mac build workflow using remote Mac or GitHub Actions.
-
-### Phase 4 - Core app shell
-- Navigation, onboarding, search, and account states.
-- Sessions and logout behavior.
-
-### Phase 5 - Tasks and projects (MVP)
-- CRUD for task/project.
-- Today/upcoming/overdue views and search.
-- Soft delete, undo, basic recurrence.
-
-### Phase 6 - Scheduling engine
-- Day/week planning view.
-- Deadline/dependence and focus-time constraints.
-- Conflict detection and reschedule suggestions.
-
-### Phase 7 - AI workflow layer
-- Smart suggestions with strict prompt and output schema checks.
-- Human-confirmed action application and rollback.
-
-### Phase 8 - Integrations and notifications
-- Calendar integration (read/write model).
-- Reminder + notification flows.
-- Menubar/menu quick actions.
-
-### Phase 9 - Security hardening baseline
-- Implement signing, update verification, server entitlements.
-- Implement keychain-backed tokens and runtime checks.
-- Add abuse/incident logs and alerting.
-
-### Phase 10 - Testing pass
-- Unit/integration tests.
-- Sync and recurrence edge cases.
-- Mac-only flow checks in CI.
-
-### Phase 11 - Packaging and release
-- Signing, notarization, upgrade path, and migration plan.
-- Private beta + crash and adoption metrics.
-
-### Phase 12 - Public launch and iterate
-- Resolve launch blockers.
-- Add P1 enhancements and feedback-driven changes.
+New priority order:
+1. Shell parity
+2. Task/project/view/inbox parity
+3. Calendar/scheduler/form parity
+4. API/sync/cache parity
+5. Native desktop/mac parity and hardening
 
 ---
 
-## How I will hand-hold execution with you
+## Current roadmap by phase
 
-At the end of each phase:
-- you get the exact outcome,
-- what changed and why,
-- what to test,
-- what errors mean and what to do,
-- and the next concrete step.
+### Phase 4 - Desktop Shell Parity
+- Current detailed working phase.
+- Goal: replace the single-page planner with a Motion-like desktop shell:
+  - sidebar,
+  - tabs,
+  - main view surface,
+  - agenda/app-bar rail,
+  - theme-aware Motion-like layout.
+- Source references:
+  - `developer/plans/motion-shell-parity-pivot.md`
+  - `developer/motion-research/CODE_ASSETS/SHELL_LOGIC/`
+  - `developer/motion-research/CODE_ASSETS/UI_SKIN/`
+  - `developer/motion-research/findings.md`
 
-That is the execution style so you never feel lost.
+### Phase 5 - Task, Project, View, and Inbox Domain Parity
+- Queue after Phase 4.
+- Goal: align the repo's core entities with Motion's observed task schema, workspace/project/stage model, saved views, and inbox surfaces.
+- Source references:
+  - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/models/`
+  - `developer/motion-research/CODE_ASSETS/UI_LOGIC/pm/`
+  - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/views-v3/`
+  - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/inbox/`
+
+### Phase 6 - Calendar, Scheduling, and Form Parity
+- Queue after Phase 5.
+- Goal: align calendar entities, task forms, scheduling semantics, dependencies, and reschedule behavior with Motion's observed contracts.
+- Source references:
+  - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/calendars/`
+  - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/calendar-events/`
+  - `developer/motion-research/CODE_ASSETS/UI_LOGIC/pm/task/form/`
+  - `developer/motion-research/CODE_ASSETS/SHARED_LOGIC/flows/`
+
+### Phase 7 - API, Sync, and Cache Parity
+- Queue after Phase 6.
+- Goal: align API clients, sync event shape, PowerSync-style transport, bootstrap/cache/query behavior, and local-first reconciliation with extracted Motion contracts.
+- Source references:
+  - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/`
+  - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/events/`
+  - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/dtos/`
+  - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/powersync/`
+
+### Phase 8 - Native Desktop, Mac Parity, and Hardening
+- Queue after Phase 7.
+- Goal: move from product-behavior parity to real desktop fidelity:
+  - native shell contracts,
+  - macOS shortcut/window/menu fit,
+  - hardening of the desktop bridge,
+  - release-path security improvements over the original Motion shell.
+- Source references:
+  - `developer/motion-research/FINAL_REPORT.md`
+  - `developer/motion-research/ENGINEERING_LEARNINGS.md`
+  - `developer/motion-research/CODE_ASSETS/SHELL_LOGIC/`
 
 ---
 
 ## Document map
 
-- `learnings/plans/phase-0-plan.md` - Phase 0 foundation, contracts, and acceptance gate
-- `learnings/plans/phase-1-plan.md` - Phase 1 MVP product-kernel plan and completion record
-- `learnings/plans/phase-2-plan.md` - Phase 2 architecture, scheduling, hardening, and detailed execution notes
-- `learnings/plans/phase-3-plan.md` - Phase 3 sync, calendar overlay, and server-authority entitlement baseline
-- `learnings/plans/phase-4-plan.md` - Phase 4 manual sync transport, remote merge, and connected refresh baseline
-- `learnings/steps.md` - chronological step log across all phases
-- `learnings/planning.md` - this high-level roadmap and project summary
+- `learnings/plans/phase-0-plan.md` - historical Phase 0 foundation plan
+- `learnings/plans/phase-1-plan.md` - historical Phase 1 MVP kernel plan
+- `learnings/plans/phase-2-plan.md` - historical Phase 2 architecture and hardening plan
+- `learnings/plans/phase-3-plan.md` - historical Phase 3 sync/calendar/entitlement plan
+- `learnings/plans/phase-4-plan.md` - current Phase 4 shell parity plan
+- `learnings/plans/phase-5-plan.md` - Phase 5 task/project/view/inbox parity plan
+- `learnings/plans/phase-6-plan.md` - Phase 6 calendar/scheduler/form parity plan
+- `learnings/plans/phase-7-plan.md` - Phase 7 API/sync/cache parity plan
+- `learnings/plans/phase-8-plan.md` - Phase 8 native/mac parity and hardening plan
+- `learnings/steps.md` - chronological execution log and next-step handoff
+
+Supporting research inside the repo:
+- `developer/motion-research/findings.md`
+- `developer/motion-research/FINAL_REPORT.md`
+- `developer/motion-research/ENGINEERING_LEARNINGS.md`
+- `developer/motion-research/clone-spec.md`
+- `developer/motion-research/repo-gap-analysis.md`
+- `developer/plans/motion-reverse-engineering-clone.md`
+- `developer/plans/motion-shell-parity-pivot.md`
+
+---
 
 ## Current phase summary
 
-### Phase 0
-- Locked and completed.
-- Foundation, release/security contracts, CI baseline, and shell placeholder were established.
-
-### Phase 1
-- Locked and completed.
-- MVP task kernel, local persistence, entitlement baseline, and usable shell were built.
-
-### Phase 2
-- Locked and completed in the execution log.
-- Contracts, fixtures, service split, scheduler baseline, entitlement hardening, and runtime guards are documented in `learnings/plans/phase-2-plan.md`.
-
-### Phase 3
-- Locked and completed in the acceptance pass.
-- Sync contracts, calendar overlay ingestion, server-authority entitlement refresh, and the acceptance gate are documented in `learnings/plans/phase-3-plan.md`.
-- `npm run lint`, `npm run build`, and `npm run test` passed on April 22, 2026.
-
 ### Phase 4
-- Current detailed working phase.
-- Manual sync transport, remote merge, and connected refresh controls are defined in `learnings/plans/phase-4-plan.md`.
+- Current active phase.
+- Execute with `/steps` starting from Step 21 in `learnings/plans/phase-4-plan.md`.
+- This phase exists to fix the biggest visible mismatch first: the app shell.
+
+### Phase 5
+- Queued.
+- Starts once the shell behaves like Motion instead of a generic planner.
+
+### Phase 6
+- Queued.
+- Starts once core task/project/view structure is aligned enough to support real calendar and scheduler parity.
+
+### Phase 7
+- Queued.
+- Starts once the local product structure is close enough that API and sync alignment will reinforce the right model instead of the wrong one.
+
+### Phase 8
+- Queued.
+- Final desktop and macOS pass after product parity is strong.
