@@ -1,7 +1,7 @@
 import { normalizeTask } from './taskService.js';
 import { buildProjectDomainSeedData, buildProjectSeedData, decorateTaskWithProject } from './projectService.js';
 import { appendOutboxEvent, normalizeSyncState } from './syncContract.js';
-import { deriveShellStateSnapshot } from './shellService.js';
+import { deriveShellStateSnapshot, getShellViewMeta, selectTasksForShellView } from './shellService.js';
 
 export * from './taskService.js';
 export * from './projectService.js';
@@ -80,4 +80,20 @@ export function getSyncStateSummary(appData = {}) {
 
 export function getShellState(appData = {}, options = {}) {
   return deriveShellStateSnapshot(appData, options);
+}
+
+export function getViewStateSummary(appData = {}, options = {}) {
+  const shellState = deriveShellStateSnapshot(appData, options);
+  const meta = getShellViewMeta(shellState);
+  const tasks = selectTasksForShellView(Array.isArray(appData.tasks) ? appData.tasks : [], shellState, options);
+
+  return {
+    shellState,
+    meta,
+    tasks,
+    visibleCount: tasks.length,
+    itemType: meta.itemType,
+    columns: Array.isArray(meta.columns) ? meta.columns.filter((column) => column.visible) : [],
+    filterSummary: Array.isArray(meta.filterSummary) ? meta.filterSummary.slice() : []
+  };
 }

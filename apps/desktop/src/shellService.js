@@ -52,6 +52,186 @@ const SHELL_VIEW_META = {
   }
 };
 
+const VIEW_DEFINITION_PRESETS = {
+  view_my_deadlines: {
+    type: 'projects-and-tasks',
+    itemType: 'tasks',
+    visibility: 'private',
+    layout: 'kanban',
+    groups: [
+      { field: 'deadline', by: 'day' }
+    ],
+    sort: [
+      { field: 'estimatedCompletionTime', direction: 'asc' }
+    ],
+    dateRange: { mode: 'quarter', value: 'current' },
+    columns: [
+      { id: 'name', label: 'Task', field: 'title', visible: true },
+      { id: 'deadline', label: 'Deadline', field: 'dueDate', visible: true },
+      { id: 'project', label: 'Project', field: 'projectName', visible: true },
+      { id: 'priority', label: 'Priority', field: 'priorityLevel', visible: true }
+    ],
+    filters: {
+      tasks: {
+        assignee: '@me',
+        completed: 'exclude',
+        canceled: 'exclude',
+        archived: 'exclude',
+        isAutoScheduled: true,
+        typeIn: ['NORMAL'],
+        dueDate: {
+          mode: 'on-or-after',
+          value: 'now'
+        },
+        estimatedCompletionTime: null
+      },
+      projects: {
+        completed: 'exclude',
+        archived: 'exclude'
+      }
+    }
+  },
+  view_my_tasks: {
+    type: 'projects-and-tasks',
+    itemType: 'tasks',
+    visibility: 'private',
+    layout: 'kanban',
+    groups: [
+      { field: 'deadline', by: 'week' }
+    ],
+    sort: [
+      { field: 'scheduledStart', direction: 'asc' }
+    ],
+    dateRange: null,
+    columns: [
+      { id: 'name', label: 'Task', field: 'title', visible: true },
+      { id: 'project', label: 'Project', field: 'projectName', visible: true },
+      { id: 'scheduledStart', label: 'Scheduled', field: 'scheduledStart', visible: true },
+      { id: 'status', label: 'Status', field: 'status', visible: true }
+    ],
+    filters: {
+      tasks: {
+        assignee: '@me',
+        completed: 'include',
+        canceled: 'include',
+        archived: 'exclude',
+        isAutoScheduled: null,
+        typeIn: [],
+        dueDate: null,
+        estimatedCompletionTime: null
+      },
+      projects: {
+        completed: 'include',
+        archived: 'exclude'
+      }
+    }
+  },
+  view_project_timelines: {
+    type: 'projects-and-tasks',
+    itemType: 'projects',
+    visibility: 'team',
+    layout: 'gantt',
+    groups: [
+      { field: 'workspace', by: null }
+    ],
+    sort: [
+      { field: 'startDate', direction: 'asc' }
+    ],
+    dateRange: null,
+    columns: [
+      { id: 'name', label: 'Project', field: 'projectName', visible: true },
+      { id: 'workspace', label: 'Workspace', field: 'workspaceName', visible: true },
+      { id: 'startDate', label: 'Start', field: 'startOn', visible: true },
+      { id: 'deadline', label: 'Due', field: 'dueDate', visible: true }
+    ],
+    filters: {
+      tasks: {
+        assignee: null,
+        completed: 'include',
+        canceled: 'include',
+        archived: 'exclude',
+        isAutoScheduled: null,
+        typeIn: [],
+        dueDate: null,
+        estimatedCompletionTime: null
+      },
+      projects: {
+        completed: 'include',
+        archived: 'exclude'
+      }
+    }
+  },
+  view_team_schedule: {
+    type: 'projects-and-tasks',
+    itemType: 'tasks',
+    visibility: 'team',
+    layout: 'kanban',
+    groups: [
+      { field: 'scheduledDate', by: 'day' },
+      { field: 'user', by: null }
+    ],
+    sort: [
+      { field: 'estimatedCompletionTime', direction: 'asc' }
+    ],
+    dateRange: {
+      mode: 'defined-relative',
+      value: 'next-7-days'
+    },
+    columns: [
+      { id: 'name', label: 'Task', field: 'title', visible: true },
+      { id: 'scheduledDate', label: 'Scheduled', field: 'estimatedCompletionTime', visible: true },
+      { id: 'user', label: 'Assignee', field: 'assigneeUserId', visible: true },
+      { id: 'workspace', label: 'Workspace', field: 'workspaceName', visible: true }
+    ],
+    filters: {
+      tasks: {
+        assignee: null,
+        completed: 'include',
+        canceled: 'include',
+        archived: 'exclude',
+        isAutoScheduled: null,
+        typeIn: [],
+        dueDate: null,
+        estimatedCompletionTime: {
+          mode: 'defined-relative',
+          value: 'next-7-days'
+        }
+      },
+      projects: {
+        completed: 'include',
+        archived: 'exclude'
+      }
+    }
+  }
+};
+
+function createDefaultViewDefinition(viewId = DEFAULT_VIEW_ID) {
+  const preset = VIEW_DEFINITION_PRESETS[viewId] || VIEW_DEFINITION_PRESETS[DEFAULT_VIEW_ID];
+  return {
+    type: preset.type,
+    itemType: preset.itemType,
+    visibility: preset.visibility,
+    layout: preset.layout,
+    groups: preset.groups.map((group) => ({ ...group })),
+    sort: preset.sort.map((rule) => ({ ...rule })),
+    dateRange: preset.dateRange ? { ...preset.dateRange } : null,
+    columns: preset.columns.map((column) => ({ ...column })),
+    filters: {
+      tasks: {
+        ...preset.filters.tasks,
+        typeIn: Array.isArray(preset.filters.tasks.typeIn) ? preset.filters.tasks.typeIn.slice() : [],
+        dueDate: preset.filters.tasks.dueDate ? { ...preset.filters.tasks.dueDate } : null,
+        estimatedCompletionTime: preset.filters.tasks.estimatedCompletionTime
+          ? { ...preset.filters.tasks.estimatedCompletionTime }
+          : null
+      },
+      projects: {
+        ...preset.filters.projects
+      }
+    }
+  };
+}
+
 const DEFAULT_SAVED_VIEWS = [
   {
     id: 'view_my_deadlines',
@@ -67,7 +247,9 @@ const DEFAULT_SAVED_VIEWS = [
     sort: {
       field: 'estimatedCompletionTime',
       direction: 'asc'
-    }
+    },
+    definitionVersion: 3,
+    definition: createDefaultViewDefinition('view_my_deadlines')
   },
   {
     id: 'view_my_tasks',
@@ -83,7 +265,9 @@ const DEFAULT_SAVED_VIEWS = [
     sort: {
       field: 'scheduledStart',
       direction: 'asc'
-    }
+    },
+    definitionVersion: 3,
+    definition: createDefaultViewDefinition('view_my_tasks')
   },
   {
     id: 'view_project_timelines',
@@ -99,7 +283,9 @@ const DEFAULT_SAVED_VIEWS = [
     sort: {
       field: 'startDate',
       direction: 'asc'
-    }
+    },
+    definitionVersion: 3,
+    definition: createDefaultViewDefinition('view_project_timelines')
   },
   {
     id: 'view_team_schedule',
@@ -116,7 +302,9 @@ const DEFAULT_SAVED_VIEWS = [
     sort: {
       field: 'estimatedCompletionTime',
       direction: 'asc'
-    }
+    },
+    definitionVersion: 3,
+    definition: createDefaultViewDefinition('view_team_schedule')
   }
 ];
 
@@ -206,6 +394,162 @@ function cloneGroupBy(groupBy = []) {
     .filter((entry) => entry && entry.key);
 }
 
+function normalizeStringArray(value, fallback = []) {
+  const seen = new Set();
+  const source = Array.isArray(value) ? value : fallback;
+  return source
+    .map((entry) => sanitizeText(entry).toUpperCase())
+    .filter(Boolean)
+    .filter((entry) => {
+      if (seen.has(entry)) {
+        return false;
+      }
+      seen.add(entry);
+      return true;
+    });
+}
+
+function normalizeViewInclusion(value, fallback = 'include') {
+  return sanitizeText(value, fallback).toLowerCase() === 'exclude' ? 'exclude' : 'include';
+}
+
+function normalizeBooleanOrNull(value, fallback = null) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return fallback;
+}
+
+function normalizeViewColumns(columns = [], fallback = []) {
+  const source = Array.isArray(columns) && columns.length ? columns : fallback;
+  return source
+    .map((column) => {
+      if (!isPlainObject(column)) {
+        return null;
+      }
+
+      const id = sanitizeText(column.id);
+      const label = sanitizeText(column.label);
+      const field = sanitizeText(column.field);
+      if (!id || !label || !field) {
+        return null;
+      }
+
+      return {
+        id,
+        label,
+        field,
+        visible: column.visible == null ? true : Boolean(column.visible)
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeViewGroups(groups = [], fallback = []) {
+  const normalized = cloneGroupBy(groups.map((group) => ({
+    key: group?.field || group?.key,
+    by: group?.by
+  })));
+
+  if (normalized.length) {
+    return normalized.map((group) => ({
+      field: group.key,
+      by: group.by
+    }));
+  }
+
+  return cloneGroupBy(fallback.map((group) => ({
+    key: group?.field || group?.key,
+    by: group?.by
+  }))).map((group) => ({
+    field: group.key,
+    by: group.by
+  }));
+}
+
+function normalizeViewSort(sort = [], fallback = []) {
+  const source = Array.isArray(sort) ? sort : (isPlainObject(sort) ? [sort] : []);
+  const defaultSource = Array.isArray(fallback) ? fallback : (isPlainObject(fallback) ? [fallback] : []);
+  const candidates = source.length ? source : defaultSource;
+
+  return candidates
+    .map((rule) => {
+      if (!isPlainObject(rule)) {
+        return null;
+      }
+      const field = sanitizeText(rule.field);
+      if (!field) {
+        return null;
+      }
+      return {
+        field,
+        direction: sanitizeText(rule.direction, 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc'
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeRelativeWindow(raw = null, fallback = null) {
+  const source = isPlainObject(raw) ? raw : (isPlainObject(fallback) ? fallback : null);
+  if (!source) {
+    return null;
+  }
+
+  const mode = sanitizeText(source.mode);
+  const value = sanitizeText(source.value);
+  if (!mode || !value) {
+    return null;
+  }
+
+  return {
+    mode,
+    value
+  };
+}
+
+function normalizeViewFilters(filters = {}, fallback = {}) {
+  const source = isPlainObject(filters) ? filters : {};
+  const fallbackValue = isPlainObject(fallback) ? fallback : {};
+  const taskFilters = isPlainObject(source.tasks) ? source.tasks : {};
+  const fallbackTaskFilters = isPlainObject(fallbackValue.tasks) ? fallbackValue.tasks : {};
+  const projectFilters = isPlainObject(source.projects) ? source.projects : {};
+  const fallbackProjectFilters = isPlainObject(fallbackValue.projects) ? fallbackValue.projects : {};
+
+  return {
+    tasks: {
+      assignee: sanitizeText(taskFilters.assignee, sanitizeText(fallbackTaskFilters.assignee)) || null,
+      completed: normalizeViewInclusion(taskFilters.completed, normalizeViewInclusion(fallbackTaskFilters.completed, 'include')),
+      canceled: normalizeViewInclusion(taskFilters.canceled, normalizeViewInclusion(fallbackTaskFilters.canceled, 'include')),
+      archived: normalizeViewInclusion(taskFilters.archived, normalizeViewInclusion(fallbackTaskFilters.archived, 'exclude')),
+      isAutoScheduled: normalizeBooleanOrNull(taskFilters.isAutoScheduled, normalizeBooleanOrNull(fallbackTaskFilters.isAutoScheduled)),
+      typeIn: normalizeStringArray(taskFilters.typeIn, fallbackTaskFilters.typeIn),
+      dueDate: normalizeRelativeWindow(taskFilters.dueDate, fallbackTaskFilters.dueDate),
+      estimatedCompletionTime: normalizeRelativeWindow(taskFilters.estimatedCompletionTime, fallbackTaskFilters.estimatedCompletionTime)
+    },
+    projects: {
+      completed: normalizeViewInclusion(projectFilters.completed, normalizeViewInclusion(fallbackProjectFilters.completed, 'include')),
+      archived: normalizeViewInclusion(projectFilters.archived, normalizeViewInclusion(fallbackProjectFilters.archived, 'exclude'))
+    }
+  };
+}
+
+function normalizeViewDefinition(rawDefinition = {}, fallbackDefinition = {}) {
+  const source = isPlainObject(rawDefinition) ? rawDefinition : {};
+  const fallback = isPlainObject(fallbackDefinition) ? fallbackDefinition : createDefaultViewDefinition(DEFAULT_VIEW_ID);
+
+  return {
+    type: sanitizeText(source.type, sanitizeText(fallback.type, 'projects-and-tasks')),
+    itemType: sanitizeText(source.itemType, sanitizeText(fallback.itemType, 'tasks')),
+    visibility: sanitizeText(source.visibility, sanitizeText(fallback.visibility, 'private')),
+    layout: sanitizeText(source.layout, sanitizeText(fallback.layout, 'kanban')),
+    groups: normalizeViewGroups(source.groups, fallback.groups),
+    sort: normalizeViewSort(source.sort, fallback.sort),
+    dateRange: normalizeRelativeWindow(source.dateRange, fallback.dateRange),
+    columns: normalizeViewColumns(source.columns, fallback.columns),
+    filters: normalizeViewFilters(source.filters, fallback.filters)
+  };
+}
+
 export function createDefaultShellTheme() {
   return {
     mode: DEFAULT_THEME_MODE,
@@ -262,19 +606,52 @@ function normalizeSavedView(raw = {}, fallback = {}) {
     return null;
   }
 
+  const fallbackDefinition = isPlainObject(fallback.definition)
+    ? fallback.definition
+    : createDefaultViewDefinition(id);
+  const fallbackVisibility = fallbackDefinition.visibility || (fallback.isPrivate ? 'private' : 'team');
+  const legacyVisibility = raw.isPrivate == null
+    ? fallbackVisibility
+    : (raw.isPrivate ? 'private' : 'team');
+  const legacyDefinition = {
+    type: sanitizeText(raw.type, sanitizeText(fallback.type, 'projects-and-tasks')),
+    itemType: sanitizeText(raw.itemType, sanitizeText(fallback.itemType, id === 'view_project_timelines' ? 'projects' : 'tasks')),
+    visibility: sanitizeText(legacyVisibility, sanitizeText(fallbackDefinition.visibility, 'private')),
+    layout: sanitizeText(raw.layout, sanitizeText(fallback.layout, 'kanban')),
+    groups: cloneGroupBy(raw.groupBy || fallback.groupBy).map((group) => ({
+      field: group.key,
+      by: group.by
+    })),
+    sort: normalizeViewSort(raw.sort, fallback.sort),
+    dateRange: null,
+    columns: Array.isArray(raw.columns) ? raw.columns : fallbackDefinition.columns,
+    filters: isPlainObject(raw.filters) ? raw.filters : fallbackDefinition.filters
+  };
+  const definition = normalizeViewDefinition(raw.definition || legacyDefinition, fallbackDefinition);
+  const primarySort = definition.sort[0] || { field: 'estimatedCompletionTime', direction: 'asc' };
+  const groupBy = definition.groups.map((group) => ({
+    key: group.field,
+    by: group.by
+  }));
+  const isPrivate = definition.visibility === 'private';
+  const sectionFallback = isPrivate ? 'views' : 'team';
+
   return {
     id,
     name,
     route: sanitizeText(raw.route, sanitizeText(fallback.route, `/web/views/${id}`)),
-    type: sanitizeText(raw.type, sanitizeText(fallback.type, 'projects-and-tasks')),
-    layout: sanitizeText(raw.layout, sanitizeText(fallback.layout, 'kanban')),
-    isPrivate: raw.isPrivate == null ? Boolean(fallback.isPrivate) : Boolean(raw.isPrivate),
-    section: sanitizeText(raw.section, sanitizeText(fallback.section, 'views')),
-    groupBy: cloneGroupBy(raw.groupBy || fallback.groupBy),
+    type: definition.type,
+    itemType: definition.itemType,
+    layout: definition.layout,
+    isPrivate,
+    section: sanitizeText(raw.section, sanitizeText(fallback.section, sectionFallback)),
+    groupBy,
     sort: {
-      field: sanitizeText(raw.sort?.field, sanitizeText(fallback.sort?.field, 'estimatedCompletionTime')),
-      direction: sanitizeText(raw.sort?.direction, sanitizeText(fallback.sort?.direction, 'asc')).toLowerCase() === 'desc' ? 'desc' : 'asc'
-    }
+      field: primarySort.field,
+      direction: primarySort.direction
+    },
+    definitionVersion: Number.isInteger(raw.definitionVersion) ? raw.definitionVersion : Number.isInteger(fallback.definitionVersion) ? fallback.definitionVersion : 3,
+    definition
   };
 }
 
@@ -368,47 +745,74 @@ function getTaskTimeValue(task = {}, key = 'startAt') {
   return parsed?.valueOf() ?? Number.MAX_SAFE_INTEGER;
 }
 
-function compareTaskStatus(left = {}, right = {}) {
+function getComparableValue(task = {}, field = 'scheduledStart') {
+  switch (field) {
+    case 'deadline':
+    case 'dueDate':
+      return parseDate(task.dueAt || task.dueDate)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    case 'estimatedCompletionTime':
+      return parseDate(task.estimatedCompletionTime || task.scheduledEnd)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    case 'scheduledStart':
+      return parseDate(task.scheduledStart || task.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    case 'scheduledDate':
+      return parseDate(task.estimatedCompletionTime || task.scheduledStart || task.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    case 'startDate':
+      return parseDate(task.scheduledStart || task.startAt || task.startOn || task.dueAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    case 'workspace':
+      return sanitizeText(task.workspaceName, sanitizeText(task.workspaceId));
+    case 'user':
+      return sanitizeText(task.assigneeUserId);
+    case 'project':
+      return sanitizeText(task.projectName, sanitizeText(task.projectId));
+    case 'priorityLevel':
+      return sanitizeText(task.priorityLevel);
+    default:
+      return sanitizeText(task[field]);
+  }
+}
+
+function compareGenericValues(left, right, direction = 'asc') {
+  if (typeof left === 'number' || typeof right === 'number') {
+    const normalizedLeft = typeof left === 'number' ? left : Number.MAX_SAFE_INTEGER;
+    const normalizedRight = typeof right === 'number' ? right : Number.MAX_SAFE_INTEGER;
+    return direction === 'desc' ? normalizedRight - normalizedLeft : normalizedLeft - normalizedRight;
+  }
+
+  const leftValue = sanitizeText(left);
+  const rightValue = sanitizeText(right);
+  return direction === 'desc'
+    ? rightValue.localeCompare(leftValue)
+    : leftValue.localeCompare(rightValue);
+}
+
+function compareByViewDefinition(left = {}, right = {}, meta = {}) {
+  const sortRules = Array.isArray(meta.sortRules) && meta.sortRules.length
+    ? meta.sortRules
+    : [{ field: meta.sort?.field || 'scheduledStart', direction: meta.sort?.direction || 'asc' }];
+
+  for (const rule of sortRules) {
+    const comparison = compareGenericValues(
+      getComparableValue(left, rule.field),
+      getComparableValue(right, rule.field),
+      rule.direction
+    );
+    if (comparison !== 0) {
+      return comparison;
+    }
+  }
+
   const leftDone = left.status === 'done';
   const rightDone = right.status === 'done';
   if (leftDone !== rightDone) {
     return leftDone ? 1 : -1;
   }
-  return 0;
-}
 
-function compareBySchedule(left = {}, right = {}) {
-  const statusOrder = compareTaskStatus(left, right);
-  if (statusOrder !== 0) {
-    return statusOrder;
-  }
-
-  const leftValue = Math.min(getTaskTimeValue(left, 'startAt'), getTaskTimeValue(left, 'dueAt'));
-  const rightValue = Math.min(getTaskTimeValue(right, 'startAt'), getTaskTimeValue(right, 'dueAt'));
-  if (leftValue !== rightValue) {
-    return leftValue - rightValue;
-  }
-
-  return sanitizeText(left.title).localeCompare(sanitizeText(right.title));
-}
-
-function compareByDeadline(left = {}, right = {}) {
-  const leftValue = getTaskTimeValue(left, 'dueAt');
-  const rightValue = getTaskTimeValue(right, 'dueAt');
-  if (leftValue !== rightValue) {
-    return leftValue - rightValue;
-  }
-
-  return compareBySchedule(left, right);
-}
-
-function compareByProjectTimeline(left = {}, right = {}) {
   const projectOrder = sanitizeText(left.projectId).localeCompare(sanitizeText(right.projectId));
   if (projectOrder !== 0) {
     return projectOrder;
   }
 
-  return compareBySchedule(left, right);
+  return sanitizeText(left.title).localeCompare(sanitizeText(right.title));
 }
 
 function resolveShellScopeId(shellState = {}) {
@@ -535,11 +939,135 @@ export function buildAgendaSnapshot(tasks = [], options = {}) {
   };
 }
 
+function startOfDay(value) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function isRelativeDateMatch(rawValue, rule, now = new Date()) {
+  if (!rule || !rawValue) {
+    return true;
+  }
+
+  const value = parseDate(rawValue);
+  if (!value) {
+    return false;
+  }
+
+  if (rule.mode === 'on-or-after' && rule.value === 'now') {
+    return value.valueOf() >= now.valueOf();
+  }
+
+  if (rule.mode === 'defined-relative' && rule.value === 'next-7-days') {
+    const start = startOfDay(now).valueOf();
+    const end = start + 8 * 24 * 60 * 60 * 1000;
+    const candidate = value.valueOf();
+    return candidate >= start && candidate < end;
+  }
+
+  return true;
+}
+
+function matchesTaskAssignee(task = {}, assignee = null, currentUserId = 'user_gargi') {
+  if (!assignee) {
+    return true;
+  }
+
+  if (assignee === '@me') {
+    return sanitizeText(task.assigneeUserId) === sanitizeText(currentUserId);
+  }
+
+  return sanitizeText(task.assigneeUserId) === sanitizeText(assignee);
+}
+
+function matchesTaskFilters(task = {}, filters = {}, now = new Date(), currentUserId = 'user_gargi') {
+  if (!isPlainObject(task)) {
+    return false;
+  }
+
+  if (sanitizeText(task.status) === 'deleted') {
+    return false;
+  }
+
+  if (!matchesTaskAssignee(task, filters.assignee, currentUserId)) {
+    return false;
+  }
+
+  if (filters.completed === 'exclude' && task.status === 'done') {
+    return false;
+  }
+
+  if (filters.archived === 'exclude' && task.archivedTime) {
+    return false;
+  }
+
+  if (typeof filters.isAutoScheduled === 'boolean' && Boolean(task.isAutoScheduled) !== filters.isAutoScheduled) {
+    return false;
+  }
+
+  if (Array.isArray(filters.typeIn) && filters.typeIn.length > 0) {
+    const taskType = sanitizeText(task.type, 'NORMAL').toUpperCase();
+    if (!filters.typeIn.includes(taskType)) {
+      return false;
+    }
+  }
+
+  if (filters.dueDate && !isRelativeDateMatch(task.dueAt || task.dueDate, filters.dueDate, now)) {
+    return false;
+  }
+
+  if (filters.estimatedCompletionTime && !isRelativeDateMatch(task.estimatedCompletionTime, filters.estimatedCompletionTime, now)) {
+    return false;
+  }
+
+  return true;
+}
+
+function buildViewFilterSummary(definition = {}) {
+  const summary = [];
+  const taskFilters = definition?.filters?.tasks || {};
+
+  if (definition.visibility === 'private') {
+    summary.push('Private');
+  } else {
+    summary.push('Shared');
+  }
+
+  if (definition.itemType === 'projects') {
+    summary.push('Projects');
+  } else {
+    summary.push('Tasks');
+  }
+
+  if (taskFilters.assignee === '@me') {
+    summary.push('Assigned to me');
+  }
+
+  if (taskFilters.isAutoScheduled === true) {
+    summary.push('Auto-scheduled');
+  }
+
+  if (taskFilters.completed === 'exclude') {
+    summary.push('Hide completed');
+  }
+
+  if (taskFilters.dueDate?.value === 'now') {
+    summary.push('Upcoming deadlines');
+  }
+
+  if (taskFilters.estimatedCompletionTime?.value === 'next-7-days') {
+    summary.push('Next 7 days');
+  }
+
+  return summary;
+}
+
 export function buildSidebarSections(input = {}) {
   const savedViews = normalizeSavedViews(input.savedViews);
   const projects = Array.isArray(input.projects) ? input.projects : [];
-  const privateViews = savedViews.filter((view) => sanitizeText(view.section, 'views') === 'views');
-  const teamViews = savedViews.filter((view) => sanitizeText(view.section, 'views') !== 'views');
+  const privateViews = savedViews.filter((view) => view.definition?.visibility === 'private' || sanitizeText(view.section, 'views') === 'views');
+  const teamViews = savedViews.filter((view) => !privateViews.some((candidate) => candidate.id === view.id));
   const sections = [
     {
       id: 'workspace',
@@ -623,6 +1151,7 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
   const isCalendarScope = explicitViewId === 'calendar' && activeTab?.itemType === 'route';
   const activeView = isCalendarScope ? null : getSavedViewById(savedViews, explicitViewId || DEFAULT_VIEW_ID);
   const theme = normalizeShellTheme(rawShell.theme);
+  const referenceNow = toIsoString(options.now || rawShell.agenda?.generatedAt) || toIsoString(new Date());
   const sidebarSections = buildSidebarSections({
     savedViews,
     projects: Array.isArray(appData.projects) ? appData.projects : []
@@ -631,7 +1160,7 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
   const agenda = buildAgendaSnapshot(Array.isArray(appData.tasks) ? appData.tasks : [], {
     projects: Array.isArray(appData.projects) ? appData.projects : [],
     calendarOverlay: appData.calendarOverlay || {},
-    now: options.now
+    now: referenceNow
   });
 
   return {
@@ -642,6 +1171,7 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
     savedViews,
     activeViewId: isCalendarScope ? 'calendar' : activeView?.id || DEFAULT_VIEW_ID,
     activeView,
+    referenceNow,
     sidebarSections,
     agenda
   };
@@ -653,6 +1183,13 @@ export function getShellViewMeta(shellState = {}) {
   const activeTab = shellState?.activeTab || null;
   const activeView = shellState?.activeView || null;
   const base = SHELL_VIEW_META[scopeId] || fallback;
+  const fallbackDefinition = createDefaultViewDefinition(scopeId);
+  const definition = normalizeViewDefinition(activeView?.definition, fallbackDefinition);
+  const primarySort = definition.sort[0] || { field: 'estimatedCompletionTime', direction: 'asc' };
+  const groups = definition.groups.map((group) => ({
+    key: group.field,
+    by: group.by
+  }));
 
   return {
     ...base,
@@ -660,43 +1197,50 @@ export function getShellViewMeta(shellState = {}) {
     title: activeTab?.itemType === 'route'
       ? sanitizeText(activeTab.title, base.title)
       : sanitizeText(activeView?.name, sanitizeText(activeTab?.title, base.title)),
-    layout: sanitizeText(activeView?.layout, sanitizeText(base.layout, 'kanban')),
+    layout: sanitizeText(definition.layout, sanitizeText(base.layout, 'kanban')),
     route: sanitizeText(activeTab?.route, sanitizeText(activeView?.route, '/web/calendar')),
-    groupBy: cloneGroupBy(activeView?.groupBy),
+    itemType: sanitizeText(definition.itemType, 'tasks'),
+    viewType: sanitizeText(definition.type, 'projects-and-tasks'),
+    visibility: sanitizeText(definition.visibility, activeView?.isPrivate ? 'private' : 'team'),
+    columns: normalizeViewColumns(definition.columns, fallbackDefinition.columns),
+    definitionVersion: Number.isInteger(activeView?.definitionVersion) ? activeView.definitionVersion : 3,
+    groupBy: groups,
+    filterSummary: buildViewFilterSummary(definition),
+    sortRules: definition.sort,
+    dateRange: definition.dateRange,
+    filters: definition.filters,
     sort: {
-      field: sanitizeText(activeView?.sort?.field, sanitizeText(base.sort?.field, 'estimatedCompletionTime')),
-      direction: sanitizeText(activeView?.sort?.direction, sanitizeText(base.sort?.direction, 'asc')).toLowerCase() === 'desc' ? 'desc' : 'asc'
-    }
+      field: primarySort.field,
+      direction: primarySort.direction
+    },
+    definition
   };
 }
 
-export function selectTasksForShellView(tasks = [], shellState = {}) {
+export function selectTasksForShellView(tasks = [], shellState = {}, options = {}) {
   const meta = getShellViewMeta(shellState);
+  const referenceNow = parseDate(options.now || shellState.referenceNow || shellState.agenda?.generatedAt) || new Date();
+  const currentUserId = sanitizeText(options.currentUserId, 'user_gargi');
   const candidates = Array.isArray(tasks)
     ? tasks.filter((task) => isPlainObject(task) && sanitizeText(task.status) !== 'deleted')
     : [];
 
-  switch (meta.id) {
-    case 'view_my_deadlines':
-      return candidates
-        .filter((task) => task.status !== 'done' && task.dueAt)
-        .sort(compareByDeadline);
-    case 'view_project_timelines':
-      return candidates
-        .filter((task) => task.projectId && task.projectId !== 'inbox')
-        .sort(compareByProjectTimeline);
-    case 'view_team_schedule':
-      return candidates
-        .filter((task) => task.status !== 'done' && (task.startAt || task.dueAt))
-        .sort(compareBySchedule);
-    case 'view_my_tasks':
-      return candidates
-        .filter((task) => task.status !== 'deleted')
-        .sort(compareBySchedule);
-    case 'calendar':
-    default:
-      return candidates.sort(compareBySchedule);
+  if (meta.id === 'calendar') {
+    return candidates.sort((left, right) => compareByViewDefinition(left, right, {
+      sortRules: [{ field: 'scheduledStart', direction: 'asc' }]
+    }));
   }
+
+  const filtered = candidates
+    .filter((task) => matchesTaskFilters(task, meta.filters?.tasks || {}, referenceNow, currentUserId))
+    .filter((task) => {
+      if (meta.itemType === 'projects') {
+        return Boolean(task.projectId && task.projectId !== 'inbox');
+      }
+      return true;
+    });
+
+  return filtered.sort((left, right) => compareByViewDefinition(left, right, meta));
 }
 
 export function activateShellTab(shell = {}, tabId = '') {
