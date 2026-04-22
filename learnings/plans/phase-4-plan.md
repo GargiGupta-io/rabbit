@@ -139,3 +139,28 @@ Create:
 - Tabs, views, agenda, and theme are driven by structured shell state.
 - Existing task/calendar logic still works underneath the new shell.
 - `npm run test`, `npm run typecheck`, and `npm run build` pass.
+
+## Phase 4 closure (2026-04-24)
+
+Phase 4 is complete.
+
+What landed across Steps 21 to 25:
+- shell state helpers, selectors, and persisted shell payload support
+- seeded Motion-like tabs, saved views, theme defaults, and agenda snapshots
+- desktop shell layout replacing the old planner-first page
+- darker Motion-like shell skin and view-driven navigation behavior
+- verification gate passing on the repo checks
+
+Verification run:
+- `npm run test`
+- `npm run typecheck`
+- `npm run build`
+
+Observed outcome:
+- the app now opens as a desktop shell rather than a stacked planner form
+- saved views and tabs drive what the central surface shows
+- the agenda rail remains visible as part of the top-level shell
+- the old planner logic still works, but now inside a Motion-like frame instead of as the frame itself
+
+Deep-learn follow-up:
+- `learnings/phase-4-shell-parity-deeplearn.md`

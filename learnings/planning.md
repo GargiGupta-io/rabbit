@@ -98,7 +98,7 @@ New priority order:
 ## Current roadmap by phase
 
 ### Phase 4 - Desktop Shell Parity
-- Current detailed working phase.
+- Completed in the step log on 2026-04-24.
 - Goal: replace the single-page planner with a Motion-like desktop shell:
   - sidebar,
   - tabs,
@@ -110,9 +110,10 @@ New priority order:
   - `developer/motion-research/CODE_ASSETS/SHELL_LOGIC/`
   - `developer/motion-research/CODE_ASSETS/UI_SKIN/`
   - `developer/motion-research/findings.md`
+  - `learnings/phase-4-shell-parity-deeplearn.md`
 
 ### Phase 5 - Task, Project, View, and Inbox Domain Parity
-- Queue after Phase 4.
+- Current detailed working phase.
 - Goal: align the repo's core entities with Motion's observed task schema, workspace/project/stage model, saved views, and inbox surfaces.
 - Source references:
   - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/models/`
@@ -159,6 +160,7 @@ New priority order:
 - `learnings/plans/phase-2-plan.md` - historical Phase 2 architecture and hardening plan
 - `learnings/plans/phase-3-plan.md` - historical Phase 3 sync/calendar/entitlement plan
 - `learnings/plans/phase-4-plan.md` - current Phase 4 shell parity plan
+- `learnings/phase-4-shell-parity-deeplearn.md` - Phase 4 shell parity learning write-up
 - `learnings/plans/phase-5-plan.md` - Phase 5 task/project/view/inbox parity plan
 - `learnings/plans/phase-6-plan.md` - Phase 6 calendar/scheduler/form parity plan
 - `learnings/plans/phase-7-plan.md` - Phase 7 API/sync/cache parity plan
@@ -179,13 +181,14 @@ Supporting research inside the repo:
 ## Current phase summary
 
 ### Phase 4
-- Current active phase.
-- Execute with `/steps` starting from Step 21 in `learnings/plans/phase-4-plan.md`.
-- This phase exists to fix the biggest visible mismatch first: the app shell.
+- Completed.
+- Steps 21 to 25 delivered the persisted shell state, desktop shell layout, Motion-like dark skin, view-driven navigation, and the Phase 4 verification gate.
+- Deep-learn write-up: `learnings/phase-4-shell-parity-deeplearn.md`.
 
 ### Phase 5
-- Queued.
-- Starts once the shell behaves like Motion instead of a generic planner.
+- Current active phase.
+- Starts at Step 26 in `learnings/plans/phase-5-plan.md`.
+- This phase moves from shell fidelity into richer Motion-like domain structure: tasks, workspaces, views, and inbox.
 
 ### Phase 6
 - Queued.

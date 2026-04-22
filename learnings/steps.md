@@ -471,4 +471,27 @@ The shell now looks less like a dressed-up custom planner and more like a real M
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 25 closes Phase 4 with the shell verification gate and then the required deeplearn phase write-up.*
+## ? Step 25 — Phase 4 Verification and Deep Learn Closeout
+*Completed: 2026-04-24*
+
+**What was built**
+- `learnings/planning.md` — marks Phase 4 complete, shifts the active roadmap focus to Phase 5, and links the shell-phase learning write-up.
+- `learnings/plans/phase-4-plan.md` — records the Phase 4 closure state, acceptance gate results, and the concrete outcome of the shell parity work.
+- `learnings/phase-4-shell-parity-deeplearn.md` — captures the full Phase 4 learning write-up: what shell parity meant, how the shell state and UI are structured, why the saved-view model matters, and what this phase changed in the repo.
+
+**In plain English**
+Phase 4 is properly closed now instead of just "looking done." The verification gate passed, the roadmap no longer treats shell parity as in-progress, and there is now a real learning document that explains what this phase taught us so the next phase can build on understanding instead of just momentum.
+
+**Files changed**
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-4-plan.md`
++ created: `learnings/phase-4-shell-parity-deeplearn.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 26 begins Phase 5 by expanding the task contract toward Motion's observed task schema.*
