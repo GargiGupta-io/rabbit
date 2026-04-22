@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyTaskMutation, buildSeedData, createTaskId, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applyTaskMutation, buildInboxSeedData, buildSeedData, createTaskId, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
@@ -17,6 +17,7 @@ import {
 import {
   FIXTURE_CALENDAR_EVENTS_RAW,
   FIXTURE_CALENDAR_OVERLAY,
+  FIXTURE_INBOX_STATE,
   FIXTURE_NOW,
   FIXTURE_PROJECT_DEFINITIONS,
   FIXTURE_WORKSPACES,
@@ -97,6 +98,7 @@ runTest('fixture set is deterministic and parseable', () => {
   assert.equal(normalized.projectDefinitions.length, FIXTURE_PROJECT_DEFINITIONS.length);
   assert.equal(normalized.projects.length, 4);
   assert.equal(normalized.tasks.length, 5);
+  assert.equal(normalized.inbox.items.length, FIXTURE_INBOX_STATE.items.length);
   assert.equal(normalized.tasks.every((task) => typeof task.title === 'string'), true);
 });
 
@@ -211,6 +213,34 @@ runTest('saved view runtime preserves views-v3-style definitions and summaries',
   assert.equal(summary.columns.length, 4);
   assert.equal(summary.filterSummary.includes('Private'), true);
   assert.equal(summary.filterSummary.includes('Assigned to me'), true);
+});
+
+runTest('fixture inbox state seeds a structured personal inbox baseline', () => {
+  const normalized = getFixtureState();
+  assert.equal(normalized.inbox.activeInboxId, 'inbox_personal');
+  assert.equal(normalized.inbox.inboxes.length, 1);
+  assert.equal(normalized.inbox.items.length, 5);
+});
+
+runTest('inbox runtime normalizes unread counts and resolves task and project targets', () => {
+  const inboxState = getInboxStateSummary(fixtureState);
+
+  assert.equal(inboxState.activeInboxLabel, 'Inbox');
+  assert.equal(inboxState.totalCount, 5);
+  assert.equal(inboxState.unreadCount, 3);
+  assert.equal(inboxState.needsActionCount, 3);
+  assert.equal(inboxState.items[0].id, 'notif_1');
+  assert.equal(inboxState.items[0].targetTitle, 'Draft weekly plan');
+  assert.equal(inboxState.items[2].targetTitle, 'Motion Basics');
+});
+
+runTest('missing inbox data degrades to a safe empty inbox surface', () => {
+  const inboxState = buildInboxSeedData({}, fixtureState);
+
+  assert.equal(inboxState.totalCount, 0);
+  assert.equal(inboxState.unreadCount, 0);
+  assert.equal(inboxState.activeInboxLabel, 'Inbox');
+  assert.equal(inboxState.emptyState.includes('Inbox is clear'), true);
 });
 
 runTest('active shell views change the base task collection before ad hoc filters run', () => {

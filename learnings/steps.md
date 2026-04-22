@@ -578,4 +578,32 @@ Saved views are no longer just named buttons in the sidebar. The app now treats 
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 29 adds the inbox domain and renders it as a real shell surface instead of a placeholder gap.*
+## ? Step 29 — Phase 5 Inbox Surface Baseline
+*Completed: 2026-04-24*
+
+**What was built**
+- `apps/desktop/src/state.js` — adds a lightweight inbox domain summary that normalizes personal inbox items, unread counts, target labels, and safe empty-state behavior using observed Motion notification item types.
+- `apps/desktop/src/fixtures.js` — seeds deterministic inbox data with structured personal inbox items such as task assignments, mentions, project stage updates, meeting insights, and post-onboarding guidance.
+- `apps/desktop/src/main.tsx` — renders a real inbox panel in the desktop shell rail with unread counts, source counts, and a structured item list instead of leaving inbox as an implied future area.
+- `scripts/test.mjs` — adds coverage for fixture inbox seeding, inbox unread summaries, target resolution, and safe empty-state fallback.
+
+**In plain English**
+The app now has a real inbox surface instead of just evidence that inbox will exist later. It can show structured notifications, unread counts, and the main target each item points to, which brings the shell closer to how Motion exposes assignments, mentions, and updates. Even if there are no items yet, the inbox now degrades into a clean empty state instead of being missing entirely.
+
+**Files changed**
+~ modified: `apps/desktop/src/state.js`
+~ modified: `apps/desktop/src/fixtures.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/state.js`
+- `node --check apps/desktop/src/fixtures.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 30 runs the Phase 5 verification gate and closes the phase with the required deep-learn write-up.*
