@@ -373,4 +373,10 @@ Phase 3 is now closed out instead of half-finished. The repo's own checks finall
 ~ modified: `learnings/steps.md`
 
 ---
-*Next: Step 21 begins Phase 4 with the connected sync client baseline described in `learnings/plans/phase-4-plan.md`.*
+**Roadmap reset: 2026-04-23**
+- Phase 4 onward now follows the reverse-engineering-first roadmap in `learnings/planning.md`.
+- The older connected-sync-first Phase 4 plan has been replaced by the shell-parity-first Phase 4 plan.
+- Execute future work with `/plan` and `/steps`: one numbered step at a time, stop after each completion block, then continue with `next`.
+
+---
+*Next: Step 21 begins Phase 4 with the shell state model baseline described in `learnings/plans/phase-4-plan.md`.*

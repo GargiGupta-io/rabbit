@@ -1,126 +1,141 @@
-# Plan: Phase 4 - Connected Sync and Refresh Baseline
+# Plan: Phase 4 - Desktop Shell Parity Reset
 
 ## Goal
-Turn the Phase 3 sync-ready shell into a manually connected client with remote sync transport, revision-safe merge behavior, and connected refresh controls for sync and calendar state.
+Turn the current single-page planner into a Motion-shaped desktop shell using the reverse-engineered shell, view, agenda, and theme evidence now available in the repo.
+
+## Why this phase changed
+The older Phase 4 prioritized connected sync transport first.
+
+That plan is now superseded because:
+- the current app still looks and behaves like a custom planner,
+- Motion's actual shell structure is now known,
+- further transport work would deepen the wrong product shape.
+
+The correct next move is shell parity first.
 
 ## Current state at Phase 4 start
 You already have:
-- A persisted outbox and sync metadata baseline in `apps/desktop/src/syncContract.js`, `apps/desktop/src/state.js`, and `apps/desktop/src/storage.js`.
-- Calendar overlay normalization and planner occupancy support in `apps/desktop/src/calendarService.js` and `apps/desktop/src/scheduler.js`.
-- Refreshable entitlement authority state in `apps/desktop/src/entitlementClient.js` and `apps/desktop/src/entitlement.js`.
-- A green acceptance gate for Phase 3: `npm run lint`, `npm run build`, and `npm run test`.
+- persisted task, calendar overlay, sync, and entitlement baseline logic in `apps/desktop/src/`
+- acceptance checks that pass for the current planner baseline
+- reverse-engineered Motion findings and extracted code assets inside `developer/motion-research/`
 
-The app is still intentionally transport-light:
-- no remote sync request/response contract,
-- no outbox acknowledgement path,
-- no remote pull merge behavior,
-- no connected calendar refresh client,
-- no manual sync controls for the user.
+You do not yet have:
+- a Motion-like sidebar or tabs shell
+- an agenda/app-bar rail
+- saved-view-driven navigation
+- Motion-like shell theme structure
+- shell state persisted as part of app data
+
+## Execution mode
+
+Use the `plan` and `steps` workflow for this phase:
+- `/plan` to review or adjust the phase
+- `/steps` to execute one numbered step only
+- stop after each step, update `learnings/steps.md`, and commit before continuing
 
 ## Scope
-Phase 4 is limited to connected-client baseline work:
-- manual sync client contract with mock transport,
-- remote acknowledgement and pull merge handling,
-- persisted sync history and merge-safe state transitions,
-- calendar refresh client and connection metadata,
-- explicit UI controls for sync and refresh actions,
-- deterministic tests for transport, merge, and refresh flows.
+Phase 4 is limited to shell fidelity:
+- tabs
+- sidebar sections
+- saved-view shell state
+- agenda snapshot rail
+- Motion-like visual shell tokens
+- structured theme state
 
-Deferred to Phase 5:
-- background or live sync,
-- real calendar OAuth,
-- websocket or push updates,
-- AI scheduling actions,
-- multi-user workspaces.
+Deferred to later phases:
+- task schema expansion
+- project/stage/task-definition parity
+- full calendar entity parity
+- API/sync transport alignment
+- native/macOS shell pass
 
 ## Approach
-I will keep this phase narrow and testable:
-- define the remote sync contract first,
-- teach local state how to acknowledge and merge remote changes next,
-- then expose manual sync and calendar refresh controls in the desktop shell.
+Keep the existing data layer where it is still useful, but stop preserving the old UI shape.
 
-That keeps transport concerns isolated and avoids mixing UI work with merge logic too early.
+Build a shell model first, seed and persist it, then replace the current UI with a Motion-like layout that reads from structured tabs, views, and agenda state.
 
-## Phase 1 - Remote sync contract baseline (~50m)
+## Phase 1 - Shell State Model (~50m)
 
-21. Add a sync client contract and remote result normalization.
-   - Add `apps/desktop/src/syncClient.js` for push request, pull response, and acknowledgement normalization.
-   - Persist `lastSyncResult`, `syncHistory`, and `remoteRevision` through the storage contract.
-   - Add deterministic mock sync responses for success, partial acknowledgement, and remote divergence.
-   - Touch: `apps/desktop/src/syncClient.js`, `apps/desktop/src/storage.js`, `apps/desktop/src/state.js`, `scripts/test.mjs`.
+21. Add shell state helpers and selectors.
+   - Create `apps/desktop/src/shellService.js` for:
+     - tabs,
+     - sidebar sections,
+     - saved views,
+     - agenda groups,
+     - shell theme state.
+   - Touch: `apps/desktop/src/shellService.js`, `apps/desktop/src/state.js`.
 
-22. Add remote merge and acknowledgement application.
-   - Update state orchestration so acknowledged outbox events are removed safely.
-   - Add merge helpers for remote task snapshots and remote tombstones.
-   - Preserve unsent local work while applying pulled remote updates.
-   - Touch: `apps/desktop/src/state.js`, `apps/desktop/src/syncContract.js`, `apps/desktop/src/taskService.js`, `scripts/test.mjs`.
+22. Seed and persist shell state.
+   - Extend fixtures and payload normalization so shell state is stored alongside tasks/projects.
+   - Add default tabs, views, and agenda seed data that reflect the current Motion evidence.
+   - Touch: `apps/desktop/src/fixtures.js`, `apps/desktop/src/contracts.js`, `apps/desktop/src/storage.js`, `scripts/test.mjs`.
 
-## Phase 2 - Connected client UI baseline (~55m)
+## Phase 2 - Motion-Like Shell UI (~65m)
 
-23. Wire manual sync controls and sync history into the desktop UI.
-   - Add manual sync controls in `apps/desktop/src/main.tsx`.
-   - Show last sync result, acknowledged events, remote revision, and divergence warnings.
-   - Keep offline and degraded states explicit instead of implicit.
-   - Touch: `apps/desktop/src/main.tsx`, `apps/desktop/src/state.js`, `apps/desktop/src/storage.js`.
+23. Replace the current planner layout with a shell layout.
+   - Rebuild `apps/desktop/src/main.tsx` around:
+     - left sidebar,
+     - top tab strip,
+     - central content area,
+     - right agenda/app-bar rail.
+   - Remove the current form-first layout as the top-level structure.
+   - Touch: `apps/desktop/src/main.tsx`.
 
-24. Add calendar refresh client and connection state.
-   - Add `apps/desktop/src/calendarClient.js` for mock connected refresh responses and source metadata normalization.
-   - Persist `calendarConnection` state with provider, permission status, last refresh result, and connection health.
-   - Expose manual refresh controls and connection summary in the desktop shell.
-   - Touch: `apps/desktop/src/calendarClient.js`, `apps/desktop/src/calendarService.js`, `apps/desktop/src/main.tsx`, `scripts/test.mjs`.
+24. Apply Motion-like shell skin and view-driven navigation.
+   - Use extracted UI token guidance to move away from the current generic white-card layout.
+   - Render active views and tabs from shell state instead of from ad hoc filter groups.
+   - Touch: `apps/desktop/src/main.tsx`, `apps/desktop/src/shellService.js`, `scripts/test.mjs`.
 
-## Phase 3 - Phase 4 acceptance pass (~25m)
+## Phase 3 - Verification and Handoff (~25m)
 
-25. Run the Phase 4 verification gate.
-   - Run `npm run lint`.
-   - Run `npm run build`.
+25. Run the Phase 4 shell verification gate.
    - Run `npm run test`.
-   - Verify outbox acknowledgements, remote merges, manual sync UI, and calendar refresh controls behave deterministically.
+   - Run `npm run typecheck`.
+   - Run `npm run build`.
+   - Confirm the app shell now reflects Motion-like structure and the old planner layout is no longer the top-level experience.
 
 ## Files
 
 Modify:
 - `apps/desktop/src/main.tsx`
 - `apps/desktop/src/state.js`
+- `apps/desktop/src/fixtures.js`
+- `apps/desktop/src/contracts.js`
 - `apps/desktop/src/storage.js`
-- `apps/desktop/src/syncContract.js`
-- `apps/desktop/src/taskService.js`
-- `apps/desktop/src/calendarService.js`
 - `scripts/test.mjs`
 
 Create:
-- `apps/desktop/src/syncClient.js`
-- `apps/desktop/src/calendarClient.js`
+- `apps/desktop/src/shellService.js`
 
 ## Edge cases
 
-- Remote acknowledges only part of the outbox:
-  keep unacknowledged local events queued and report the partial result clearly.
+- Shell state missing from older payloads:
+  inject default tabs, views, agenda groups, and theme safely during normalization.
 
-- Remote deletes a task that still has local unsent edits:
-  preserve the local mutation event, mark divergence, and do not silently drop the local work.
+- No agenda items available:
+  keep the right rail visible with an empty state instead of collapsing the shell.
 
-- Calendar refresh succeeds but permissions were downgraded:
-  keep the previous overlay snapshot if needed, mark the connection state degraded, and surface the permission change.
+- Saved views are incomplete:
+  fall back to a safe default Motion-like set rather than crashing navigation.
 
-- Manual sync runs while entitlement is offline or stale:
-  allow safe local sync bookkeeping, but do not treat entitlement refresh state as silently healed.
+- Existing filter behavior gets hidden by the new shell:
+  preserve the underlying filter logic through active-view selection so functionality does not regress while the shell changes.
 
 ## Risks
 
-- Merge logic can become noisy if local and remote state handling are mixed.
-  Mitigation: keep remote merge helpers isolated from UI handlers and test them with deterministic fixtures.
+- Preserving too much of the old UI will keep the app feeling custom.
+  Mitigation: treat the current layout as disposable and keep only the useful data logic.
 
-- Mock transport can become too magical and hide real transport complexity.
-  Mitigation: keep request and response shapes explicit and narrow.
+- A shell-only rewrite could become cosmetic.
+  Mitigation: drive tabs, views, and agenda from structured shell state and real Motion references.
 
-- Connected refresh controls can clutter the desktop shell.
-  Mitigation: add focused status panels instead of scattering transport details across the app.
+- Theme work could drift into redesign.
+  Mitigation: stay close to the extracted shell/component/token evidence.
 
 ## Done when
 
-- The app can normalize manual sync pushes and pulls through a client contract.
-- Acknowledged outbox events are removed safely while remote updates merge deterministically.
-- Calendar refresh uses a connected client contract instead of only static fixtures.
-- Manual sync and refresh controls are visible in the UI with explicit degraded-state messaging.
-- `npm run lint`, `npm run build`, and `npm run test` pass after the new connected-client paths land.
+- The app no longer renders as a basic planner form and task list.
+- The shell has Motion-like structure: sidebar, tabs, content surface, and agenda rail.
+- Tabs, views, agenda, and theme are driven by structured shell state.
+- Existing task/calendar logic still works underneath the new shell.
+- `npm run test`, `npm run typecheck`, and `npm run build` pass.
