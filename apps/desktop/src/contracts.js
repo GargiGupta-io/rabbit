@@ -9,7 +9,7 @@ import {
 } from './shellService.js';
 import { normalizeTask as normalizeDomainTask } from './taskService.js';
 
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 const EARLIEST_SCHEMA_VERSION = 1;
 const DEFAULT_APP_VERSION = '1.0.0';
 
@@ -222,6 +222,9 @@ function normalizeMigrationInfo(payload = {}, fromVersion = EARLIEST_SCHEMA_VERS
   if (fromVersion < 4) {
     steps.push('expanded task domain defaults');
   }
+  if (fromVersion < 5) {
+    steps.push('expanded calendar entity defaults');
+  }
   return {
     fromVersion,
     toVersion,
@@ -279,6 +282,10 @@ export function validatePersistedPayload(payload = {}) {
 
   if (!Array.isArray(normalized.calendarOverlay?.importedEvents)) {
     errors.push('calendarOverlay.importedEvents must be an array');
+  }
+
+  if (!Array.isArray(normalized.calendarOverlay?.calendars)) {
+    errors.push('calendarOverlay.calendars must be an array');
   }
 
   if (!Array.isArray(normalized.shell?.tabs)) {
