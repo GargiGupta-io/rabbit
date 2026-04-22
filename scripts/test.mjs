@@ -1,16 +1,28 @@
 import assert from 'node:assert/strict';
 import { applyTaskMutation, createTaskId, getSyncStateSummary, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
-import { ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
+import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
 import { buildCalendarBusyBlocks, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
+import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
 import { FIXTURE_CALENDAR_EVENTS_RAW, FIXTURE_CALENDAR_OVERLAY, FIXTURE_NOW, FIXTURE_TASKS_RAW, getFixtureState } from '../apps/desktop/src/fixtures.js';
 
 function runTest(name, fn) {
   try {
     fn();
+    console.log(`PASS: ${name}`);
+  } catch (error) {
+    console.error(`FAIL: ${name}`);
+    console.error(error.message);
+    process.exit(1);
+  }
+}
+
+async function runAsyncTest(name, fn) {
+  try {
+    await fn();
     console.log(`PASS: ${name}`);
   } catch (error) {
     console.error(`FAIL: ${name}`);
@@ -42,15 +54,24 @@ function createLocalStorageMock() {
 
 function withLocalStorage(storage, fn) {
   const previous = globalThis.localStorage;
-  globalThis.localStorage = storage;
-  try {
-    return fn();
-  } finally {
+  const restore = () => {
     if (previous) {
       globalThis.localStorage = previous;
     } else {
       delete globalThis.localStorage;
     }
+  };
+  globalThis.localStorage = storage;
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') {
+      return result.finally(restore);
+    }
+    restore();
+    return result;
+  } catch (error) {
+    restore();
+    throw error;
   }
 }
 
@@ -341,6 +362,154 @@ runTest('tampered entitlement token blocks premium feature gates', () => {
     const check = requireEntitlement('ai_suggest');
     assert.equal(check.allowed, false);
     assert.equal(check.reason.includes('token signature'), true);
+  });
+});
+
+runTest('authority response normalization flags revoked and malformed refresh payloads', () => {
+  const revoked = normalizeAuthorityRefreshResponse(
+    {
+      status: 'revoked',
+      source: 'mock-authority',
+      reason: 'Subscription revoked by authority.'
+    },
+    { now: new Date('2026-04-17T12:00:00.000Z').valueOf() }
+  );
+  const malformed = normalizeAuthorityRefreshResponse(
+    {
+      status: 'active',
+      source: 'mock-authority'
+    },
+    { now: new Date('2026-04-17T12:00:00.000Z').valueOf() }
+  );
+
+  assert.equal(revoked.ok, true);
+  assert.equal(revoked.status, 'revoked');
+  assert.equal(revoked.reason.includes('revoked'), true);
+  assert.equal(malformed.ok, false);
+  assert.equal(malformed.reason.includes('payload'), true);
+});
+
+runTest('stale entitlement summary is derived from authority freshness window', () => {
+  const staleNow = new Date('2026-04-18T18:00:00.000Z').valueOf();
+  const snapshot = getEntitlementSnapshot({
+    now: staleNow,
+    allowPersistence: false,
+    rawSnapshot: {
+      userId: 'user-1',
+      plan: 'pro',
+      featureFlags: {
+        ai_suggest: true,
+        calendar_read: true,
+        calendar_write: true,
+        advanced_recurrence: true,
+        tasks_manage: true
+      },
+      entitlements: ['tasks.basic', 'calendar.read', 'ai.suggest'],
+      source: 'mock-authority',
+      token: 'rabbit-signature:test-token',
+      issuedAt: '2026-04-17T08:00:00.000Z',
+      expiresAt: '2026-04-30T08:00:00.000Z',
+      authority: {
+        status: 'fresh',
+        source: 'mock-authority',
+        checkedAt: '2026-04-17T08:00:00.000Z',
+        lastAttemptAt: '2026-04-17T08:00:00.000Z',
+        lastSuccessfulAt: '2026-04-17T08:00:00.000Z',
+        staleAfterMs: ENTITLEMENT_REFRESH_STALE_MS
+      }
+    }
+  });
+  const summary = getEntitlementStateSummary({
+    ...snapshot,
+    now: staleNow
+  });
+
+  assert.equal(summary.isStale, true);
+  assert.equal(summary.authorityStatus, 'stale');
+  assert.equal(summary.reason.includes('freshness'), true);
+});
+
+await runAsyncTest('authority refresh upgrade path persists a fresh entitlement snapshot', async () => {
+  const storage = createLocalStorageMock();
+  const now = new Date('2026-04-17T12:00:00.000Z').valueOf();
+  await withLocalStorage(storage, async () => {
+    const snapshot = await refreshEntitlementSnapshot({
+      now,
+      transport: createMockEntitlementTransport()
+    });
+    const check = requireEntitlement('ai_suggest', now, snapshot);
+    const saved = JSON.parse(storage.getItem(ENTITLEMENT_STORAGE_KEY));
+
+    assert.equal(snapshot.authority.status, 'fresh');
+    assert.equal(snapshot.plan, 'free');
+    assert.equal(check.allowed, false);
+    assert.equal(saved.authority.status, 'fresh');
+    assert.equal(saved.authority.source, 'mock-authority');
+  });
+});
+
+await runAsyncTest('authority refresh can mock an upgrade and unlock premium flags', async () => {
+  const storage = createLocalStorageMock();
+  const now = new Date('2026-04-17T12:10:00.000Z').valueOf();
+  await withLocalStorage(storage, async () => {
+    const snapshot = await refreshEntitlementSnapshot({
+      now,
+      scenario: 'upgrade',
+      transport: createMockEntitlementTransport()
+    });
+    const summary = getEntitlementStateSummary(snapshot);
+
+    assert.equal(snapshot.authority.status, 'fresh');
+    assert.equal(snapshot.plan, 'pro');
+    assert.equal(summary.aiEnabled, true);
+    assert.equal(summary.calendarReadEnabled, true);
+    assert.equal(requireEntitlement('ai_suggest', now, snapshot).allowed, true);
+  });
+});
+
+await runAsyncTest('offline authority refresh keeps the last safe snapshot and marks it offline', async () => {
+  const storage = createLocalStorageMock();
+  const onlineNow = new Date('2026-04-17T12:15:00.000Z').valueOf();
+  const offlineNow = new Date('2026-04-17T12:30:00.000Z').valueOf();
+  await withLocalStorage(storage, async () => {
+    await refreshEntitlementSnapshot({
+      now: onlineNow,
+      scenario: 'upgrade',
+      transport: createMockEntitlementTransport()
+    });
+
+    const snapshot = await refreshEntitlementSnapshot({
+      now: offlineNow,
+      scenario: 'offline',
+      transport: createMockEntitlementTransport()
+    });
+    const summary = getEntitlementStateSummary(snapshot);
+
+    assert.equal(summary.isOffline, true);
+    assert.equal(summary.authorityStatus, 'offline');
+    assert.equal(snapshot.plan, 'pro');
+    assert.equal(summary.aiEnabled, true);
+    assert.equal(summary.reason.includes('offline'), true);
+  });
+});
+
+await runAsyncTest('revoked authority refresh forces read-only fallback', async () => {
+  const storage = createLocalStorageMock();
+  const now = new Date('2026-04-17T13:00:00.000Z').valueOf();
+  await withLocalStorage(storage, async () => {
+    const snapshot = await refreshEntitlementSnapshot({
+      now,
+      scenario: 'revoked',
+      transport: createMockEntitlementTransport()
+    });
+    const summary = getEntitlementStateSummary(snapshot);
+    const taskCheck = requireEntitlement('tasks_manage', now, snapshot);
+
+    assert.equal(summary.isRevoked, true);
+    assert.equal(summary.authorityStatus, 'revoked');
+    assert.equal(summary.canMutate, false);
+    assert.equal(taskCheck.allowed, false);
+    assert.equal(taskCheck.reason.includes('revoked'), true);
   });
 });
 
