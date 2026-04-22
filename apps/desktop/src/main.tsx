@@ -1,14 +1,18 @@
 import {
+  activateShellTab,
+  activateShellView,
   applyTaskMutation,
   buildProjectSeedData,
   decorateTaskWithProject,
   formatDisplayDateTime,
   getProjectById,
   getShellState,
+  getShellViewMeta,
   getShellThemeClassName,
   getSyncStateSummary,
   getTaskFilters,
   getTaskStateSummary,
+  selectTasksForShellView,
   resolveTaskAction,
   upsertTask
 } from './state.js';
@@ -19,8 +23,7 @@ import {
   getEntitlementSnapshot,
   getEntitlementStateSummary,
   refreshEntitlementSnapshot,
-  requireEntitlement,
-  resolveFeatureGate
+  requireEntitlement
 } from './entitlement.js';
 import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
 
@@ -185,32 +188,34 @@ style.textContent = `
   body {
     margin: 0;
     font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-    background: #dfe4ec;
-    color: #172033;
+    background: #151819;
+    color: #f3f4f6;
   }
 
   .desktop-shell {
-    --workspace-bg: #eef2f7;
-    --panel-bg: #ffffff;
-    --panel-border: #dbe3ef;
-    --panel-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    --text-strong: #101828;
-    --text-muted: #556274;
-    --text-soft: #7a8796;
-    --accent: #3b82f6;
-    --accent-strong: #1d4ed8;
-    --sidebar-bg: #131722;
-    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --workspace-bg: #1a1d1e;
+    --panel-bg: #23282d;
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --panel-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+    --text-strong: #f8fafc;
+    --text-muted: rgba(226, 232, 240, 0.8);
+    --text-soft: rgba(148, 163, 184, 0.88);
+    --accent: #60a5fa;
+    --accent-strong: #93c5fd;
+    --sidebar-bg: #151819;
+    --sidebar-border: rgba(255, 255, 255, 0.06);
     --sidebar-text: #f8fafc;
-    --sidebar-muted: rgba(226, 232, 240, 0.72);
-    --sidebar-active: rgba(255, 255, 255, 0.12);
+    --sidebar-muted: rgba(203, 213, 225, 0.64);
+    --sidebar-active: rgba(255, 255, 255, 0.08);
     min-height: 100vh;
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
-    background: linear-gradient(180deg, #e8edf5 0%, #eef2f7 100%);
+    background: radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 28%),
+      linear-gradient(180deg, #1b1f20 0%, #16191a 100%);
   }
 
-  .desktop-shell.theme-light {
+  .desktop-shell.theme-light,
+  .desktop-shell[data-theme="light"] {
     --workspace-bg: #f7f9fc;
     --panel-bg: #ffffff;
     --panel-border: #dbe3ef;
@@ -434,10 +439,10 @@ style.textContent = `
   }
 
   .tab-button.active {
-    background: #ffffff;
-    border-color: #d3deeb;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
     color: var(--text-strong);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
   }
 
   .tab-label {
@@ -517,7 +522,7 @@ style.textContent = `
     gap: 6px;
     padding: 7px 10px;
     border-radius: 999px;
-    background: #eef4fb;
+    background: rgba(96, 165, 250, 0.12);
     color: var(--text-muted);
     font-size: 12px;
   }
@@ -530,10 +535,10 @@ style.textContent = `
   }
 
   .view-stat {
-    border: 1px solid #e4ebf4;
+    border: 1px solid var(--panel-border);
     border-radius: 18px;
     padding: 12px;
-    background: #f8fbff;
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .view-stat strong,
@@ -562,10 +567,10 @@ style.textContent = `
 
   .metric-card,
   .sync-stat {
-    border: 1px solid #e4ebf4;
+    border: 1px solid var(--panel-border);
     border-radius: 18px;
     padding: 14px;
-    background: #fbfcfe;
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .metric-card strong {
@@ -622,10 +627,10 @@ style.textContent = `
   .form-row select,
   .control-row select {
     width: 100%;
-    border: 1px solid #d3dce9;
+    border: 1px solid var(--panel-border);
     border-radius: 14px;
     padding: 11px 12px;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.02);
     color: var(--text-strong);
     font: inherit;
   }
@@ -640,10 +645,10 @@ style.textContent = `
   .form-row button,
   .task-actions button,
   .control-row button {
-    border: 1px solid #d3dce9;
+    border: 1px solid var(--panel-border);
     border-radius: 14px;
     padding: 10px 12px;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.02);
     color: var(--text-strong);
     cursor: pointer;
     font: inherit;
@@ -651,6 +656,39 @@ style.textContent = `
 
   .btn-group button.active,
   .form-row button {
+    background: #f8fafc;
+    border-color: #f8fafc;
+    color: #111827;
+  }
+
+  .btn-group button:hover,
+  .task-actions button:hover,
+  .control-row button:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  .toolbar-search input::placeholder,
+  .form-row input::placeholder {
+    color: rgba(148, 163, 184, 0.72);
+  }
+
+  .toolbar-search input:focus,
+  .form-row input:focus,
+  .form-row select:focus,
+  .control-row select:focus,
+  .btn-group button:focus-visible,
+  .task-actions button:focus-visible,
+  .control-row button:focus-visible,
+  .tab-button:focus-visible,
+  .nav-item:focus-visible {
+    outline: 2px solid rgba(96, 165, 250, 0.55);
+    outline-offset: 2px;
+  }
+
+  .desktop-shell[data-theme="light"] .btn-group button.active,
+  .desktop-shell.theme-light .btn-group button.active,
+  .desktop-shell[data-theme="light"] .form-row button,
+  .desktop-shell.theme-light .form-row button {
     background: #111827;
     border-color: #111827;
     color: #ffffff;
@@ -712,9 +750,9 @@ style.textContent = `
   }
 
   .task-item {
-    border: 1px solid #e4ebf4;
+    border: 1px solid var(--panel-border);
     border-radius: 18px;
-    background: #fbfdff;
+    background: rgba(255, 255, 255, 0.02);
     padding: 14px;
     display: grid;
     gap: 14px;
@@ -740,7 +778,7 @@ style.textContent = `
     gap: 6px;
     padding: 6px 10px;
     border-radius: 999px;
-    background: #eef4fb;
+    background: rgba(255, 255, 255, 0.06);
     color: var(--text-muted);
     font-size: 11px;
     letter-spacing: 0.06em;
@@ -844,8 +882,8 @@ style.textContent = `
 
   .rail-count,
   .sync-pill.local-only {
-    background: #edf2f7;
-    color: #475467;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
   }
 
   .sync-pill.pending,
@@ -888,10 +926,10 @@ style.textContent = `
   }
 
   .agenda-item {
-    border: 1px solid #e4ebf4;
+    border: 1px solid var(--panel-border);
     border-radius: 16px;
     padding: 12px;
-    background: #fbfcfe;
+    background: rgba(255, 255, 255, 0.03);
     display: grid;
     gap: 8px;
   }
@@ -1274,8 +1312,9 @@ function refreshEntitlementState() {
   }
 }
 
-function buildPlannerState() {
-  const filteredTasks = getTaskFilters(tasks, {
+function buildPlannerState(shellState) {
+  const viewTasks = selectTasksForShellView(tasks, shellState);
+  const filteredTasks = getTaskFilters(viewTasks, {
     statusFilter: activeFilter,
     query: search
   }).map((task) => decorateTaskWithProject(task, appData.projects));
@@ -1341,12 +1380,13 @@ function updateSyncStatus() {
 
 function updateSummary(plannerState, shellState) {
   const summary = getTaskStateSummary(tasks);
+  const meta = getShellViewMeta(shellState);
   const overlay = appData.calendarOverlay || {
     importedEvents: [],
     permissionStatus: 'unknown',
     refreshedAt: null
   };
-  const activeLabel = shellState.activeTab?.title || shellState.activeView?.name || 'Calendar';
+  const activeLabel = meta.title || 'Calendar';
   const permissionLabel = overlay.permissionStatus === 'granted'
     ? `${plannerState.planWindow.busyBlocks.length} busy blocks active in ${activeLabel}`
     : `Calendar overlay ${overlay.permissionStatus}`;
@@ -1414,7 +1454,7 @@ function renderSidebar(shellState) {
             <span class="nav-dot"></span>
             <span class="nav-title">${escapeHtml(item.label)}</span>
           </span>
-          <span class="nav-kind">${escapeHtml(item.kind)}</span>
+          <span class="nav-kind">${escapeHtml(item.layout || item.kind)}</span>
         </button>
       `;
     }).join('');
@@ -1438,30 +1478,23 @@ function renderTabStrip(shellState) {
 }
 
 function renderViewHeader(shellState, plannerState) {
-  const activeTab = shellState.activeTab;
-  const activeView = shellState.activeView;
-  const title = activeTab?.itemType === 'view'
-    ? activeView?.name || activeTab?.title || 'Task view'
-    : activeTab?.title || activeView?.name || 'Calendar';
-  const layout = activeView?.layout || (activeTab?.itemType === 'route' ? 'schedule' : 'kanban');
-  const route = activeTab?.route || activeView?.route || '/web/calendar';
-  const description = activeTab?.itemType === 'route'
-    ? 'This top-level shell is now sidebar-first and agenda-first, while the current planner logic continues to drive the underlying content.'
-    : 'Saved-view shell state is now shaping the workspace, so the current planner output sits inside a Motion-style content surface instead of a stacked page.';
+  const meta = getShellViewMeta(shellState);
   const chips = [
-    `Route ${route}`,
-    `${layout} layout`,
-    `${plannerState.visibleTasks.length} visible tasks`
+    `Route ${meta.route}`,
+    `${meta.layout} layout`,
+    meta.collectionLabel,
+    `${plannerState.visibleTasks.length} visible tasks`,
+    `${meta.sort.field} ${meta.sort.direction}`
   ]
-    .concat(Array.isArray(activeView?.groupBy) ? activeView.groupBy.map((entry) => `${entry.key}${entry.by ? ` by ${entry.by}` : ''}`) : [])
+    .concat(Array.isArray(meta.groupBy) ? meta.groupBy.map((entry) => `${entry.key}${entry.by ? ` by ${entry.by}` : ''}`) : [])
     .map((chip) => `<span class="view-chip">${escapeHtml(chip)}</span>`)
     .join('');
 
   viewHeaderEl.innerHTML = `
     <div class="view-copy">
-      <div class="view-breadcrumb">Workspace / ${escapeHtml(title)}</div>
-      <h2>${escapeHtml(title)}</h2>
-      <p>${escapeHtml(description)}</p>
+      <div class="view-breadcrumb">Workspace / ${escapeHtml(meta.title)}</div>
+      <h2>${escapeHtml(meta.title)}</h2>
+      <p>${escapeHtml(meta.description)}</p>
       <div class="view-chip-row">${chips}</div>
     </div>
     <div class="view-stat-grid">
@@ -1518,19 +1551,20 @@ function renderAgenda(shellState) {
   `;
 }
 
-function renderTasks(plannerState) {
+function renderTasks(plannerState, shellState) {
   const { visibleTasks, overlaps, blockedTaskIds } = plannerState;
+  const meta = getShellViewMeta(shellState);
   const blockedTaskSet = new Set(blockedTaskIds);
   taskListEl.innerHTML = '';
   surfaceCountEl.textContent = `${visibleTasks.length} visible`;
   surfaceCaptionEl.textContent = activePlanWindow === 'today'
-    ? 'Planner output scoped to today.'
+    ? `${meta.collectionLabel} scoped to today.`
     : activePlanWindow === 'week'
-      ? 'Planner output scoped to this week.'
-      : 'Planner output across the current horizon.';
+      ? `${meta.collectionLabel} scoped to this week.`
+      : meta.description;
 
   if (!visibleTasks.length) {
-    taskListEl.innerHTML = '<p class="muted">No matching tasks in this shell view.</p>';
+    taskListEl.innerHTML = `<p class="muted">${escapeHtml(meta.emptyState)}</p>`;
     return;
   }
 
@@ -1568,40 +1602,16 @@ function renderTasks(plannerState) {
 }
 
 function setActiveShellTab(tabId: string) {
-  const shellState = getShellState(appData);
-  const tabs = shellState.tabs.map((tab) => ({
-    ...tab,
-    active: tab.id === tabId
-  }));
-  const activeTab = tabs.find((tab) => tab.id === tabId) || tabs[0];
-
   appData = {
     ...appData,
-    shell: {
-      ...(appData.shell || {}),
-      tabs,
-      activeTabId: activeTab?.id || shellState.activeTabId,
-      activeViewId: activeTab?.itemType === 'view' ? activeTab.itemId : shellState.activeViewId
-    }
+    shell: activateShellTab(appData.shell || {}, tabId)
   };
 }
 
 function setActiveShellView(viewId: string) {
-  const shellState = getShellState(appData);
-  const matchingTab = shellState.tabs.find((tab) => tab.itemType === 'view' && tab.itemId === viewId);
-  const tabs = shellState.tabs.map((tab) => ({
-    ...tab,
-    active: matchingTab ? tab.id === matchingTab.id : tab.active
-  }));
-
   appData = {
     ...appData,
-    shell: {
-      ...(appData.shell || {}),
-      tabs,
-      activeTabId: matchingTab?.id || shellState.activeTabId,
-      activeViewId: viewId
-    }
+    shell: activateShellView(appData.shell || {}, viewId)
   };
 }
 
@@ -1614,15 +1624,16 @@ function persistAppData() {
 }
 
 function renderWorkspace() {
-  const plannerState = buildPlannerState();
   const shellState = getShellState(appData);
+  const plannerState = buildPlannerState(shellState);
 
   shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
+  shell.dataset.theme = shellState.theme.dataTheme;
   renderSidebar(shellState);
   renderTabStrip(shellState);
   renderViewHeader(shellState, plannerState);
   updateSummary(plannerState, shellState);
-  renderTasks(plannerState);
+  renderTasks(plannerState, shellState);
   renderAgenda(shellState);
 }
 
