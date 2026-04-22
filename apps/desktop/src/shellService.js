@@ -4,6 +4,53 @@ const DEFAULT_ACCENT = 'motion';
 const DEFAULT_DENSITY = 'comfortable';
 const DEFAULT_TAB_ID = 'tab_calendar';
 const DEFAULT_VIEW_ID = 'view_my_tasks';
+const VIEW_SECTION_TITLES = {
+  views: 'My Views',
+  team: 'Team Views'
+};
+
+const SHELL_VIEW_META = {
+  calendar: {
+    id: 'calendar',
+    title: 'Calendar',
+    layout: 'schedule',
+    collectionLabel: 'Full schedule',
+    description: 'Everything with scheduling context appears in one timeline-oriented surface.',
+    emptyState: 'No scheduled work is visible in this calendar view.'
+  },
+  view_my_deadlines: {
+    id: 'view_my_deadlines',
+    title: 'My Deadlines',
+    layout: 'kanban',
+    collectionLabel: 'Deadline pressure',
+    description: 'Tasks are ordered by due date so urgent work rises to the top.',
+    emptyState: 'No deadline-driven tasks are waiting right now.'
+  },
+  view_my_tasks: {
+    id: 'view_my_tasks',
+    title: 'My Tasks',
+    layout: 'kanban',
+    collectionLabel: 'Personal queue',
+    description: 'This view keeps the current task queue visible across scheduled and unscheduled work.',
+    emptyState: 'No active tasks match this saved view.'
+  },
+  view_project_timelines: {
+    id: 'view_project_timelines',
+    title: 'Project Timelines',
+    layout: 'gantt',
+    collectionLabel: 'Project sequence',
+    description: 'Project work is ordered to emphasize timeline flow instead of the raw inbox.',
+    emptyState: 'No project timeline work is available yet.'
+  },
+  view_team_schedule: {
+    id: 'view_team_schedule',
+    title: 'Team Schedule',
+    layout: 'kanban',
+    collectionLabel: 'Scheduled work',
+    description: 'Scheduled tasks are prioritized so the shell reads like a planning surface.',
+    emptyState: 'No scheduled team work is visible in this view.'
+  }
+};
 
 const DEFAULT_SAVED_VIEWS = [
   {
@@ -316,6 +363,70 @@ function sortAgendaEntries(left, right) {
   return left.title.localeCompare(right.title);
 }
 
+function getTaskTimeValue(task = {}, key = 'startAt') {
+  const parsed = parseDate(task?.[key]);
+  return parsed?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+}
+
+function compareTaskStatus(left = {}, right = {}) {
+  const leftDone = left.status === 'done';
+  const rightDone = right.status === 'done';
+  if (leftDone !== rightDone) {
+    return leftDone ? 1 : -1;
+  }
+  return 0;
+}
+
+function compareBySchedule(left = {}, right = {}) {
+  const statusOrder = compareTaskStatus(left, right);
+  if (statusOrder !== 0) {
+    return statusOrder;
+  }
+
+  const leftValue = Math.min(getTaskTimeValue(left, 'startAt'), getTaskTimeValue(left, 'dueAt'));
+  const rightValue = Math.min(getTaskTimeValue(right, 'startAt'), getTaskTimeValue(right, 'dueAt'));
+  if (leftValue !== rightValue) {
+    return leftValue - rightValue;
+  }
+
+  return sanitizeText(left.title).localeCompare(sanitizeText(right.title));
+}
+
+function compareByDeadline(left = {}, right = {}) {
+  const leftValue = getTaskTimeValue(left, 'dueAt');
+  const rightValue = getTaskTimeValue(right, 'dueAt');
+  if (leftValue !== rightValue) {
+    return leftValue - rightValue;
+  }
+
+  return compareBySchedule(left, right);
+}
+
+function compareByProjectTimeline(left = {}, right = {}) {
+  const projectOrder = sanitizeText(left.projectId).localeCompare(sanitizeText(right.projectId));
+  if (projectOrder !== 0) {
+    return projectOrder;
+  }
+
+  return compareBySchedule(left, right);
+}
+
+function resolveShellScopeId(shellState = {}) {
+  if (sanitizeText(shellState?.activeViewId, '') === 'calendar') {
+    return sanitizeText(shellState?.activeTab?.itemId, 'calendar');
+  }
+
+  if (shellState?.activeView?.id) {
+    return sanitizeText(shellState.activeView.id, DEFAULT_VIEW_ID);
+  }
+
+  if (shellState?.activeTab?.itemType === 'route') {
+    return sanitizeText(shellState.activeTab.itemId, 'calendar');
+  }
+
+  return sanitizeText(shellState?.activeView?.id, sanitizeText(shellState?.activeTab?.itemId, DEFAULT_VIEW_ID));
+}
+
 function mapTaskToAgendaEntry(task = {}, projectsById = new Map()) {
   if (!isPlainObject(task) || task.status === 'done' || task.status === 'deleted') {
     return null;
@@ -427,8 +538,9 @@ export function buildAgendaSnapshot(tasks = [], options = {}) {
 export function buildSidebarSections(input = {}) {
   const savedViews = normalizeSavedViews(input.savedViews);
   const projects = Array.isArray(input.projects) ? input.projects : [];
-
-  return [
+  const privateViews = savedViews.filter((view) => sanitizeText(view.section, 'views') === 'views');
+  const teamViews = savedViews.filter((view) => sanitizeText(view.section, 'views') !== 'views');
+  const sections = [
     {
       id: 'workspace',
       title: 'Workspace',
@@ -438,31 +550,58 @@ export function buildSidebarSections(input = {}) {
           label: 'Calendar',
           kind: 'route',
           route: '/web/calendar'
-        },
-        ...savedViews.map((view) => ({
-          id: view.id,
-          label: view.name,
-          kind: 'view',
-          route: view.route,
-          layout: view.layout,
-          viewId: view.id
-        }))
+        }
       ]
-    },
-    {
-      id: 'projects',
-      title: 'Projects',
-      items: projects
-        .filter((project) => !project.archived)
-        .map((project) => ({
-          id: project.id,
-          label: sanitizeText(project.name, 'Untitled project'),
-          kind: 'project',
-          color: sanitizeText(project.color, '#3b82f6'),
-          projectId: project.id
-        }))
     }
   ];
+
+  if (privateViews.length) {
+    sections.push({
+      id: 'my-views',
+      title: VIEW_SECTION_TITLES.views,
+      items: privateViews.map((view) => ({
+        id: view.id,
+        label: view.name,
+        kind: 'view',
+        route: view.route,
+        layout: view.layout,
+        viewId: view.id,
+        section: view.section
+      }))
+    });
+  }
+
+  if (teamViews.length) {
+    sections.push({
+      id: 'team-views',
+      title: VIEW_SECTION_TITLES.team,
+      items: teamViews.map((view) => ({
+        id: view.id,
+        label: view.name,
+        kind: 'view',
+        route: view.route,
+        layout: view.layout,
+        viewId: view.id,
+        section: view.section
+      }))
+    });
+  }
+
+  sections.push({
+    id: 'projects',
+    title: 'Projects',
+    items: projects
+      .filter((project) => !project.archived)
+      .map((project) => ({
+        id: project.id,
+        label: sanitizeText(project.name, 'Untitled project'),
+        kind: 'project',
+        color: sanitizeText(project.color, '#3b82f6'),
+        projectId: project.id
+      }))
+  });
+
+  return sections;
 }
 
 export function getSavedViewById(savedViews = [], viewId = DEFAULT_VIEW_ID) {
@@ -480,7 +619,9 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
   const savedViews = normalizeSavedViews(rawShell.savedViews);
   const tabs = normalizeShellTabs(rawShell.tabs);
   const activeTab = getActiveShellTab(tabs, sanitizeText(rawShell.activeTabId, DEFAULT_TAB_ID));
-  const activeView = getSavedViewById(savedViews, sanitizeText(rawShell.activeViewId, activeTab?.itemType === 'view' ? activeTab.itemId : DEFAULT_VIEW_ID));
+  const explicitViewId = sanitizeText(rawShell.activeViewId, activeTab?.itemType === 'view' ? activeTab.itemId : 'calendar');
+  const isCalendarScope = explicitViewId === 'calendar' && activeTab?.itemType === 'route';
+  const activeView = isCalendarScope ? null : getSavedViewById(savedViews, explicitViewId || DEFAULT_VIEW_ID);
   const theme = normalizeShellTheme(rawShell.theme);
   const sidebarSections = buildSidebarSections({
     savedViews,
@@ -499,10 +640,103 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
     activeTabId: activeTab?.id || DEFAULT_TAB_ID,
     activeTab,
     savedViews,
-    activeViewId: activeView?.id || DEFAULT_VIEW_ID,
+    activeViewId: isCalendarScope ? 'calendar' : activeView?.id || DEFAULT_VIEW_ID,
     activeView,
     sidebarSections,
     agenda
+  };
+}
+
+export function getShellViewMeta(shellState = {}) {
+  const scopeId = resolveShellScopeId(shellState);
+  const fallback = SHELL_VIEW_META.view_my_tasks;
+  const activeTab = shellState?.activeTab || null;
+  const activeView = shellState?.activeView || null;
+  const base = SHELL_VIEW_META[scopeId] || fallback;
+
+  return {
+    ...base,
+    id: scopeId,
+    title: activeTab?.itemType === 'route'
+      ? sanitizeText(activeTab.title, base.title)
+      : sanitizeText(activeView?.name, sanitizeText(activeTab?.title, base.title)),
+    layout: sanitizeText(activeView?.layout, sanitizeText(base.layout, 'kanban')),
+    route: sanitizeText(activeTab?.route, sanitizeText(activeView?.route, '/web/calendar')),
+    groupBy: cloneGroupBy(activeView?.groupBy),
+    sort: {
+      field: sanitizeText(activeView?.sort?.field, sanitizeText(base.sort?.field, 'estimatedCompletionTime')),
+      direction: sanitizeText(activeView?.sort?.direction, sanitizeText(base.sort?.direction, 'asc')).toLowerCase() === 'desc' ? 'desc' : 'asc'
+    }
+  };
+}
+
+export function selectTasksForShellView(tasks = [], shellState = {}) {
+  const meta = getShellViewMeta(shellState);
+  const candidates = Array.isArray(tasks)
+    ? tasks.filter((task) => isPlainObject(task) && sanitizeText(task.status) !== 'deleted')
+    : [];
+
+  switch (meta.id) {
+    case 'view_my_deadlines':
+      return candidates
+        .filter((task) => task.status !== 'done' && task.dueAt)
+        .sort(compareByDeadline);
+    case 'view_project_timelines':
+      return candidates
+        .filter((task) => task.projectId && task.projectId !== 'inbox')
+        .sort(compareByProjectTimeline);
+    case 'view_team_schedule':
+      return candidates
+        .filter((task) => task.status !== 'done' && (task.startAt || task.dueAt))
+        .sort(compareBySchedule);
+    case 'view_my_tasks':
+      return candidates
+        .filter((task) => task.status !== 'deleted')
+        .sort(compareBySchedule);
+    case 'calendar':
+    default:
+      return candidates.sort(compareBySchedule);
+  }
+}
+
+export function activateShellTab(shell = {}, tabId = '') {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const activeTab = tabs.find((tab) => tab.id === tabId) || tabs.find((tab) => tab.active) || tabs[0] || null;
+  const nextTabs = tabs.map((tab) => ({
+    ...tab,
+    active: tab.id === activeTab?.id
+  }));
+
+  return {
+    ...shell,
+    theme: normalizeShellTheme(shell.theme),
+    tabs: nextTabs,
+    savedViews,
+    activeTabId: activeTab?.id || DEFAULT_TAB_ID,
+    activeViewId: activeTab?.itemType === 'view'
+      ? sanitizeText(activeTab.itemId, DEFAULT_VIEW_ID)
+      : 'calendar'
+  };
+}
+
+export function activateShellView(shell = {}, viewId = '') {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const activeView = getSavedViewById(savedViews, viewId);
+  const matchingTab = tabs.find((tab) => tab.itemType === 'view' && tab.itemId === activeView?.id) || null;
+  const nextTabs = tabs.map((tab) => ({
+    ...tab,
+    active: matchingTab ? tab.id === matchingTab.id : tab.active
+  }));
+
+  return {
+    ...shell,
+    theme: normalizeShellTheme(shell.theme),
+    tabs: nextTabs,
+    savedViews,
+    activeTabId: matchingTab?.id || sanitizeText(shell.activeTabId, DEFAULT_TAB_ID),
+    activeViewId: activeView?.id || DEFAULT_VIEW_ID
   };
 }
 
