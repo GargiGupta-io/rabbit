@@ -400,4 +400,31 @@ The app now has a brain for the shell before the shell itself gets redrawn. Inst
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
 
 ---
-*Next: Step 22 continues Phase 4 by seeding and persisting shell state in fixtures, contracts, and storage.*
+## ? Step 22 — Phase 4 Seeded Shell Persistence
+*Completed: 2026-04-23*
+
+**What was built**
+- `apps/desktop/src/fixtures.js` — seeds Motion-like shell fixture data with dark theme defaults, saved views, tab state, sidebar sections, and an agenda snapshot tied to the deterministic task and calendar fixtures.
+- `apps/desktop/src/contracts.js` — promotes shell state into the persisted schema so older payloads automatically gain normalized shell tabs, views, theme, sidebar, and agenda data during migration.
+- `apps/desktop/src/storage.js` — persists the normalized shell block alongside the existing task, calendar, and sync state and marks shell presence in storage metadata.
+- `scripts/test.mjs` — adds coverage for seeded shell fixtures, shell-state migration from legacy payloads, and storage roundtrips that preserve shell data.
+
+**In plain English**
+The app now saves the shell the same way it saves tasks. That means the Motion-like tab setup, saved views, sidebar structure, theme mode, and agenda rail data are no longer just ideas in memory; they are seeded into the app's default state, automatically added to older saved payloads, and kept when the app saves and reloads. This gives the next UI step a real persisted shell to render instead of forcing it to invent layout state on the fly.
+
+**Files changed**
+~ modified: `apps/desktop/src/fixtures.js`
+~ modified: `apps/desktop/src/contracts.js`
+~ modified: `apps/desktop/src/storage.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/fixtures.js`
+- `node --check apps/desktop/src/contracts.js`
+- `node --check apps/desktop/src/storage.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+
+---
+*Next: Step 23 continues Phase 4 by replacing the old planner-first layout with the Motion-like desktop shell layout.*

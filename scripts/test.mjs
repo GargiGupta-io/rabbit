@@ -7,7 +7,14 @@ import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
 import { buildCalendarBusyBlocks, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
-import { FIXTURE_CALENDAR_EVENTS_RAW, FIXTURE_CALENDAR_OVERLAY, FIXTURE_NOW, FIXTURE_TASKS_RAW, getFixtureState } from '../apps/desktop/src/fixtures.js';
+import {
+  FIXTURE_CALENDAR_EVENTS_RAW,
+  FIXTURE_CALENDAR_OVERLAY,
+  FIXTURE_NOW,
+  FIXTURE_SHELL_STATE,
+  FIXTURE_TASKS_RAW,
+  getFixtureState
+} from '../apps/desktop/src/fixtures.js';
 
 function runTest(name, fn) {
   try {
@@ -80,6 +87,18 @@ runTest('fixture set is deterministic and parseable', () => {
   assert.equal(normalized.projects.length, 3);
   assert.equal(normalized.tasks.length, 5);
   assert.equal(normalized.tasks.every((task) => typeof task.title === 'string'), true);
+});
+
+runTest('fixture shell state seeds Motion-like tabs, views, and agenda groups', () => {
+  const normalized = getFixtureState();
+  assert.equal(normalized.shell.theme.mode, 'dark');
+  assert.equal(normalized.shell.tabs.length, 3);
+  assert.equal(normalized.shell.savedViews.length, 4);
+  assert.equal(normalized.shell.activeTabId, 'tab_calendar');
+  assert.equal(normalized.shell.activeViewId, 'view_my_tasks');
+  assert.equal(normalized.shell.sidebarSections.length, 2);
+  assert.equal(normalized.shell.agenda.counts.total, FIXTURE_SHELL_STATE.agenda.counts.total);
+  assert.equal(normalized.shell.agenda.counts.total, 6);
 });
 
 runTest('create duplicate task guard rejects duplicate title in same project', () => {
@@ -520,8 +539,13 @@ runTest('task IDs are stable unique shape', () => {
   assert.equal(first.length > 10, true);
 });
 
-runTest('storage contract migrates deterministic legacy payload', () => {
-  const result = validatePersistedPayload(fixtureState);
+runTest('storage contract migrates legacy payloads by injecting calendar and shell state', () => {
+  const result = validatePersistedPayload({
+    version: '0.9.0',
+    schemaVersion: 1,
+    projects: fixtureState.projects,
+    tasks: fixtureState.tasks
+  });
 
   assert.equal(result.ok, true);
   assert.equal(result.value.schemaVersion, CURRENT_SCHEMA_VERSION);
@@ -532,7 +556,21 @@ runTest('storage contract migrates deterministic legacy payload', () => {
   assert.equal(result.value.projects.length, 3);
   assert.equal(result.value.tasks.length, 5);
   assert.equal(Array.isArray(result.value.calendarOverlay.importedEvents), true);
-  assert.equal(result.value.calendarOverlay.importedEvents.length, 3);
+  assert.equal(result.value.calendarOverlay.importedEvents.length, 0);
+  assert.equal(Array.isArray(result.value.shell.tabs), true);
+  assert.equal(Array.isArray(result.value.shell.savedViews), true);
+  assert.equal(result.value.shell.activeTabId, 'tab_calendar');
+});
+
+runTest('storage contract keeps seeded shell state on current fixture payloads', () => {
+  const result = validatePersistedPayload(fixtureState);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.value.schemaVersion, CURRENT_SCHEMA_VERSION);
+  assert.equal(result.value.shell.theme.mode, 'dark');
+  assert.equal(result.value.shell.savedViews.length, 4);
+  assert.equal(result.value.shell.sidebarSections.length, 2);
+  assert.equal(result.value.shell.agenda.counts.total, 6);
 });
 
 runTest('storage contract removes malformed payload rows while retaining valid fixture-like rows', () => {
@@ -581,6 +619,7 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
       projects: getFixtureState().projects,
       tasks: getFixtureState().tasks,
       calendarOverlay: getFixtureState().calendarOverlay,
+      shell: getFixtureState().shell,
       outbox: [outboxEvent, outboxEvent],
       lastSyncAt: '2026-04-17T12:00:00.000Z',
       syncCursor: 'cursor_step15',
@@ -598,6 +637,7 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.metadata.app, 'rabbit');
     assert.equal(saved.metadata.source, 'desktop');
     assert.equal(saved.metadata.syncState, 'pending');
+    assert.equal(saved.metadata.shellState, 'present');
     assert.equal(Array.isArray(saved.outbox), true);
     assert.equal(saved.outbox.length, 1);
     assert.equal(saved.syncCursor, 'cursor_step15');
@@ -605,9 +645,13 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(typeof saved.deviceId, 'string');
     assert.equal(saved.calendarOverlay.permissionStatus, 'granted');
     assert.equal(saved.calendarOverlay.importedEvents.length, 3);
+    assert.equal(saved.shell.theme.mode, 'dark');
+    assert.equal(saved.shell.tabs.length, 3);
+    assert.equal(saved.shell.savedViews.length, 4);
     assert.equal(savedSnapshot.syncStatus, 'pending');
     assert.equal(savedSnapshot.outbox.length, 1);
     assert.equal(savedSnapshot.calendarOverlay.source.provider, 'google');
+    assert.equal(savedSnapshot.shell.activeViewId, 'view_my_tasks');
 
     const loaded = loadStoredData();
     assert.equal(Array.isArray(loaded.tasks), true);
@@ -621,6 +665,10 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(loaded.calendarOverlay.permissionStatus, 'granted');
     assert.equal(loaded.calendarOverlay.importedEvents.length, 3);
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.provider, 'google');
+    assert.equal(Array.isArray(loaded.shell.tabs), true);
+    assert.equal(loaded.shell.tabs.length, 3);
+    assert.equal(loaded.shell.savedViews.length, 4);
+    assert.equal(loaded.shell.agenda.counts.total, 6);
     assert.equal(Array.isArray(loaded.metadata?.revision) || typeof loaded.metadata?.revision === 'string', true);
   });
 });
