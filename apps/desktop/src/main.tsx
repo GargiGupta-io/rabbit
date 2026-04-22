@@ -7,12 +7,11 @@ import {
   formatDisplayDateTime,
   getProjectById,
   getShellState,
-  getShellViewMeta,
   getShellThemeClassName,
   getSyncStateSummary,
   getTaskFilters,
   getTaskStateSummary,
-  selectTasksForShellView,
+  getViewStateSummary,
   resolveTaskAction,
   upsertTask
 } from './state.js';
@@ -1313,7 +1312,13 @@ function refreshEntitlementState() {
 }
 
 function buildPlannerState(shellState) {
-  const viewTasks = selectTasksForShellView(tasks, shellState);
+  const viewState = getViewStateSummary({
+    ...appData,
+    shell: shellState
+  }, {
+    now: shellState.referenceNow
+  });
+  const viewTasks = viewState.tasks;
   const filteredTasks = getTaskFilters(viewTasks, {
     statusFilter: activeFilter,
     query: search
@@ -1340,6 +1345,7 @@ function buildPlannerState(shellState) {
   const blockedTaskIds = planWindow.blockedTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
 
   return {
+    viewState,
     planWindow,
     visibleTasks,
     overlaps,
@@ -1380,7 +1386,7 @@ function updateSyncStatus() {
 
 function updateSummary(plannerState, shellState) {
   const summary = getTaskStateSummary(tasks);
-  const meta = getShellViewMeta(shellState);
+  const meta = plannerState.viewState.meta;
   const overlay = appData.calendarOverlay || {
     importedEvents: [],
     permissionStatus: 'unknown',
@@ -1478,15 +1484,19 @@ function renderTabStrip(shellState) {
 }
 
 function renderViewHeader(shellState, plannerState) {
-  const meta = getShellViewMeta(shellState);
+  const meta = plannerState.viewState.meta;
+  const visibleColumns = Array.isArray(meta.columns) ? meta.columns.filter((column) => column.visible) : [];
   const chips = [
-    `Route ${meta.route}`,
+    `${meta.visibility} view`,
     `${meta.layout} layout`,
+    `${meta.itemType} collection`,
     meta.collectionLabel,
-    `${plannerState.visibleTasks.length} visible tasks`,
-    `${meta.sort.field} ${meta.sort.direction}`
+    `${plannerState.visibleTasks.length} visible ${meta.itemType === 'projects' ? 'records' : 'tasks'}`,
+    `${meta.sort.field} ${meta.sort.direction}`,
+    `${visibleColumns.length} visible columns`
   ]
     .concat(Array.isArray(meta.groupBy) ? meta.groupBy.map((entry) => `${entry.key}${entry.by ? ` by ${entry.by}` : ''}`) : [])
+    .concat(Array.isArray(meta.filterSummary) ? meta.filterSummary : [])
     .map((chip) => `<span class="view-chip">${escapeHtml(chip)}</span>`)
     .join('');
 
@@ -1503,12 +1513,12 @@ function renderViewHeader(shellState, plannerState) {
         <span>${escapeHtml(String(plannerState.visibleTasks.length))}</span>
       </div>
       <div class="view-stat">
-        <strong>Conflicts</strong>
-        <span>${escapeHtml(String(Object.keys(plannerState.overlaps).length))}</span>
+        <strong>Columns</strong>
+        <span>${escapeHtml(String(visibleColumns.length))}</span>
       </div>
       <div class="view-stat">
-        <strong>Agenda</strong>
-        <span>${escapeHtml(String(shellState.agenda.counts.total))}</span>
+        <strong>Groups</strong>
+        <span>${escapeHtml(String(meta.groupBy.length))}</span>
       </div>
     </div>
   `;
@@ -1553,7 +1563,7 @@ function renderAgenda(shellState) {
 
 function renderTasks(plannerState, shellState) {
   const { visibleTasks, overlaps, blockedTaskIds } = plannerState;
-  const meta = getShellViewMeta(shellState);
+  const meta = plannerState.viewState.meta;
   const blockedTaskSet = new Set(blockedTaskIds);
   taskListEl.innerHTML = '';
   surfaceCountEl.textContent = `${visibleTasks.length} visible`;
@@ -1561,7 +1571,7 @@ function renderTasks(plannerState, shellState) {
     ? `${meta.collectionLabel} scoped to today.`
     : activePlanWindow === 'week'
       ? `${meta.collectionLabel} scoped to this week.`
-      : meta.description;
+      : `${meta.description} ${meta.filterSummary.length ? `Filters: ${meta.filterSummary.join(', ')}.` : ''}`;
 
   if (!visibleTasks.length) {
     taskListEl.innerHTML = `<p class="muted">${escapeHtml(meta.emptyState)}</p>`;
