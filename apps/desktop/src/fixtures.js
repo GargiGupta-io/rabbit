@@ -294,46 +294,144 @@ export const FIXTURE_INBOX_STATE = {
   ]
 };
 
+export const FIXTURE_CALENDARS_RAW = [
+  {
+    id: 'team-primary',
+    userId: 'user_gargi',
+    emailAccountId: 'acct_team',
+    type: 'DEFAULT',
+    providerId: 'gcal_primary_gargi',
+    accessRole: 'OWNER',
+    allowedConferenceTypes: ['meet', 'zoom', 'customLocation'],
+    colorId: '11',
+    isEnabled: true,
+    isInMyCalendars: true,
+    isInFrequentlyMet: false,
+    isPrimary: true,
+    providerType: 'GOOGLE',
+    title: 'Gargi Gupta',
+    status: 'OK'
+  },
+  {
+    id: 'company-shared',
+    userId: 'user_gargi',
+    emailAccountId: 'acct_team',
+    type: 'FREQUENTLY_MET',
+    providerId: 'gcal_company_shared',
+    accessRole: 'VIEWER',
+    allowedConferenceTypes: ['none'],
+    colorId: '7',
+    isEnabled: true,
+    isInMyCalendars: false,
+    isInFrequentlyMet: true,
+    isPrimary: false,
+    providerType: 'GOOGLE',
+    title: 'Company Shared',
+    status: 'OK'
+  }
+];
+
 export const FIXTURE_CALENDAR_EVENTS_RAW = [
   {
     id: 'cal_evt_1',
     externalId: 'google_evt_1',
+    providerId: 'google_evt_1',
     title: 'Customer kickoff',
     provider: 'google',
+    providerType: 'GOOGLE',
     calendarId: 'team-primary',
+    email: 'gargig469@gmail.com',
     status: 'busy',
-    startAt: '2026-04-17T13:00:00.000Z',
-    endAt: '2026-04-17T14:00:00.000Z',
+    start: '2026-04-17T13:00:00.000Z',
+    end: '2026-04-17T14:00:00.000Z',
+    createdTime: '2026-04-16T18:00:00.000Z',
+    updatedTime: '2026-04-17T12:04:00.000Z',
+    type: 'NORMAL',
+    visibility: 'DEFAULT',
+    conferenceLink: 'https://meet.google.com/abc-defg-hij',
+    conferenceType: 'meet',
+    organizer: {
+      displayName: 'Gargi Gupta',
+      email: 'gargig469@gmail.com'
+    },
+    attendees: [
+      {
+        displayName: 'Gargi Gupta',
+        email: 'gargig469@gmail.com',
+        isOptional: false,
+        isOrganizer: true,
+        status: 'accepted'
+      },
+      {
+        displayName: 'Customer Team',
+        email: 'customer@example.com',
+        isOptional: false,
+        isOrganizer: false,
+        status: 'accepted'
+      }
+    ],
     location: 'Meet',
-    notes: 'Primary busy block from calendar'
+    notes: 'Primary busy block from calendar',
+    url: 'https://calendar.google.com/event?eid=google_evt_1'
   },
   {
     id: 'cal_evt_2',
     externalId: 'google_evt_2',
+    providerId: 'google_evt_2',
     title: 'Focus block',
     provider: 'google',
+    providerType: 'GOOGLE',
     calendarId: 'team-primary',
+    email: 'gargig469@gmail.com',
     status: 'busy',
-    startAt: '2026-04-17T15:00:00.000Z',
-    endAt: '2026-04-17T16:30:00.000Z'
+    start: '2026-04-17T15:00:00.000Z',
+    end: '2026-04-17T16:30:00.000Z',
+    createdTime: '2026-04-15T17:45:00.000Z',
+    updatedTime: '2026-04-17T08:30:00.000Z',
+    type: 'NORMAL',
+    visibility: 'PRIVATE',
+    attendees: [],
+    organizer: {
+      displayName: 'Gargi Gupta',
+      email: 'gargig469@gmail.com'
+    },
+    travelTimeBefore: 15,
+    travelTimeAfter: 10
   },
   {
     id: 'cal_evt_3',
     externalId: 'google_evt_3',
+    providerId: 'google_evt_3',
     title: 'Company holiday',
     provider: 'google',
+    providerType: 'GOOGLE',
     calendarId: 'company-shared',
+    email: 'gargig469@gmail.com',
     status: 'busy',
-    startAt: '2026-04-18T00:00:00.000Z',
-    allDay: true
+    start: '2026-04-18T00:00:00.000Z',
+    allDay: true,
+    createdTime: '2026-04-10T09:00:00.000Z',
+    updatedTime: '2026-04-16T12:00:00.000Z',
+    type: 'EXTERNAL_EVENT',
+    visibility: 'PUBLIC',
+    organizer: {
+      displayName: 'People Ops',
+      email: 'peopleops@example.com'
+    },
+    attendees: [],
+    iCalUid: 'company_holiday_2026@example.com'
   }
 ];
 
 export const FIXTURE_CALENDAR_OVERLAY = {
+  calendars: FIXTURE_CALENDARS_RAW,
   importedEvents: FIXTURE_CALENDAR_EVENTS_RAW,
   source: {
     provider: 'google',
+    providerType: 'GOOGLE',
     accountId: 'acct_team',
+    accountEmail: 'gargig469@gmail.com',
+    userId: 'user_gargi',
     calendarIds: ['team-primary', 'company-shared'],
     syncToken: 'sync_fixture_google'
   },
@@ -442,6 +540,23 @@ function cloneInboxItems(items = []) {
   }));
 }
 
+function cloneCalendarDefinitions(calendars = []) {
+  return calendars.map((calendar) => ({
+    ...calendar,
+    allowedConferenceTypes: Array.isArray(calendar.allowedConferenceTypes)
+      ? calendar.allowedConferenceTypes.slice()
+      : []
+  }));
+}
+
+function cloneCalendarEvents(events = []) {
+  return events.map((event) => ({
+    ...event,
+    organizer: event.organizer ? { ...event.organizer } : null,
+    attendees: Array.isArray(event.attendees) ? event.attendees.map((attendee) => ({ ...attendee })) : []
+  }));
+}
+
 function createFixtureShellState() {
   const base = createDefaultShellState();
 
@@ -506,7 +621,8 @@ export function getFixtureState() {
         ...FIXTURE_CALENDAR_OVERLAY.source,
         calendarIds: FIXTURE_CALENDAR_OVERLAY.source.calendarIds.slice()
       },
-      importedEvents: FIXTURE_CALENDAR_EVENTS_RAW.map((event) => ({ ...event }))
+      calendars: cloneCalendarDefinitions(FIXTURE_CALENDARS_RAW),
+      importedEvents: cloneCalendarEvents(FIXTURE_CALENDAR_EVENTS_RAW)
     },
     shell: {
       ...FIXTURE_SHELL_STATE,
