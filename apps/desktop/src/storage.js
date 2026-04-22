@@ -43,6 +43,17 @@ function ensureSafeText(value, fallback = '') {
   return trimmed.length ? trimmed : fallback;
 }
 
+function hasShellState(payload = {}) {
+  return Boolean(
+    payload?.shell &&
+      typeof payload.shell === 'object' &&
+      !Array.isArray(payload.shell) &&
+      Array.isArray(payload.shell.tabs) &&
+      Array.isArray(payload.shell.savedViews) &&
+      Array.isArray(payload.shell.sidebarSections)
+  );
+}
+
 function detectPlatform() {
   if (typeof navigator !== 'undefined' && navigator?.platform) {
     return ensureSafeText(navigator.platform, 'unknown');
@@ -85,6 +96,7 @@ function normalizeStorageMetadata(payload, now, { incomingSchemaVersion, syncSta
     platform: detectPlatform(),
     deviceId,
     syncState: ensureSafeText(syncStatus, DEFAULT_SYNC_STATUS),
+    shellState: hasShellState(payload) ? 'present' : 'missing',
     source: ensureSafeText(source || payload.source, 'desktop'),
     revision: ensureSafeText(payload.revision, `r_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`),
     lastLoadedAt: now,
@@ -170,7 +182,7 @@ export function loadStoredData() {
     }
 
     const normalized = withUpgradeGuard(parsed);
-    if (!Array.isArray(normalized.projects) || !Array.isArray(normalized.tasks)) {
+    if (!Array.isArray(normalized.projects) || !Array.isArray(normalized.tasks) || !hasShellState(normalized)) {
       return fallbackPayload();
     }
 
