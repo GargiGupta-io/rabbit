@@ -190,6 +190,110 @@ export const FIXTURE_TASKS_RAW = [
   }
 ];
 
+export const FIXTURE_INBOX_STATE = {
+  inboxes: [
+    {
+      id: 'inbox_personal',
+      label: 'Inbox',
+      kind: 'personal',
+      sourceIds: ['motion-notifications', 'meeting-insights']
+    }
+  ],
+  activeInboxId: 'inbox_personal',
+  items: [
+    {
+      id: 'notif_1',
+      inboxId: 'inbox_personal',
+      type: 'task-assigned',
+      recipientId: 'user_gargi',
+      read: false,
+      createdTime: '2026-04-17T11:40:00.000Z',
+      payload: {
+        snapshot: {
+          title: 'You were assigned Draft weekly plan',
+          description: 'The planning task moved into your queue for today.'
+        },
+        metadata: {
+          taskId: 'f1',
+          assignerUserId: 'user_manager_motion'
+        }
+      }
+    },
+    {
+      id: 'notif_2',
+      inboxId: 'inbox_personal',
+      type: 'mentioned-in-task-comment',
+      recipientId: 'user_gargi',
+      read: false,
+      createdTime: '2026-04-17T10:50:00.000Z',
+      payload: {
+        snapshot: {
+          title: 'Mentioned in a task comment',
+          description: 'Need your feedback before the design review moves forward.'
+        },
+        metadata: {
+          taskId: 'f3',
+          commentId: 'comment_design_review',
+          threadId: 'thread_design_review',
+          mentionerUserId: 'user_manager_motion'
+        }
+      }
+    },
+    {
+      id: 'notif_3',
+      inboxId: 'inbox_personal',
+      type: 'project-stage-entered',
+      recipientId: 'user_gargi',
+      read: true,
+      createdTime: '2026-04-17T09:30:00.000Z',
+      payload: {
+        snapshot: {
+          title: 'Learn motion entered Motion Basics',
+          description: 'The tutorial project advanced into the next stage.'
+        },
+        metadata: {
+          projectId: 'pr_learn_motion',
+          stageDefinitionId: 'stagedef_motion_basics'
+        }
+      }
+    },
+    {
+      id: 'notif_4',
+      inboxId: 'inbox_personal',
+      type: 'meeting-insights',
+      recipientId: 'user_gargi',
+      read: false,
+      createdTime: '2026-04-17T08:20:00.000Z',
+      payload: {
+        snapshot: {
+          title: 'Meeting insights are ready',
+          description: 'Motion finished the recap for the customer kickoff.'
+        },
+        metadata: {
+          noteId: 'meeting_note_kickoff'
+        }
+      }
+    },
+    {
+      id: 'notif_5',
+      inboxId: 'inbox_personal',
+      type: 'post-onboarding',
+      recipientId: 'user_gargi',
+      read: true,
+      createdTime: '2026-04-16T18:00:00.000Z',
+      payload: {
+        snapshot: {
+          title: 'Try Motion AI next',
+          description: 'Explore the AI employee and notetaker workflows.'
+        },
+        metadata: {
+          type: 'ai-chat'
+        }
+      }
+    }
+  ]
+};
+
 export const FIXTURE_CALENDAR_EVENTS_RAW = [
   {
     id: 'cal_evt_1',
@@ -327,6 +431,17 @@ function cloneAgendaSnapshot(agenda = {}) {
   };
 }
 
+function cloneInboxItems(items = []) {
+  return items.map((item) => ({
+    ...item,
+    payload: {
+      ...(item.payload || {}),
+      snapshot: { ...((item.payload || {}).snapshot || {}) },
+      metadata: { ...((item.payload || {}).metadata || {}) }
+    }
+  }));
+}
+
 function createFixtureShellState() {
   const base = createDefaultShellState();
 
@@ -365,6 +480,7 @@ export const FIXTURE_PAYLOAD = {
   projectDefinitions: FIXTURE_PROJECT_DEFINITIONS,
   projects: FIXTURE_PROJECTS,
   tasks: FIXTURE_TASKS_RAW,
+  inbox: FIXTURE_INBOX_STATE,
   calendarOverlay: FIXTURE_CALENDAR_OVERLAY,
   shell: FIXTURE_SHELL_STATE
 };
@@ -376,6 +492,14 @@ export function getFixtureState() {
     projectDefinitions: cloneProjectDefinitions(FIXTURE_PROJECT_DEFINITIONS),
     projects: cloneProjects(FIXTURE_PROJECTS),
     tasks: FIXTURE_TASKS_RAW.map((task) => ({ ...task })),
+    inbox: {
+      ...FIXTURE_INBOX_STATE,
+      inboxes: FIXTURE_INBOX_STATE.inboxes.map((entry) => ({
+        ...entry,
+        sourceIds: entry.sourceIds.slice()
+      })),
+      items: cloneInboxItems(FIXTURE_INBOX_STATE.items)
+    },
     calendarOverlay: {
       ...FIXTURE_CALENDAR_OVERLAY,
       source: {
