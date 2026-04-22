@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyTaskMutation, createTaskId, getSyncStateSummary, getTaskFilters, getTaskStateSummary, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applyTaskMutation, buildSeedData, createTaskId, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
@@ -18,6 +18,8 @@ import {
   FIXTURE_CALENDAR_EVENTS_RAW,
   FIXTURE_CALENDAR_OVERLAY,
   FIXTURE_NOW,
+  FIXTURE_PROJECT_DEFINITIONS,
+  FIXTURE_WORKSPACES,
   FIXTURE_SHELL_STATE,
   FIXTURE_TASKS_RAW,
   getFixtureState
@@ -91,9 +93,29 @@ function withLocalStorage(storage, fn) {
 
 runTest('fixture set is deterministic and parseable', () => {
   const normalized = getFixtureState();
-  assert.equal(normalized.projects.length, 3);
+  assert.equal(normalized.workspaces.length, FIXTURE_WORKSPACES.length);
+  assert.equal(normalized.projectDefinitions.length, FIXTURE_PROJECT_DEFINITIONS.length);
+  assert.equal(normalized.projects.length, 4);
   assert.equal(normalized.tasks.length, 5);
   assert.equal(normalized.tasks.every((task) => typeof task.title === 'string'), true);
+});
+
+runTest('project seed data carries the Motion tutorial workspace and staged project graph', () => {
+  const seed = buildSeedData(getFixtureState());
+  const tutorialWorkspace = getWorkspaceById(seed.workspaces, 'ws_private_my_tasks');
+  const tutorialDefinition = getProjectDefinitionById(seed.projectDefinitions, 'pde_learn_motion');
+  const basicsStage = getStageDefinitionById(seed.projectDefinitions, 'stagedef_motion_basics');
+  const dashboardsTask = getTaskDefinitionById(seed.projectDefinitions, 'taskdef_dashboards');
+  const tutorialProject = seed.projects.find((project) => project.id === 'pr_learn_motion');
+
+  assert.equal(tutorialWorkspace?.name, 'My Tasks (Private)');
+  assert.equal(tutorialDefinition?.name, 'Learn motion');
+  assert.equal(tutorialDefinition?.stages.length, 3);
+  assert.equal(basicsStage?.name, 'Motion Basics');
+  assert.equal(dashboardsTask?.name, 'Setup Dashboards');
+  assert.equal(tutorialProject?.projectDefinitionId, 'pde_learn_motion');
+  assert.equal(tutorialProject?.activeStageDefinitionId, 'stagedef_motion_basics');
+  assert.equal(tutorialProject?.stages.length, 3);
 });
 
 runTest('task normalization injects Motion-like domain defaults for legacy task drafts', () => {
@@ -125,7 +147,7 @@ runTest('fixture tasks expose richer Motion-like dependency and scheduling field
   const notesTask = normalized.find((task) => task.id === 'f5');
 
   assert.equal(draftWeeklyPlan.priorityLevel, 'HIGH');
-  assert.equal(draftWeeklyPlan.workspaceId, 'ws_motion');
+  assert.equal(draftWeeklyPlan.workspaceId, 'ws_motion_team');
   assert.equal(draftWeeklyPlan.scheduledStatus, 'ON_TRACK');
   assert.equal(draftWeeklyPlan.taskDefinitionId, 'taskdef_weekly_plan');
   assert.deepEqual(draftWeeklyPlan.blockingTaskIds, ['f4']);
@@ -156,7 +178,7 @@ runTest('saved views are grouped into workspace, private, team, and project side
   assert.deepEqual(sections.map((section) => section.id), ['workspace', 'my-views', 'team-views', 'projects']);
   assert.equal(sections[1].items.length, 2);
   assert.equal(sections[2].items.length, 2);
-  assert.equal(sections[3].items.length, 3);
+  assert.equal(sections[3].items.length, 4);
 });
 
 runTest('activating a saved view syncs the matching tab and resolves Motion-like view metadata', () => {
@@ -193,6 +215,17 @@ runTest('active shell views change the base task collection before ad hoc filter
 
   assert.equal(timelineTasks.every((task) => task.projectId !== 'inbox'), true);
   assert.deepEqual(timelineTasks.map((task) => task.id), ['f3', 'f4', 'f1']);
+});
+
+runTest('seeded task/project reconciliation adds workspace and tutorial metadata to runtime tasks', () => {
+  const seed = buildSeedData(getFixtureState());
+  const workTask = seed.tasks.find((task) => task.id === 'f1');
+  const personalTask = seed.tasks.find((task) => task.id === 'f3');
+
+  assert.equal(workTask.workspaceName, 'Motion Team');
+  assert.equal(workTask.projectName, 'Work');
+  assert.equal(workTask.isTutorialProject, false);
+  assert.equal(personalTask.workspaceName, 'My Tasks (Private)');
 });
 
 runTest('create duplicate task guard rejects duplicate title in same project', () => {
@@ -647,7 +680,7 @@ runTest('storage contract migrates legacy payloads by injecting calendar and she
   assert.equal(result.value.migration.fromVersion, 1);
   assert.equal(result.value.migration.toVersion, CURRENT_SCHEMA_VERSION);
   assert.equal(Array.isArray(result.value.projects), true);
-  assert.equal(result.value.projects.length, 3);
+  assert.equal(result.value.projects.length, 4);
   assert.equal(result.value.tasks.length, 5);
   assert.equal(Array.isArray(result.value.calendarOverlay.importedEvents), true);
   assert.equal(result.value.calendarOverlay.importedEvents.length, 0);
@@ -661,7 +694,7 @@ runTest('storage contract keeps seeded shell state on current fixture payloads',
 
   assert.equal(result.ok, true);
   assert.equal(result.value.schemaVersion, CURRENT_SCHEMA_VERSION);
-  assert.equal(result.value.tasks[0].workspaceId, 'ws_motion');
+  assert.equal(result.value.tasks[0].workspaceId, 'ws_motion_team');
   assert.equal(result.value.tasks[0].priorityLevel, 'HIGH');
   assert.equal(result.value.tasks[0].scheduledStatus, 'ON_TRACK');
   assert.equal(result.value.tasks[0].taskDefinitionId, 'taskdef_weekly_plan');
@@ -743,7 +776,7 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(typeof saved.deviceId, 'string');
     assert.equal(saved.calendarOverlay.permissionStatus, 'granted');
     assert.equal(saved.calendarOverlay.importedEvents.length, 3);
-    assert.equal(saved.tasks[0].workspaceId, 'ws_motion');
+    assert.equal(saved.tasks[0].workspaceId, 'ws_motion_team');
     assert.equal(saved.tasks[0].priorityLevel, 'HIGH');
     assert.equal(saved.tasks[0].blockingTaskIds.includes('f4'), true);
     assert.equal(saved.shell.theme.mode, 'dark');
@@ -767,7 +800,7 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(loaded.calendarOverlay.permissionStatus, 'granted');
     assert.equal(loaded.calendarOverlay.importedEvents.length, 3);
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.provider, 'google');
-    assert.equal(loaded.tasks[0].workspaceId, 'ws_motion');
+    assert.equal(loaded.tasks[0].workspaceId, 'ws_motion_team');
     assert.equal(loaded.tasks[0].priorityLevel, 'HIGH');
     assert.equal(loaded.tasks[0].scheduledStatus, 'ON_TRACK');
     assert.equal(Array.isArray(loaded.shell.tabs), true);

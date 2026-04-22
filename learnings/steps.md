@@ -522,4 +522,32 @@ The app now thinks about tasks more like Motion does instead of treating them li
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
 
 ---
-*Next: Step 27 adds workspace, project stage, and task-definition baseline structures.*
+## ? Step 27 — Phase 5 Workspace and Project Graph Baseline
+*Completed: 2026-04-24*
+
+**What was built**
+- `apps/desktop/src/projectService.js` — replaces the flat project-only helper layer with Motion-like workspace, project-definition, stage-definition, task-definition, and staged project-instance normalization.
+- `apps/desktop/src/state.js` — upgrades `buildSeedData()` so seeded tasks are reconciled against the workspace and project graph instead of being normalized in isolation.
+- `apps/desktop/src/fixtures.js` — seeds a tutorial-style Motion graph with the `Learn motion` project definition, three stage definitions, staged project instances, and linked workspace data.
+- `scripts/test.mjs` — adds regression coverage for the seeded workspace/tutorial graph and for task reconciliation against project/workspace metadata.
+
+**In plain English**
+The repo can now represent a real Motion-style project hierarchy instead of only a list of colored project names. It knows about workspaces, tutorial project templates, stages inside projects, and task definitions inside stages, which makes the later saved-view and inbox work much less fake. The seeded data now includes the `Learn motion` tutorial structure we observed in the real app, so the clone is building on actual Motion concepts instead of guessed placeholders.
+
+**Files changed**
+~ modified: `apps/desktop/src/projectService.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `apps/desktop/src/fixtures.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/projectService.js`
+- `node --check apps/desktop/src/state.js`
+- `node --check apps/desktop/src/fixtures.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+
+---
+*Next: Step 28 makes saved views first-class in the runtime instead of treating them like light shell buttons.*
