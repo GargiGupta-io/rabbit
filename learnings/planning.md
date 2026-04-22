@@ -217,6 +217,7 @@ That is the execution style so you never feel lost.
 - `learnings/plans/phase-1-plan.md` - Phase 1 MVP product-kernel plan and completion record
 - `learnings/plans/phase-2-plan.md` - Phase 2 architecture, scheduling, hardening, and detailed execution notes
 - `learnings/plans/phase-3-plan.md` - Phase 3 sync, calendar overlay, and server-authority entitlement baseline
+- `learnings/plans/phase-4-plan.md` - Phase 4 manual sync transport, remote merge, and connected refresh baseline
 - `learnings/steps.md` - chronological step log across all phases
 - `learnings/planning.md` - this high-level roadmap and project summary
 
@@ -238,3 +239,7 @@ That is the execution style so you never feel lost.
 - Locked and completed in the acceptance pass.
 - Sync contracts, calendar overlay ingestion, server-authority entitlement refresh, and the acceptance gate are documented in `learnings/plans/phase-3-plan.md`.
 - `npm run lint`, `npm run build`, and `npm run test` passed on April 22, 2026.
+
+### Phase 4
+- Current detailed working phase.
+- Manual sync transport, remote merge, and connected refresh controls are defined in `learnings/plans/phase-4-plan.md`.

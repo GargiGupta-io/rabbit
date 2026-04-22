@@ -373,4 +373,4 @@ Phase 3 is now closed out instead of half-finished. The repo's own checks finall
 ~ modified: `learnings/steps.md`
 
 ---
-*Next: Phase 3 is complete. The next detailed phase has not been defined yet.*
+*Next: Step 21 begins Phase 4 with the connected sync client baseline described in `learnings/plans/phase-4-plan.md`.*
