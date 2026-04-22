@@ -606,4 +606,28 @@ The app now has a real inbox surface instead of just evidence that inbox will ex
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 30 runs the Phase 5 verification gate and closes the phase with the required deep-learn write-up.*
+## ? Step 30 — Phase 5 Verification and Deep Learn Closeout
+*Completed: 2026-04-24*
+
+**What was built**
+- `learnings/planning.md` — marks Phase 5 complete, makes Phase 6 the current detailed phase, and adds the new Phase 5 deep-learn reference to the roadmap.
+- `learnings/plans/phase-5-plan.md` — records the Phase 5 closure state and acceptance-gate outcome.
+- `learnings/phase-5-domain-parity-deeplearn.md` — captures the Phase 5 learning write-up covering task, project, view, and inbox domain parity and how those layers now connect.
+- `learnings/steps.md` — logs Step 30 and points the handoff to Step 31.
+
+**In plain English**
+Phase 5 is properly closed now instead of just feeling complete. The acceptance gate passed, the roadmap now treats domain parity as finished work, and the repo has a dedicated learning note explaining what changed and why it matters before Phase 6 starts. That means the next phase begins from a stable handoff instead of tribal memory.
+
+**Files changed**
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-5-plan.md`
++ created: `learnings/phase-5-domain-parity-deeplearn.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 31 begins Phase 6 by expanding calendar and calendar-event normalization toward Motion's observed calendar shape.*

@@ -110,3 +110,14 @@ Modify:
 - Saved views drive the shell more directly.
 - Inbox exists as a real surface in the app.
 - `npm run test`, `npm run typecheck`, and `npm run build` pass.
+
+## Closure status (2026-04-24)
+
+- Completed through Steps 26 to 30.
+- Delivered:
+  - richer Motion-like task contracts,
+  - workspace, project definition, stage, and task-definition seed structures,
+  - saved views modeled as runtime definitions,
+  - personal inbox baseline rendered in the shell,
+  - verification gate with `test`, `typecheck`, and `build` passing.
+- Deep-learn write-up: `learnings/phase-5-domain-parity-deeplearn.md`.

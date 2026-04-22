@@ -113,16 +113,17 @@ New priority order:
   - `learnings/phase-4-shell-parity-deeplearn.md`
 
 ### Phase 5 - Task, Project, View, and Inbox Domain Parity
-- Current detailed working phase.
+- Completed on 2026-04-24.
 - Goal: align the repo's core entities with Motion's observed task schema, workspace/project/stage model, saved views, and inbox surfaces.
 - Source references:
   - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/models/`
   - `developer/motion-research/CODE_ASSETS/UI_LOGIC/pm/`
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/views-v3/`
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/inbox/`
+  - `learnings/phase-5-domain-parity-deeplearn.md`
 
 ### Phase 6 - Calendar, Scheduling, and Form Parity
-- Queue after Phase 5.
+- Current detailed working phase.
 - Goal: align calendar entities, task forms, scheduling semantics, dependencies, and reschedule behavior with Motion's observed contracts.
 - Source references:
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/calendars/`
@@ -159,10 +160,11 @@ New priority order:
 - `learnings/plans/phase-1-plan.md` - historical Phase 1 MVP kernel plan
 - `learnings/plans/phase-2-plan.md` - historical Phase 2 architecture and hardening plan
 - `learnings/plans/phase-3-plan.md` - historical Phase 3 sync/calendar/entitlement plan
-- `learnings/plans/phase-4-plan.md` - current Phase 4 shell parity plan
+- `learnings/plans/phase-4-plan.md` - completed Phase 4 shell parity plan
 - `learnings/phase-4-shell-parity-deeplearn.md` - Phase 4 shell parity learning write-up
-- `learnings/plans/phase-5-plan.md` - Phase 5 task/project/view/inbox parity plan
-- `learnings/plans/phase-6-plan.md` - Phase 6 calendar/scheduler/form parity plan
+- `learnings/plans/phase-5-plan.md` - completed Phase 5 task/project/view/inbox parity plan
+- `learnings/phase-5-domain-parity-deeplearn.md` - Phase 5 domain parity learning write-up
+- `learnings/plans/phase-6-plan.md` - current Phase 6 calendar/scheduler/form parity plan
 - `learnings/plans/phase-7-plan.md` - Phase 7 API/sync/cache parity plan
 - `learnings/plans/phase-8-plan.md` - Phase 8 native/mac parity and hardening plan
 - `learnings/steps.md` - chronological execution log and next-step handoff
@@ -186,13 +188,14 @@ Supporting research inside the repo:
 - Deep-learn write-up: `learnings/phase-4-shell-parity-deeplearn.md`.
 
 ### Phase 5
-- Current active phase.
-- Starts at Step 26 in `learnings/plans/phase-5-plan.md`.
-- This phase moves from shell fidelity into richer Motion-like domain structure: tasks, workspaces, views, and inbox.
+- Completed.
+- Steps 26 to 30 delivered Motion-like task domain expansion, workspace/project graph seeding, saved-view runtime definitions, the inbox shell surface, and the Phase 5 verification gate.
+- Deep-learn write-up: `learnings/phase-5-domain-parity-deeplearn.md`.
 
 ### Phase 6
-- Queued.
-- Starts once core task/project/view structure is aligned enough to support real calendar and scheduler parity.
+- Current active phase.
+- Starts at Step 31 in `learnings/plans/phase-6-plan.md`.
+- This phase moves from domain parity into calendar entity alignment, scheduler semantics, and a Motion-like task form surface.
 
 ### Phase 7
 - Queued.
