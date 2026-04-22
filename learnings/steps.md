@@ -494,4 +494,32 @@ Phase 4 is properly closed now instead of just "looking done." The verification 
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 26 begins Phase 5 by expanding the task contract toward Motion's observed task schema.*
+## ? Step 26 — Phase 5 Task Contract Expansion
+*Completed: 2026-04-24*
+
+**What was built**
+- `apps/desktop/src/taskService.js` — expands task normalization to carry Motion-like task domain fields such as `statusId`, `priorityLevel`, dependency ids, schedule state, workspace ownership, and richer scheduling metadata while keeping the existing planner-friendly fields intact.
+- `apps/desktop/src/contracts.js` — upgrades persisted payload normalization to schema version 4 and reuses the richer task normalization path so older saved payloads receive safe task-domain defaults instead of staying on the minimal task shape.
+- `apps/desktop/src/fixtures.js` — seeds the fixture task set with deterministic Motion-like task metadata for scheduling state, dependencies, stage/task-definition ids, workspace ids, and task priority so future Phase 5 work has realistic source data.
+- `scripts/test.mjs` — adds regression coverage for the richer task defaults, fixture task shape, and task-domain roundtrip persistence.
+
+**In plain English**
+The app now thinks about tasks more like Motion does instead of treating them like simple checklist rows. Each task can carry scheduling state, dependency links, priority, workspace ownership, and definition metadata, which gives later project, view, and inbox work a much stronger base to build on. Older saved data still loads safely, but it now gets upgraded into the richer task shape automatically.
+
+**Files changed**
+~ modified: `apps/desktop/src/taskService.js`
+~ modified: `apps/desktop/src/contracts.js`
+~ modified: `apps/desktop/src/fixtures.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/taskService.js`
+- `node --check apps/desktop/src/contracts.js`
+- `node --check apps/desktop/src/fixtures.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+
+---
+*Next: Step 27 adds workspace, project stage, and task-definition baseline structures.*

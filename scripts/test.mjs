@@ -96,6 +96,45 @@ runTest('fixture set is deterministic and parseable', () => {
   assert.equal(normalized.tasks.every((task) => typeof task.title === 'string'), true);
 });
 
+runTest('task normalization injects Motion-like domain defaults for legacy task drafts', () => {
+  const task = normalizeTask({
+    id: 'legacy_minimal',
+    title: 'Legacy task',
+    projectId: 'work',
+    durationMinutes: 26
+  });
+
+  assert.equal(task.type, 'NORMAL');
+  assert.equal(task.statusId, 'status_todo');
+  assert.equal(task.priorityLevel, 'MEDIUM');
+  assert.equal(task.deadlineType, 'NONE');
+  assert.equal(task.workspaceId, 'ws_personal');
+  assert.equal(task.durationMinutes, 25);
+  assert.equal(task.duration, 25);
+  assert.equal(task.minimumDuration, null);
+  assert.equal(task.scheduledStatus, null);
+  assert.deepEqual(task.blockingTaskIds, []);
+  assert.deepEqual(task.blockedByTaskIds, []);
+  assert.deepEqual(task.labelIds, []);
+});
+
+runTest('fixture tasks expose richer Motion-like dependency and scheduling fields', () => {
+  const normalized = FIXTURE_TASKS_RAW.map((task) => normalizeTask(task));
+  const draftWeeklyPlan = normalized.find((task) => task.id === 'f1');
+  const designReview = normalized.find((task) => task.id === 'f3');
+  const notesTask = normalized.find((task) => task.id === 'f5');
+
+  assert.equal(draftWeeklyPlan.priorityLevel, 'HIGH');
+  assert.equal(draftWeeklyPlan.workspaceId, 'ws_motion');
+  assert.equal(draftWeeklyPlan.scheduledStatus, 'ON_TRACK');
+  assert.equal(draftWeeklyPlan.taskDefinitionId, 'taskdef_weekly_plan');
+  assert.deepEqual(draftWeeklyPlan.blockingTaskIds, ['f4']);
+  assert.equal(designReview.scheduledStatus, 'PAST_DUE');
+  assert.equal(designReview.needsReschedule, true);
+  assert.equal(notesTask.deadlineType, 'NONE');
+  assert.equal(notesTask.scheduledStatus, null);
+});
+
 runTest('fixture shell state seeds Motion-like tabs, views, and agenda groups', () => {
   const normalized = getFixtureState();
   assert.equal(normalized.shell.theme.mode, 'dark');
@@ -622,6 +661,10 @@ runTest('storage contract keeps seeded shell state on current fixture payloads',
 
   assert.equal(result.ok, true);
   assert.equal(result.value.schemaVersion, CURRENT_SCHEMA_VERSION);
+  assert.equal(result.value.tasks[0].workspaceId, 'ws_motion');
+  assert.equal(result.value.tasks[0].priorityLevel, 'HIGH');
+  assert.equal(result.value.tasks[0].scheduledStatus, 'ON_TRACK');
+  assert.equal(result.value.tasks[0].taskDefinitionId, 'taskdef_weekly_plan');
   assert.equal(result.value.shell.theme.mode, 'dark');
   assert.equal(result.value.shell.savedViews.length, 4);
   assert.equal(result.value.shell.sidebarSections.length, 4);
@@ -700,12 +743,16 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(typeof saved.deviceId, 'string');
     assert.equal(saved.calendarOverlay.permissionStatus, 'granted');
     assert.equal(saved.calendarOverlay.importedEvents.length, 3);
+    assert.equal(saved.tasks[0].workspaceId, 'ws_motion');
+    assert.equal(saved.tasks[0].priorityLevel, 'HIGH');
+    assert.equal(saved.tasks[0].blockingTaskIds.includes('f4'), true);
     assert.equal(saved.shell.theme.mode, 'dark');
     assert.equal(saved.shell.tabs.length, 3);
     assert.equal(saved.shell.savedViews.length, 4);
     assert.equal(savedSnapshot.syncStatus, 'pending');
     assert.equal(savedSnapshot.outbox.length, 1);
     assert.equal(savedSnapshot.calendarOverlay.source.provider, 'google');
+    assert.equal(savedSnapshot.tasks[0].scheduledStatus, 'ON_TRACK');
     assert.equal(savedSnapshot.shell.activeViewId, 'view_my_tasks');
 
     const loaded = loadStoredData();
@@ -720,6 +767,9 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(loaded.calendarOverlay.permissionStatus, 'granted');
     assert.equal(loaded.calendarOverlay.importedEvents.length, 3);
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.provider, 'google');
+    assert.equal(loaded.tasks[0].workspaceId, 'ws_motion');
+    assert.equal(loaded.tasks[0].priorityLevel, 'HIGH');
+    assert.equal(loaded.tasks[0].scheduledStatus, 'ON_TRACK');
     assert.equal(Array.isArray(loaded.shell.tabs), true);
     assert.equal(loaded.shell.tabs.length, 3);
     assert.equal(loaded.shell.savedViews.length, 4);
@@ -748,4 +798,4 @@ runTest('storage handles future schema payload by applying an upgrade compatibil
   });
 });
 
-console.log(`PASS: Phase 3 acceptance test suite completed (${baseTasks.length} fixture tasks)`);
+console.log(`PASS: Domain regression suite completed (${baseTasks.length} fixture tasks)`);
