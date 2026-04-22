@@ -1,22 +1,27 @@
 ﻿import fs from 'node:fs';
 
-const manifestPath = 'ops/phase-1-build-manifest.json';
+const manifestPath = 'ops/phase-3-build-manifest.json';
 const manifest = {
   builtAt: new Date().toISOString(),
-  phase: 'phase-1',
-  step: 'foundation + kernel',
+  phase: 'phase-3',
+  step: 'sync + calendar + entitlement baseline',
   checks: {
     lint: 'node ./scripts/lint.mjs',
-    test: 'node ./scripts/test.mjs'
+    test: 'node ./scripts/test.mjs',
+    build: 'node ./scripts/build.mjs'
   },
   artifact: {
-    type: 'desktop-shell-phase1',
+    type: 'desktop-shell-phase3',
     files: [
       'apps/desktop/index.html',
       'apps/desktop/src/main.tsx',
       'apps/desktop/src/state.js',
       'apps/desktop/src/storage.js',
-      'apps/desktop/src/entitlement.js'
+      'apps/desktop/src/scheduler.js',
+      'apps/desktop/src/syncContract.js',
+      'apps/desktop/src/calendarService.js',
+      'apps/desktop/src/entitlement.js',
+      'apps/desktop/src/entitlementClient.js'
     ]
   }
 };

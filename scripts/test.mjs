@@ -645,4 +645,4 @@ runTest('storage handles future schema payload by applying an upgrade compatibil
   });
 });
 
-console.log(`PASS: Phase 3 Step 18 baseline test suite completed (${baseTasks.length} fixture tasks)`);
+console.log(`PASS: Phase 3 acceptance test suite completed (${baseTasks.length} fixture tasks)`);
