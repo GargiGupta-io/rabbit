@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyTaskMutation, buildSeedData, createTaskId, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applyTaskMutation, buildSeedData, createTaskId, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
@@ -194,6 +194,23 @@ runTest('activating a saved view syncs the matching tab and resolves Motion-like
   assert.equal(meta.id, 'view_project_timelines');
   assert.equal(meta.layout, 'gantt');
   assert.equal(meta.collectionLabel, 'Project sequence');
+  assert.equal(meta.itemType, 'projects');
+  assert.equal(meta.visibility, 'team');
+  assert.equal(Array.isArray(meta.columns), true);
+  assert.equal(meta.columns.length >= 4, true);
+});
+
+runTest('saved view runtime preserves views-v3-style definitions and summaries', () => {
+  const summary = getViewStateSummary(fixtureState, {
+    now: FIXTURE_NOW
+  });
+
+  assert.equal(summary.meta.id, 'view_my_tasks');
+  assert.equal(summary.meta.viewType, 'projects-and-tasks');
+  assert.equal(summary.meta.itemType, 'tasks');
+  assert.equal(summary.columns.length, 4);
+  assert.equal(summary.filterSummary.includes('Private'), true);
+  assert.equal(summary.filterSummary.includes('Assigned to me'), true);
 });
 
 runTest('active shell views change the base task collection before ad hoc filters run', () => {
@@ -202,16 +219,20 @@ runTest('active shell views change the base task collection before ad hoc filter
     ...fixtureState,
     shell: deadlineShell
   });
-  const deadlineTasks = selectTasksForShellView(fixtureState.tasks, deadlineSnapshot);
+  const deadlineTasks = selectTasksForShellView(fixtureState.tasks, deadlineSnapshot, {
+    now: FIXTURE_NOW
+  });
 
-  assert.deepEqual(deadlineTasks.map((task) => task.id), ['f3', 'f4', 'f1']);
+  assert.deepEqual(deadlineTasks.map((task) => task.id), ['f1']);
 
   const timelineShell = activateShellView(fixtureState.shell, 'view_project_timelines');
   const timelineSnapshot = deriveShellStateSnapshot({
     ...fixtureState,
     shell: timelineShell
   });
-  const timelineTasks = selectTasksForShellView(fixtureState.tasks, timelineSnapshot);
+  const timelineTasks = selectTasksForShellView(fixtureState.tasks, timelineSnapshot, {
+    now: FIXTURE_NOW
+  });
 
   assert.equal(timelineTasks.every((task) => task.projectId !== 'inbox'), true);
   assert.deepEqual(timelineTasks.map((task) => task.id), ['f3', 'f4', 'f1']);

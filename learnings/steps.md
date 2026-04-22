@@ -550,4 +550,32 @@ The repo can now represent a real Motion-style project hierarchy instead of only
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
 
 ---
-*Next: Step 28 makes saved views first-class in the runtime instead of treating them like light shell buttons.*
+## ? Step 28 — Phase 5 View Runtime Parity
+*Completed: 2026-04-24*
+
+**What was built**
+- `apps/desktop/src/shellService.js` — upgrades saved views from a light shell shape into normalized view-definition objects with filters, grouping, sort rules, visible columns, and view visibility metadata inspired by Motion's observed `views-v3` model.
+- `apps/desktop/src/state.js` — adds a view runtime summary helper so the UI can consume shell view state, visible records, column info, and filter summary as one runtime object.
+- `apps/desktop/src/main.tsx` — switches the shell header and planner surface to read from the richer saved-view runtime instead of only route labels and simple sort/group fields.
+- `scripts/test.mjs` — adds regression coverage for the richer view-definition model and for the new definition-driven task selection behavior.
+
+**In plain English**
+Saved views are no longer just named buttons in the sidebar. The app now treats each view more like Motion does: a real definition with its own filters, grouping rules, sort order, visibility, and visible columns. That means the center workspace is starting to be driven by actual view data instead of hard-coded page assumptions.
+
+**Files changed**
+~ modified: `apps/desktop/src/shellService.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/shellService.js`
+- `node --check apps/desktop/src/state.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 29 adds the inbox domain and renders it as a real shell surface instead of a placeholder gap.*
