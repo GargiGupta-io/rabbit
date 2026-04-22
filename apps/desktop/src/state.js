@@ -1,5 +1,5 @@
 import { normalizeTask } from './taskService.js';
-import { buildProjectSeedData } from './projectService.js';
+import { buildProjectDomainSeedData, buildProjectSeedData, decorateTaskWithProject } from './projectService.js';
 import { appendOutboxEvent, normalizeSyncState } from './syncContract.js';
 import { deriveShellStateSnapshot } from './shellService.js';
 
@@ -9,14 +9,23 @@ export { buildPlanWindow, generatePlanSlice, rankConflicts } from './scheduler.j
 export * from './syncContract.js';
 export * from './shellService.js';
 
-export function buildSeedData({ projects, tasks }) {
-  const normalizedProjects = buildProjectSeedData(projects);
+export function buildSeedData({ workspaces, projectDefinitions, projects, tasks } = {}) {
+  const projectDomain = buildProjectDomainSeedData({
+    workspaces,
+    projectDefinitions,
+    projects
+  });
   const normalizedTasks = Array.isArray(tasks)
-    ? tasks.map((task) => normalizeTask(task, { projectIds: new Set(normalizedProjects.map((project) => project.id)) })).filter(Boolean)
+    ? tasks
+        .map((task) => normalizeTask(task, {
+          projectIds: new Set(projectDomain.projects.map((project) => project.id))
+        }))
+        .filter(Boolean)
+        .map((task) => decorateTaskWithProject(task, projectDomain))
     : [];
 
   return {
-    projects: normalizedProjects,
+    ...projectDomain,
     tasks: normalizedTasks
   };
 }
