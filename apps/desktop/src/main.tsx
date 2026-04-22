@@ -1,7 +1,8 @@
 import { applyTaskMutation, buildProjectSeedData, decorateTaskWithProject, getProjectById, getSyncStateSummary, getTaskFilters, getTaskStateSummary, resolveTaskAction, upsertTask, formatDisplayDateTime } from './state.js';
 import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
-import { canMutateTasks, getEntitlementSnapshot, requireEntitlement, resolveFeatureGate } from './entitlement.js';
+import { canMutateTasks, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement, resolveFeatureGate } from './entitlement.js';
+import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
 
 let entitlement = getEntitlementSnapshot();
 let canMutate = canMutateTasks();
@@ -10,6 +11,8 @@ let tasks = appData.tasks.slice();
 let activeFilter = 'all';
 let activePlanWindow = 'all';
 let search = '';
+let entitlementRefreshMode = 'active';
+let isRefreshingEntitlement = false;
 
 const root = document.getElementById('root');
 if (!root) {
@@ -27,6 +30,7 @@ shell.innerHTML = `
   </header>
 
   <section class="sync-panel" id="sync-panel" aria-live="polite"></section>
+  <section class="entitlement-panel" id="entitlement-panel" aria-live="polite"></section>
 
   <section class="metrics" id="metrics"></section>
 
@@ -111,7 +115,8 @@ style.textContent = `
   .form-row,
   .editor,
   .task-list,
-  .sync-panel {
+  .sync-panel,
+  .entitlement-panel {
     background: #fff;
     border: 1px solid #d9deea;
     border-radius: 12px;
@@ -198,6 +203,11 @@ style.textContent = `
     gap: 8px;
     background: #f8fafc;
   }
+  .entitlement-panel {
+    display: grid;
+    gap: 8px;
+    background: #f8fafc;
+  }
   .sync-header {
     display: flex;
     flex-wrap: wrap;
@@ -263,12 +273,39 @@ style.textContent = `
     display: grid;
     gap: 8px;
   }
+  .control-row {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    align-items: end;
+  }
+  .control-row label {
+    display: grid;
+    gap: 5px;
+    font-size: 12px;
+    color: #334155;
+  }
+  .control-row select,
+  .control-row button {
+    border: 1px solid #cfd3dc;
+    border-radius: 8px;
+    padding: 8px;
+    background: #fff;
+  }
+  .control-row button {
+    cursor: pointer;
+  }
+  .control-row button[disabled] {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
 `;
 
 document.head.appendChild(style);
 
 const metricsEl = shell.querySelector('#metrics') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
+const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
@@ -283,15 +320,102 @@ const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
 const warningEl = document.createElement('p');
 
+function getEntitlementPresentation(summary) {
+  if (summary.isRevoked) {
+    return {
+      badgeClass: 'degraded',
+      title: 'Revoked',
+      detail: summary.reason || 'The authority revoked this entitlement, so premium actions are blocked safely.'
+    };
+  }
+
+  if (summary.isOffline) {
+    return {
+      badgeClass: 'offline',
+      title: 'Offline',
+      detail: summary.reason || 'Authority refresh is offline, so the app is using the last safe entitlement snapshot.'
+    };
+  }
+
+  if (summary.isStale) {
+    return {
+      badgeClass: 'pending',
+      title: 'Stale',
+      detail: summary.reason || 'Entitlement data is older than the freshness window and should be refreshed soon.'
+    };
+  }
+
+  if (summary.isFresh) {
+    return {
+      badgeClass: 'healthy',
+      title: 'Fresh',
+      detail: summary.reason || 'Entitlement was confirmed recently by the authority.'
+    };
+  }
+
+  return {
+    badgeClass: 'local-only',
+    title: 'Cached',
+    detail: summary.reason || 'The app is still using cached entitlement data until the first authority refresh runs.'
+  };
+}
+
+function updateEntitlementPanel() {
+  const summary = getEntitlementStateSummary(entitlement);
+  const presentation = getEntitlementPresentation(summary);
+  const refreshOptions = ENTITLEMENT_REFRESH_SCENARIOS.map(({ id, label }) => {
+    const selected = id === entitlementRefreshMode ? 'selected' : '';
+    return `<option value="${id}" ${selected}>${label}</option>`;
+  }).join('');
+  const refreshButtonLabel = isRefreshingEntitlement ? 'Refreshing...' : 'Refresh entitlement';
+
+  entitlementPanelEl.innerHTML = `
+    <div class="sync-header">
+      <strong>Entitlement authority</strong>
+      <span class="sync-pill ${presentation.badgeClass}">${presentation.title}</span>
+    </div>
+    <div class="sync-grid">
+      <div class="sync-stat">
+        <strong>Plan</strong>
+        <div class="sync-value">${summary.plan}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Last success</strong>
+        <div class="sync-value">${formatSyncDate(summary.lastSuccessfulAt)}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Last attempt</strong>
+        <div class="sync-value">${formatSyncDate(summary.lastAttemptAt)}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Authority source</strong>
+        <div class="sync-value">${summary.source || 'Unknown'}</div>
+      </div>
+    </div>
+    <div class="control-row">
+      <label>
+        Mock authority response
+        <select id="entitlement-refresh-mode">
+          ${refreshOptions}
+        </select>
+      </label>
+      <button id="entitlement-refresh-btn" type="button" ${isRefreshingEntitlement ? 'disabled' : ''}>${refreshButtonLabel}</button>
+    </div>
+    <p class="sync-note">${presentation.detail}</p>
+  `;
+}
+
 function refreshEntitlementState() {
   entitlement = getEntitlementSnapshot({ allowPersistence: false });
-  const entitlementCheck = requireEntitlement('tasks_manage');
+  const entitlementSummary = getEntitlementStateSummary(entitlement);
+  const entitlementCheck = requireEntitlement('tasks_manage', Date.now(), entitlement);
   canMutate = entitlementCheck.allowed;
-  const aiStatus = resolveFeatureGate('ai_suggest') ? 'enabled' : 'disabled';
-  const calendarStatus = resolveFeatureGate('calendar_read') ? 'enabled' : 'disabled';
+  const aiStatus = entitlementSummary.aiEnabled ? 'enabled' : 'disabled';
+  const calendarStatus = entitlementSummary.calendarReadEnabled ? 'enabled' : 'disabled';
   const mutationState = canMutate ? 'enabled' : 'read-only';
-  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
+  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | Authority: ${entitlementSummary.authorityStatus} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
   addBtn.disabled = !canMutate;
+  updateEntitlementPanel();
 
   if (!canMutate && entitlementCheck.reason) {
     warningEl.className = 'error';
@@ -673,9 +797,48 @@ taskListEl.addEventListener('click', (event) => {
   renderAll();
 });
 
+entitlementPanelEl.addEventListener('change', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLSelectElement)) {
+    return;
+  }
+  if (target.id !== 'entitlement-refresh-mode') {
+    return;
+  }
+
+  entitlementRefreshMode = target.value || 'active';
+  updateEntitlementPanel();
+});
+
+entitlementPanelEl.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+  if (target.id !== 'entitlement-refresh-btn' || isRefreshingEntitlement) {
+    return;
+  }
+
+  isRefreshingEntitlement = true;
+  updateEntitlementPanel();
+
+  try {
+    await refreshEntitlementSnapshot({
+      scenario: entitlementRefreshMode
+    });
+    showError('');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Entitlement refresh failed.';
+    showError(message);
+  } finally {
+    isRefreshingEntitlement = false;
+    renderAll();
+  }
+});
+
 if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => updateSyncStatus());
-  window.addEventListener('offline', () => updateSyncStatus());
+  window.addEventListener('online', () => renderAll());
+  window.addEventListener('offline', () => renderAll());
 }
 
 function run() {
