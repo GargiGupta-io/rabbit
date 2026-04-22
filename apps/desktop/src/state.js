@@ -1,11 +1,13 @@
 import { normalizeTask } from './taskService.js';
 import { buildProjectSeedData } from './projectService.js';
 import { appendOutboxEvent, normalizeSyncState } from './syncContract.js';
+import { deriveShellStateSnapshot } from './shellService.js';
 
 export * from './taskService.js';
 export * from './projectService.js';
 export { buildPlanWindow, generatePlanSlice, rankConflicts } from './scheduler.js';
 export * from './syncContract.js';
+export * from './shellService.js';
 
 export function buildSeedData({ projects, tasks }) {
   const normalizedProjects = buildProjectSeedData(projects);
@@ -65,4 +67,8 @@ export function getSyncStateSummary(appData = {}) {
     isLocalOnly,
     isDegraded: hasPendingChanges || isFailed
   };
+}
+
+export function getShellState(appData = {}, options = {}) {
+  return deriveShellStateSnapshot(appData, options);
 }
