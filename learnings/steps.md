@@ -687,4 +687,32 @@ The planner no longer treats every scheduling problem as the same kind of warnin
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 33 begins the Phase 6 task-form pass by building a Motion-like task form baseline.*
+## ? Step 33 — Phase 6 Task Form Baseline
+*Completed: 2026-04-25*
+
+**What was built**
+- `apps/desktop/src/state.js` — adds shared task-form state and option helpers so project defaults, assignee choices, schedule modes, and form normalization all come from one place instead of being hard-coded in the page.
+- `apps/desktop/src/taskService.js` — adds form-to-draft conversion and fixed-time scheduling support so the richer form can still create normalized tasks cleanly.
+- `apps/desktop/src/main.tsx` — replaces the tiny quick-add row with a real Motion-style task form surface that supports title, description, project, assignee, priority, status, schedule mode, schedule, due/start times, duration, deadline type, and recurrence.
+- `scripts/test.mjs` — adds regression coverage for form defaults, option sets, and fixed-time draft generation.
+
+**In plain English**
+The app no longer creates tasks through a tiny one-line capture row. It now has a real task form with the kind of defaults Motion uses: project-aware workspace selection, richer scheduling modes, assignee and priority controls, and a fuller set of task details before creation. That makes the creation flow feel much closer to the actual app and gives Step 34 a real form layer to build on.
+
+**Files changed**
+~ modified: `apps/desktop/src/state.js`
+~ modified: `apps/desktop/src/taskService.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/state.js`
+- `node --check apps/desktop/src/taskService.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 34 continues Phase 6 by adding recurrence, scheduling, and project/stage defaults to the form layer.*

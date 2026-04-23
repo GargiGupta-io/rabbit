@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyTaskMutation, buildInboxSeedData, buildSeedData, createTaskId, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applyTaskMutation, buildInboxSeedData, buildSeedData, buildTaskDraftFromFormState, createTaskFormState, createTaskId, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskFormOptions, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
@@ -171,6 +171,66 @@ runTest('fixture shell state seeds Motion-like tabs, views, and agenda groups', 
   assert.equal(normalized.shell.sidebarSections.length, 4);
   assert.equal(normalized.shell.agenda.counts.total, FIXTURE_SHELL_STATE.agenda.counts.total);
   assert.equal(normalized.shell.agenda.counts.total, 6);
+});
+
+runTest('task form state seeds Motion-like defaults from project and workspace context', () => {
+  const form = createTaskFormState(fixtureState, {
+    projectId: 'work'
+  });
+
+  assert.equal(form.projectId, 'work');
+  assert.equal(form.projectName, 'Work');
+  assert.equal(form.workspaceId, 'ws_motion_team');
+  assert.equal(form.assigneeUserId, 'user_manager_motion');
+  assert.equal(form.statusId, 'status_todo');
+  assert.equal(form.priorityLevel, 'MEDIUM');
+  assert.equal(form.deadlineType, 'SOFT');
+  assert.equal(form.scheduleMode, 'auto');
+  assert.equal(form.scheduleId, 'schedule_work_default');
+  assert.equal(form.minimumDuration, 15);
+  assert.equal(form.recurrencePattern, 'none');
+});
+
+runTest('task form options expose project, assignee, schedule, and recurrence controls', () => {
+  const form = createTaskFormState(fixtureState, {
+    projectId: 'work'
+  });
+  const options = getTaskFormOptions(fixtureState, form);
+
+  assert.equal(options.projectOptions.length, 4);
+  assert.equal(options.assigneeOptions.some((option) => option.id === 'user_manager_motion'), true);
+  assert.equal(options.scheduleOptions.length, 2);
+  assert.equal(options.scheduleModeOptions.length, 3);
+  assert.equal(options.deadlineOptions.length, 4);
+  assert.equal(options.recurrenceOptions.length, 3);
+  assert.equal(options.activeWorkspace?.id, 'ws_motion_team');
+});
+
+runTest('task form draft builder converts fixed-time form state into a normalized draft', () => {
+  const form = createTaskFormState(fixtureState, {
+    projectId: 'work',
+    title: 'Fixed kickoff prep',
+    description: 'Prepare the deck before the kickoff.',
+    scheduleMode: 'fixed',
+    dueAtInput: '2026-04-18T10:00',
+    startAtInput: '2026-04-18T09:00',
+    durationMinutes: 60,
+    minimumDuration: 30,
+    priorityLevel: 'HIGH'
+  });
+  const draft = buildTaskDraftFromFormState(form);
+
+  assert.equal(draft.title, 'Fixed kickoff prep');
+  assert.equal(draft.projectId, 'work');
+  assert.equal(draft.workspaceId, 'ws_motion_team');
+  assert.equal(draft.isFixedTimeTask, true);
+  assert.equal(draft.isAutoScheduled, false);
+  assert.equal(draft.scheduleOverridden, true);
+  assert.equal(draft.priorityLevel, 'HIGH');
+  assert.equal(draft.minimumDuration, 30);
+  assert.equal(draft.scheduledStart, '2026-04-18T03:30:00.000Z');
+  assert.equal(draft.scheduledEnd, '2026-04-18T04:30:00.000Z');
+  assert.equal(draft.dueAt, '2026-04-18T04:30:00.000Z');
 });
 
 runTest('saved views are grouped into workspace, private, team, and project sidebar sections', () => {
