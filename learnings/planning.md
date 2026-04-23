@@ -123,16 +123,17 @@ New priority order:
   - `learnings/phase-5-domain-parity-deeplearn.md`
 
 ### Phase 6 - Calendar, Scheduling, and Form Parity
-- Current detailed working phase.
+- Completed on 2026-04-25.
 - Goal: align calendar entities, task forms, scheduling semantics, dependencies, and reschedule behavior with Motion's observed contracts.
 - Source references:
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/calendars/`
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/calendar-events/`
   - `developer/motion-research/CODE_ASSETS/UI_LOGIC/pm/task/form/`
   - `developer/motion-research/CODE_ASSETS/SHARED_LOGIC/flows/`
+  - `learnings/phase-6-calendar-scheduling-form-deeplearn.md`
 
 ### Phase 7 - API, Sync, and Cache Parity
-- Queue after Phase 6.
+- Current detailed working phase.
 - Goal: align API clients, sync event shape, PowerSync-style transport, bootstrap/cache/query behavior, and local-first reconciliation with extracted Motion contracts.
 - Source references:
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/`
@@ -164,8 +165,9 @@ New priority order:
 - `learnings/phase-4-shell-parity-deeplearn.md` - Phase 4 shell parity learning write-up
 - `learnings/plans/phase-5-plan.md` - completed Phase 5 task/project/view/inbox parity plan
 - `learnings/phase-5-domain-parity-deeplearn.md` - Phase 5 domain parity learning write-up
-- `learnings/plans/phase-6-plan.md` - current Phase 6 calendar/scheduler/form parity plan
-- `learnings/plans/phase-7-plan.md` - Phase 7 API/sync/cache parity plan
+- `learnings/plans/phase-6-plan.md` - completed Phase 6 calendar/scheduler/form parity plan
+- `learnings/phase-6-calendar-scheduling-form-deeplearn.md` - Phase 6 calendar, scheduling, and form parity learning write-up
+- `learnings/plans/phase-7-plan.md` - current Phase 7 API/sync/cache parity plan
 - `learnings/plans/phase-8-plan.md` - Phase 8 native/mac parity and hardening plan
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
@@ -193,13 +195,14 @@ Supporting research inside the repo:
 - Deep-learn write-up: `learnings/phase-5-domain-parity-deeplearn.md`.
 
 ### Phase 6
-- Current active phase.
-- Starts at Step 31 in `learnings/plans/phase-6-plan.md`.
-- This phase moves from domain parity into calendar entity alignment, scheduler semantics, and a Motion-like task form surface.
+- Completed.
+- Steps 31 to 35 delivered Motion-like calendar entities, scheduler semantics, the full task composer, project-aware task-form defaults, and the Phase 6 verification gate.
+- Deep-learn write-up: `learnings/phase-6-calendar-scheduling-form-deeplearn.md`.
 
 ### Phase 7
-- Queued.
-- Starts once the local product structure is close enough that API and sync alignment will reinforce the right model instead of the wrong one.
+- Current active phase.
+- Starts at Step 36 in `learnings/plans/phase-7-plan.md`.
+- This phase moves from local product parity into API, sync-event, cache, and reconciliation parity with the extracted Motion contracts.
 
 ### Phase 8
 - Queued.

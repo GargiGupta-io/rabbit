@@ -91,3 +91,15 @@ Modify:
 - The app has a Motion-like task-edit surface instead of the old quick form row.
 - Scheduling, dependency, and recurrence behavior are materially closer to Motion.
 - `npm run test`, `npm run typecheck`, and `npm run build` pass.
+
+## Closure status (2026-04-25)
+
+- Completed through Steps 31 to 35.
+- Delivered:
+  - Motion-like calendar entity and event normalization,
+  - richer scheduler semantics for blocked, conflict, pending, and unfit states,
+  - a full task form that replaced the old inline add-task row,
+  - project-aware stage defaults and recurrence interval handling,
+  - verification gate with `test`, `typecheck`, and `build` passing.
+- Verified in `apps/desktop/src/main.tsx` that the shell now renders the full `task-form-panel` composer instead of relying on the old inline add-task row.
+- Deep-learn write-up: `learnings/phase-6-calendar-scheduling-form-deeplearn.md`.

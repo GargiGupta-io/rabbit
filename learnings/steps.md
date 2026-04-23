@@ -743,4 +743,29 @@ The task form now reacts to project context instead of treating every project th
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 35 closes Phase 6 by running the verification gate and confirming the new task form is the primary editing surface.*
+## ? Step 35 — Phase 6 Verification and Deep Learn Closeout
+*Completed: 2026-04-25*
+
+**What was built**
+- `learnings/planning.md` — marks Phase 6 complete, makes Phase 7 the active detailed phase, and adds the new Phase 6 learning reference.
+- `learnings/plans/phase-6-plan.md` — records the Phase 6 closure state and acceptance-gate outcome.
+- `learnings/phase-6-calendar-scheduling-form-deeplearn.md` — captures the Phase 6 learning write-up covering calendar entities, scheduling semantics, task-form structure, and project-aware defaults.
+- `learnings/steps.md` — logs Step 35 and points the handoff to Step 36.
+
+**In plain English**
+Phase 6 is closed properly now instead of just being “the last thing we worked on.” The gate was rerun, the roadmap now treats calendar, scheduling, and form parity as finished work, and the repo has a dedicated learning note explaining what changed and why it matters before the API and sync phase starts.
+
+**Files changed**
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-6-plan.md`
++ created: `learnings/phase-6-calendar-scheduling-form-deeplearn.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `rg -n "quick-add|Task form|composer-panel|task-edit surface|inline add-task" apps/desktop/src/main.tsx`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 36 begins Phase 7 by adding typed client wrappers for the highest-value Motion API surfaces.*
