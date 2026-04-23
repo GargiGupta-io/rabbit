@@ -8,6 +8,7 @@ import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncCo
 import { buildCalendarBusyBlocks, normalizeCalendarEvent, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
 import { getTaskScheduleSummary, getTaskScheduleType } from '../apps/desktop/src/taskService.js';
+import { getProjectTaskFormDefaults } from '../apps/desktop/src/projectService.js';
 import {
   activateShellView,
   buildSidebarSections,
@@ -231,6 +232,57 @@ runTest('task form draft builder converts fixed-time form state into a normalize
   assert.equal(draft.scheduledStart, '2026-04-18T03:30:00.000Z');
   assert.equal(draft.scheduledEnd, '2026-04-18T04:30:00.000Z');
   assert.equal(draft.dueAt, '2026-04-18T04:30:00.000Z');
+});
+
+runTest('project task form defaults derive stage-aware start and due windows from tutorial projects', () => {
+  const defaults = getProjectTaskFormDefaults({
+    projects: fixtureState.projects,
+    projectDefinitions: fixtureState.projectDefinitions,
+    projectId: 'pr_learn_motion',
+    now: FIXTURE_NOW
+  });
+  const advancedDefaults = getProjectTaskFormDefaults({
+    projects: fixtureState.projects,
+    projectDefinitions: fixtureState.projectDefinitions,
+    projectId: 'pr_learn_motion',
+    stageDefinitionId: 'stagedef_motion_advanced',
+    now: FIXTURE_NOW
+  });
+
+  assert.equal(defaults.projectDefinitionId, 'pde_learn_motion');
+  assert.equal(defaults.selectedStageId, 'stagedef_motion_basics');
+  assert.equal(defaults.stageOptions.length, 3);
+  assert.equal(defaults.defaultStartAt, '2026-04-20T09:00:00.000Z');
+  assert.equal(defaults.defaultDueAt, '2026-04-30T17:00:00.000Z');
+  assert.equal(advancedDefaults.selectedStageId, 'stagedef_motion_advanced');
+  assert.equal(advancedDefaults.defaultStartAt, '2026-04-30T09:00:00.000Z');
+  assert.equal(advancedDefaults.defaultDueAt, '2026-05-15T17:00:00.000Z');
+});
+
+runTest('task form draft builder carries project stage defaults and recurrence intervals', () => {
+  const draft = buildTaskDraftFromFormState({
+    title: 'Template follow-up',
+    projectId: 'pr_learn_motion',
+    projectName: 'Learn motion',
+    workspaceId: 'ws_private_my_tasks',
+    projectDefinitionId: 'pde_learn_motion',
+    stageDefinitionId: 'stagedef_motion_advanced',
+    scheduleMode: 'auto',
+    dueAtInput: '2026-05-15T17:00',
+    startAtInput: '2026-04-30T09:00',
+    recurrencePattern: 'weekly',
+    recurrenceInterval: 2,
+    durationMinutes: 45
+  });
+
+  assert.equal(draft.projectDefinitionId, 'pde_learn_motion');
+  assert.equal(draft.stageDefinitionId, 'stagedef_motion_advanced');
+  assert.equal(draft.startAt, null);
+  assert.equal(draft.startOn, '2026-04-30');
+  assert.equal(draft.isAutoScheduled, true);
+  assert.equal(draft.recurrence.pattern, 'weekly');
+  assert.equal(draft.recurrence.interval, 2);
+  assert.equal(draft.dueAt, '2026-05-15T11:30:00.000Z');
 });
 
 runTest('saved views are grouped into workspace, private, team, and project sidebar sections', () => {

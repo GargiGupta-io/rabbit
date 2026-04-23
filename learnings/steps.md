@@ -715,4 +715,32 @@ The app no longer creates tasks through a tiny one-line capture row. It now has 
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 34 continues Phase 6 by adding recurrence, scheduling, and project/stage defaults to the form layer.*
+## ? Step 34 — Phase 6 Project-Aware Task Form Defaults
+*Completed: 2026-04-25*
+
+**What was built**
+- `apps/desktop/src/projectService.js` — adds project-stage option helpers and stage-aware task-form defaults so tutorial-style projects can drive stage selection and default start/due windows.
+- `apps/desktop/src/taskService.js` — extends task-form draft building so stage ids, project-definition ids, start windows, and recurrence intervals survive form submission in normalized task drafts.
+- `apps/desktop/src/main.tsx` — upgrades the Motion-style task form with stage selection, recurrence interval control, project-aware default dates, and per-project reset behavior without falling back to the old inline task row.
+- `scripts/test.mjs` — adds deterministic coverage for tutorial-project stage defaults and for stage-aware recurring task draft generation.
+
+**In plain English**
+The task form now reacts to project context instead of treating every project the same. If you create work inside the tutorial-style Motion project, the form can pick the active stage, suggest start and due dates based on that stage, and carry recurrence interval data into the saved task draft. That moves the form much closer to the project-aware behavior we saw in the real Motion app.
+
+**Files changed**
+~ modified: `apps/desktop/src/projectService.js`
+~ modified: `apps/desktop/src/taskService.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/projectService.js`
+- `node --check apps/desktop/src/taskService.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 35 closes Phase 6 by running the verification gate and confirming the new task form is the primary editing surface.*
