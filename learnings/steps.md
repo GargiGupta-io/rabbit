@@ -630,4 +630,33 @@ Phase 5 is properly closed now instead of just feeling complete. The acceptance 
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 31 begins Phase 6 by expanding calendar and calendar-event normalization toward Motion's observed calendar shape.*
+## ? Step 31 — Phase 6 Calendar Entity Alignment
+*Completed: 2026-04-25*
+
+**What was built**
+- `apps/desktop/src/calendarService.js` — expands calendar normalization to carry Motion-like calendar entities, provider metadata, access roles, event visibility, organizers, attendees, conference details, recurrence fields, and provider-aware source metadata while keeping planner-friendly busy-block fields intact.
+- `apps/desktop/src/contracts.js` — bumps the persisted schema to `v5`, applies a calendar-entity migration step for older payloads, and validates that stored overlays now include a calendar collection as well as imported events.
+- `apps/desktop/src/fixtures.js` — seeds richer Google calendar fixtures with real calendar definitions, account metadata, and event objects shaped closer to Motion's extracted calendar and calendar-event models.
+- `scripts/test.mjs` — adds regression coverage for richer calendar overlay normalization, Motion-like event metadata, and persisted storage roundtrips with the expanded calendar shape.
+
+**In plain English**
+The app no longer treats the calendar as just a loose list of busy blocks. It now remembers which calendars those events came from, which account they belong to, whether a calendar is primary or shared, and richer details on each event such as attendees, meeting links, visibility, and recurrence-related fields. That makes the saved data much closer to the real Motion app without breaking the existing planner behavior.
+
+**Files changed**
+~ modified: `apps/desktop/src/calendarService.js`
+~ modified: `apps/desktop/src/contracts.js`
+~ modified: `apps/desktop/src/fixtures.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/calendarService.js`
+- `node --check apps/desktop/src/contracts.js`
+- `node --check apps/desktop/src/fixtures.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 32 continues Phase 6 by improving planner semantics around scheduled status and dependencies.*

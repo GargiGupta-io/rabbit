@@ -5,7 +5,7 @@ import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSn
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
-import { buildCalendarBusyBlocks, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
+import { buildCalendarBusyBlocks, normalizeCalendarEvent, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
 import {
   activateShellView,
@@ -16,6 +16,7 @@ import {
 } from '../apps/desktop/src/shellService.js';
 import {
   FIXTURE_CALENDAR_EVENTS_RAW,
+  FIXTURE_CALENDARS_RAW,
   FIXTURE_CALENDAR_OVERLAY,
   FIXTURE_INBOX_STATE,
   FIXTURE_NOW,
@@ -385,10 +386,20 @@ runTest('calendar overlay normalization keeps deterministic busy blocks and deri
   const overlay = normalizeCalendarOverlay(FIXTURE_CALENDAR_OVERLAY);
   const busyBlocks = buildCalendarBusyBlocks(overlay.importedEvents);
 
+  assert.equal(Array.isArray(overlay.calendars), true);
+  assert.equal(overlay.calendars.length, FIXTURE_CALENDARS_RAW.length);
   assert.equal(Array.isArray(overlay.importedEvents), true);
   assert.equal(overlay.importedEvents.length, 3);
   assert.equal(overlay.permissionStatus, 'granted');
   assert.equal(overlay.source.provider, 'google');
+  assert.equal(overlay.source.providerType, 'GOOGLE');
+  assert.equal(overlay.source.accountEmail, 'gargig469@gmail.com');
+  assert.equal(overlay.calendars[0]?.accessRole, 'OWNER');
+  assert.equal(overlay.calendars[1]?.type, 'FREQUENTLY_MET');
+  assert.equal(overlay.importedEvents[0]?.type, 'NORMAL');
+  assert.equal(overlay.importedEvents[0]?.conferenceType, 'meet');
+  assert.equal(overlay.importedEvents[0]?.attendees.length, 2);
+  assert.equal(overlay.importedEvents[0]?.visibility, 'DEFAULT');
   assert.equal(overlay.importedEvents[2]?.allDay, true);
   assert.equal(overlay.importedEvents[2]?.endAt, '2026-04-19T00:00:00.000Z');
   assert.equal(busyBlocks.length, 3);
@@ -396,6 +407,10 @@ runTest('calendar overlay normalization keeps deterministic busy blocks and deri
 
 runTest('calendar overlay normalization drops invalid calendar rows safely', () => {
   const overlay = normalizeCalendarOverlay({
+    calendars: [
+      ...FIXTURE_CALENDARS_RAW,
+      { id: '', title: 'Missing id', providerType: 'GOOGLE' }
+    ],
     importedEvents: [
       ...FIXTURE_CALENDAR_EVENTS_RAW,
       { id: 'bad_1', title: 'Missing end', startAt: '2026-04-17T18:00:00.000Z' },
@@ -409,9 +424,31 @@ runTest('calendar overlay normalization drops invalid calendar rows safely', () 
     }
   });
 
+  assert.equal(overlay.calendars.length, 2);
   assert.equal(overlay.importedEvents.length, 3);
   assert.equal(overlay.permissionStatus, 'prompt');
   assert.deepEqual(overlay.source.calendarIds, ['team-primary', 'company-shared']);
+});
+
+runTest('calendar event normalization keeps Motion-like event metadata while preserving planner fields', () => {
+  const event = normalizeCalendarEvent(FIXTURE_CALENDAR_EVENTS_RAW[0], {
+    provider: 'google',
+    providerType: 'GOOGLE',
+    calendarId: 'team-primary',
+    accountEmail: 'gargig469@gmail.com'
+  });
+
+  assert.equal(event.providerId, 'google_evt_1');
+  assert.equal(event.providerType, 'GOOGLE');
+  assert.equal(event.calendarUniqueId, 'team-primary');
+  assert.equal(event.email, 'gargig469@gmail.com');
+  assert.equal(event.start, '2026-04-17T13:00:00.000Z');
+  assert.equal(event.end, '2026-04-17T14:00:00.000Z');
+  assert.equal(event.availability, 'BUSY');
+  assert.equal(event.organizer?.email, 'gargig469@gmail.com');
+  assert.equal(event.attendees[1]?.email, 'customer@example.com');
+  assert.equal(event.conferenceLink, 'https://meet.google.com/abc-defg-hij');
+  assert.equal(event.lastModifiedAt, '2026-04-17T12:04:00.000Z');
 });
 
 runTest('task filter supports search and status windows', () => {
@@ -733,6 +770,8 @@ runTest('storage contract migrates legacy payloads by injecting calendar and she
   assert.equal(Array.isArray(result.value.projects), true);
   assert.equal(result.value.projects.length, 4);
   assert.equal(result.value.tasks.length, 5);
+  assert.equal(Array.isArray(result.value.calendarOverlay.calendars), true);
+  assert.equal(result.value.calendarOverlay.calendars.length, 0);
   assert.equal(Array.isArray(result.value.calendarOverlay.importedEvents), true);
   assert.equal(result.value.calendarOverlay.importedEvents.length, 0);
   assert.equal(Array.isArray(result.value.shell.tabs), true);
@@ -753,6 +792,10 @@ runTest('storage contract keeps seeded shell state on current fixture payloads',
   assert.equal(result.value.shell.savedViews.length, 4);
   assert.equal(result.value.shell.sidebarSections.length, 4);
   assert.equal(result.value.shell.agenda.counts.total, 6);
+  assert.equal(result.value.calendarOverlay.calendars.length, 2);
+  assert.equal(result.value.calendarOverlay.calendars[0]?.providerType, 'GOOGLE');
+  assert.equal(result.value.calendarOverlay.importedEvents[0]?.providerType, 'GOOGLE');
+  assert.equal(result.value.calendarOverlay.importedEvents[0]?.attendees.length, 2);
 });
 
 runTest('storage contract removes malformed payload rows while retaining valid fixture-like rows', () => {
@@ -826,7 +869,10 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.syncStatus, 'pending');
     assert.equal(typeof saved.deviceId, 'string');
     assert.equal(saved.calendarOverlay.permissionStatus, 'granted');
+    assert.equal(saved.calendarOverlay.calendars.length, 2);
     assert.equal(saved.calendarOverlay.importedEvents.length, 3);
+    assert.equal(saved.calendarOverlay.source.providerType, 'GOOGLE');
+    assert.equal(saved.calendarOverlay.source.accountEmail, 'gargig469@gmail.com');
     assert.equal(saved.tasks[0].workspaceId, 'ws_motion_team');
     assert.equal(saved.tasks[0].priorityLevel, 'HIGH');
     assert.equal(saved.tasks[0].blockingTaskIds.includes('f4'), true);
@@ -849,8 +895,11 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(loaded.syncStatus, 'pending');
     assert.equal(loaded.deviceId, saved.deviceId);
     assert.equal(loaded.calendarOverlay.permissionStatus, 'granted');
+    assert.equal(loaded.calendarOverlay.calendars.length, 2);
     assert.equal(loaded.calendarOverlay.importedEvents.length, 3);
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.provider, 'google');
+    assert.equal(loaded.calendarOverlay.importedEvents[0]?.providerType, 'GOOGLE');
+    assert.equal(loaded.calendarOverlay.importedEvents[0]?.attendees.length, 2);
     assert.equal(loaded.tasks[0].workspaceId, 'ws_motion_team');
     assert.equal(loaded.tasks[0].priorityLevel, 'HIGH');
     assert.equal(loaded.tasks[0].scheduledStatus, 'ON_TRACK');
