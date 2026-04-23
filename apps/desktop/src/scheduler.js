@@ -1,4 +1,5 @@
 import { buildCalendarBusyBlocks } from './calendarService.js';
+import { TASK_STATUSES, getTaskScheduleType } from './taskService.js';
 
 const MINUTE_MS = 60 * 1000;
 const DEFAULT_HORIZON_MINUTES = 7 * 24 * 60;
@@ -77,6 +78,10 @@ function overlapsFor(entries = []) {
   return overlaps;
 }
 
+function uniqueSorted(values = []) {
+  return Array.from(new Set(values.filter(Boolean))).sort();
+}
+
 function getCalendarEvents(options = {}) {
   if (Array.isArray(options.calendarEvents)) {
     return options.calendarEvents;
@@ -142,7 +147,7 @@ function mergeIntervals(intervals = []) {
   }, []);
 }
 
-function getBlockedTaskIds(entries = [], busyBlocks = []) {
+function getCalendarConflictTaskIds(entries = [], busyBlocks = []) {
   if (!busyBlocks.length) {
     return [];
   }
@@ -156,6 +161,105 @@ function getBlockedTaskIds(entries = [], busyBlocks = []) {
   });
 
   return Array.from(blocked).sort();
+}
+
+function getDependencyBlockedState(visibleEntries = [], allEntries = []) {
+  const tasksById = new Map(allEntries.map((entry) => [entry.task.id, entry.task]));
+  const blockedByTaskIds = {};
+  const blockedTaskIds = visibleEntries
+    .map((entry) => {
+      const openBlockers = uniqueSorted(
+        (entry.task.blockedByTaskIds || []).filter((taskId) => {
+          const blocker = tasksById.get(taskId);
+          return blocker && blocker.status !== TASK_STATUSES.Done && blocker.status !== TASK_STATUSES.Deleted;
+        })
+      );
+
+      if (openBlockers.length) {
+        blockedByTaskIds[entry.task.id] = openBlockers;
+        return entry.task.id;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+
+  return {
+    blockedTaskIds: uniqueSorted(blockedTaskIds),
+    blockedByTaskIds
+  };
+}
+
+function getTaskConflictTaskIds(overlaps = {}) {
+  const ids = new Set();
+  Object.entries(overlaps).forEach(([taskId, peers]) => {
+    if (!Array.isArray(peers) || peers.length === 0) {
+      return;
+    }
+
+    ids.add(taskId);
+    peers.forEach((peerId) => ids.add(peerId));
+  });
+
+  return Array.from(ids).sort();
+}
+
+function getSchedulingState(entries = [], options = {}) {
+  const scheduleTypes = {};
+  const pendingTaskIds = [];
+  const unschedulableTaskIds = [];
+
+  entries.forEach((entry) => {
+    const scheduleType = getTaskScheduleType(entry.task, options);
+    scheduleTypes[entry.task.id] = scheduleType;
+
+    if (scheduleType === 'pending') {
+      pendingTaskIds.push(entry.task.id);
+    }
+
+    if (['unfit', 'unfitPastDue', 'unfitSchedulable', 'stale'].includes(scheduleType)) {
+      unschedulableTaskIds.push(entry.task.id);
+    }
+  });
+
+  return {
+    scheduleTypes,
+    pendingTaskIds: uniqueSorted(pendingTaskIds),
+    unschedulableTaskIds: uniqueSorted(unschedulableTaskIds)
+  };
+}
+
+function buildTaskSemantics(visibleEntries = [], context = {}) {
+  const {
+    overlaps = {},
+    blockedByTaskIds = {},
+    calendarConflictTaskIds = [],
+    unschedulableTaskIds = [],
+    pendingTaskIds = [],
+    scheduleTypes = {}
+  } = context;
+  const calendarConflictSet = new Set(calendarConflictTaskIds);
+  const unschedulableSet = new Set(unschedulableTaskIds);
+  const pendingSet = new Set(pendingTaskIds);
+
+  return Object.fromEntries(
+    visibleEntries.map((entry) => {
+      const overlapTaskIds = uniqueSorted(overlaps[entry.task.id] || []);
+      return [
+        entry.task.id,
+        {
+          scheduleType: scheduleTypes[entry.task.id] || getTaskScheduleType(entry.task),
+          blockedByOpenTaskIds: blockedByTaskIds[entry.task.id] || [],
+          overlapTaskIds,
+          isDependencyBlocked: Array.isArray(blockedByTaskIds[entry.task.id]) && blockedByTaskIds[entry.task.id].length > 0,
+          isTaskConflict: overlapTaskIds.length > 0,
+          isCalendarConflict: calendarConflictSet.has(entry.task.id),
+          isPendingReschedule: pendingSet.has(entry.task.id),
+          isUnschedulable: unschedulableSet.has(entry.task.id)
+        }
+      ];
+    })
+  );
 }
 
 function calculateAvailableMinutes(windowStartMs, windowEndMs, busyBlocks = []) {
@@ -198,8 +302,8 @@ export function buildPlanWindow(tasks = [], options = {}) {
   const entries = buildVisibleEntries(tasks).map((entry) => {
     const next = { ...entry };
     const anchor = entry.startAt ?? entry.dueAt;
-    next.inWindow = anchor === null ? true : anchor >= nowMs && anchor <= horizonEndMs;
     next.isOverdue = Boolean((entry.dueAt || 0) < nowMs && entry.task.status !== 'done' && entry.task.status !== 'deleted');
+    next.inWindow = anchor === null ? true : anchor <= horizonEndMs && (anchor >= nowMs || next.isOverdue);
     return next;
   });
 
@@ -223,7 +327,19 @@ export function buildPlanWindow(tasks = [], options = {}) {
   const overlapScores = overlapsFor(visible);
   const rankedOverlaps = rankConflicts(overlapScores);
   const busyBlocks = buildBusyBlocks(getCalendarEvents(options), nowMs, horizonEndMs);
-  const blockedTaskIds = getBlockedTaskIds(visible, busyBlocks);
+  const calendarConflictTaskIds = getCalendarConflictTaskIds(visible, busyBlocks);
+  const dependencyState = getDependencyBlockedState(visible, entries);
+  const schedulingState = getSchedulingState(visible, { now: nowMs });
+  const taskConflictTaskIds = getTaskConflictTaskIds(overlapScores);
+  const conflictTaskIds = uniqueSorted(taskConflictTaskIds.concat(calendarConflictTaskIds));
+  const taskSemantics = buildTaskSemantics(visible, {
+    overlaps: overlapScores,
+    blockedByTaskIds: dependencyState.blockedByTaskIds,
+    calendarConflictTaskIds,
+    unschedulableTaskIds: schedulingState.unschedulableTaskIds,
+    pendingTaskIds: schedulingState.pendingTaskIds,
+    scheduleTypes: schedulingState.scheduleTypes
+  });
   const availableMinutes = calculateAvailableMinutes(nowMs, horizonEndMs, busyBlocks);
 
   return {
@@ -239,7 +355,13 @@ export function buildPlanWindow(tasks = [], options = {}) {
     overlaps: overlapScores,
     rankedOverlaps,
     busyBlocks: busyBlocks.map(({ startMs, endMs, ...block }) => block),
-    blockedTaskIds,
+    blockedTaskIds: dependencyState.blockedTaskIds,
+    conflictTaskIds,
+    taskConflictTaskIds,
+    calendarConflictTaskIds,
+    pendingTaskIds: schedulingState.pendingTaskIds,
+    unschedulableTaskIds: schedulingState.unschedulableTaskIds,
+    taskSemantics,
     availableMinutes
   };
 }
@@ -252,6 +374,12 @@ export function generatePlanSlice(tasks = [], options = {}) {
     rankedOverlaps: plan.rankedOverlaps,
     busyBlocks: plan.busyBlocks,
     blockedTaskIds: plan.blockedTaskIds,
+    conflictTaskIds: plan.conflictTaskIds,
+    taskConflictTaskIds: plan.taskConflictTaskIds,
+    calendarConflictTaskIds: plan.calendarConflictTaskIds,
+    pendingTaskIds: plan.pendingTaskIds,
+    unschedulableTaskIds: plan.unschedulableTaskIds,
+    taskSemantics: plan.taskSemantics,
     availableMinutes: plan.availableMinutes
   };
 }

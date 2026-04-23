@@ -18,6 +18,71 @@ export const TASK_SCHEDULED_STATUSES = ['ON_TRACK', 'PAST_DUE', 'UNFIT_SCHEDULAB
 export const TASK_TYPES = {
   Normal: 'NORMAL'
 };
+export const TASK_SCHEDULE_TYPES = [
+  'pending',
+  'asap',
+  'notScheduled',
+  'completed',
+  'pastDue',
+  'beforeDue',
+  'unfit',
+  'unfitPastDue',
+  'unfitSchedulable',
+  'stale'
+];
+
+export const TASK_SCHEDULE_TYPE_INFO = {
+  completed: {
+    label: 'Done',
+    shortLabel: 'Done',
+    tone: 'off'
+  },
+  notScheduled: {
+    label: 'Not scheduled',
+    shortLabel: 'None',
+    tone: 'off'
+  },
+  pending: {
+    label: 'Needs reschedule',
+    shortLabel: 'Pending',
+    tone: 'on'
+  },
+  asap: {
+    label: 'ASAP',
+    shortLabel: 'ASAP',
+    tone: 'on'
+  },
+  pastDue: {
+    label: 'Past deadline',
+    shortLabel: 'Late',
+    tone: 'error'
+  },
+  beforeDue: {
+    label: 'On track',
+    shortLabel: 'On track',
+    tone: 'on'
+  },
+  unfit: {
+    label: "Can't fit",
+    shortLabel: "Can't fit",
+    tone: 'error'
+  },
+  unfitPastDue: {
+    label: "Can't fit",
+    shortLabel: "Can't fit",
+    tone: 'error'
+  },
+  unfitSchedulable: {
+    label: 'To be scheduled',
+    shortLabel: 'Future',
+    tone: 'off'
+  },
+  stale: {
+    label: 'Stale',
+    shortLabel: 'Stale',
+    tone: 'error'
+  }
+};
 
 const ALLOWED_PRIORITY_LEVELS = new Set(TASK_PRIORITY_LEVELS);
 const ALLOWED_DEADLINE_TYPES = new Set(TASK_DEADLINE_TYPES);
@@ -33,6 +98,10 @@ function isPresent(value) {
 
 function isPlainObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isOpenTaskStatus(status) {
+  return status !== TASK_STATUSES.Done && status !== TASK_STATUSES.Deleted;
 }
 
 export function sanitizeText(value) {
@@ -279,6 +348,69 @@ export function formatDisplayDateTime(value) {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+export function getTaskScheduleType(task, { now = Date.now() } = {}) {
+  if (!task) {
+    return 'notScheduled';
+  }
+
+  if (task.status === TASK_STATUSES.Done) {
+    return 'completed';
+  }
+
+  if (!task.isAutoScheduled) {
+    return 'notScheduled';
+  }
+
+  if (task.needsReschedule) {
+    return 'pending';
+  }
+
+  if ((task.scheduledStart || task.scheduledEnd) && task.priorityLevel === 'ASAP') {
+    return 'asap';
+  }
+
+  if (task.scheduledStatus === 'UNFIT_PAST_DUE') {
+    return 'unfitPastDue';
+  }
+
+  if (task.scheduledStatus === 'UNFIT_SCHEDULABLE') {
+    return 'unfitSchedulable';
+  }
+
+  if (task.scheduledStatus === 'PAST_DUE') {
+    return 'pastDue';
+  }
+
+  if (task.scheduledStatus === 'ON_TRACK') {
+    return 'beforeDue';
+  }
+
+  if (task.isUnfit) {
+    return 'unfit';
+  }
+
+  const due = getDueDateValue(task);
+  if (due && due.valueOf() < now) {
+    return 'stale';
+  }
+
+  return 'notScheduled';
+}
+
+export function getTaskScheduleSummary(task, options = {}) {
+  const type = getTaskScheduleType(task, options);
+  const base = TASK_SCHEDULE_TYPE_INFO[type] || TASK_SCHEDULE_TYPE_INFO.notScheduled;
+  const shouldDisplay = type !== 'notScheduled' || (task?.isAutoScheduled && isOpenTaskStatus(task.status));
+
+  return {
+    type,
+    label: base.label,
+    shortLabel: base.shortLabel,
+    tone: base.tone,
+    shouldDisplay
+  };
 }
 
 export function createTaskMutationEvent({
