@@ -659,4 +659,32 @@ The app no longer treats the calendar as just a loose list of busy blocks. It no
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 32 continues Phase 6 by improving planner semantics around scheduled status and dependencies.*
+## ? Step 32 — Phase 6 Scheduling Semantics Alignment
+*Completed: 2026-04-25*
+
+**What was built**
+- `apps/desktop/src/taskService.js` — adds Motion-like schedule-summary helpers so tasks can be described as on track, pending reschedule, stale, or unable to fit instead of only exposing raw stored status fields.
+- `apps/desktop/src/scheduler.js` — splits planner semantics into dependency-blocked tasks, calendar conflicts, task conflicts, pending reschedules, and unschedulable tasks while keeping the existing horizon and busy-block calculations.
+- `apps/desktop/src/main.tsx` — updates the shell metrics and task cards to show separate schedule chips and warnings for blocked, conflicted, pending, and cannot-fit states.
+- `scripts/test.mjs` — adds deterministic coverage for schedule-summary labels and for the new planner semantic buckets so the behavior does not drift.
+
+**In plain English**
+The planner no longer treats every scheduling problem as the same kind of warning. It now distinguishes between tasks that are blocked by dependencies, tasks that collide with other work or calendar time, tasks that still need to be rescheduled, and tasks that simply cannot fit. That makes the planner output much closer to how Motion talks about scheduling problems instead of flattening everything into one generic conflict message.
+
+**Files changed**
+~ modified: `apps/desktop/src/taskService.js`
+~ modified: `apps/desktop/src/scheduler.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/taskService.js`
+- `node --check apps/desktop/src/scheduler.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 33 begins the Phase 6 task-form pass by building a Motion-like task form baseline.*

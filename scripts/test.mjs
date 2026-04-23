@@ -7,6 +7,7 @@ import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
 import { buildCalendarBusyBlocks, normalizeCalendarEvent, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
+import { getTaskScheduleSummary, getTaskScheduleType } from '../apps/desktop/src/taskService.js';
 import {
   activateShellView,
   buildSidebarSections,
@@ -472,6 +473,32 @@ runTest('summary aligns with deterministic fixture timeline', () => {
   assert.equal(summary.done, 1);
 });
 
+runTest('task schedule summary follows Motion-like pending, on-track, and unfit semantics', () => {
+  const onTrack = getTaskScheduleSummary(baseTasks.find((task) => task.id === 'f1'), { now: FIXTURE_NOW });
+  const pending = getTaskScheduleSummary(baseTasks.find((task) => task.id === 'f3'), { now: FIXTURE_NOW });
+  const customUnfit = getTaskScheduleSummary(
+    normalizeTask({
+      id: 'custom_unfit',
+      title: 'Unfit fixture',
+      projectId: 'work',
+      isAutoScheduled: true,
+      scheduledStatus: 'UNFIT_SCHEDULABLE',
+      dueAt: '2026-04-20T17:00:00.000Z',
+      durationMinutes: 45
+    }),
+    { now: FIXTURE_NOW }
+  );
+
+  assert.equal(onTrack.type, 'beforeDue');
+  assert.equal(onTrack.shortLabel, 'On track');
+  assert.equal(onTrack.tone, 'on');
+  assert.equal(pending.type, 'pending');
+  assert.equal(pending.label, 'Needs reschedule');
+  assert.equal(customUnfit.type, 'unfitSchedulable');
+  assert.equal(customUnfit.shortLabel, 'Future');
+  assert.equal(getTaskScheduleType(baseTasks.find((task) => task.id === 'f2'), { now: FIXTURE_NOW }), 'completed');
+});
+
 runTest('conflict detector uses deterministic overlapping fixture tasks', () => {
   const plan = generatePlanSlice(baseTasks, { now: FIXTURE_NOW, limitMinutes: 480, horizonMinutes: 60 * 24 * 7 });
   assert.equal(Boolean(plan.overlaps.f1), true);
@@ -500,7 +527,15 @@ runTest('calendar-aware planning window reports busy blocks, blocked tasks, and 
   });
 
   assert.equal(window.busyBlocks.length, 3);
-  assert.deepEqual(window.blockedTaskIds, ['f1', 'f4']);
+  assert.deepEqual(window.blockedTaskIds, ['f3', 'f4']);
+  assert.deepEqual(window.calendarConflictTaskIds, ['f1', 'f4']);
+  assert.deepEqual(window.conflictTaskIds, ['f1', 'f4']);
+  assert.deepEqual(window.pendingTaskIds, ['f3']);
+  assert.deepEqual(window.unschedulableTaskIds, []);
+  assert.equal(window.taskSemantics.f3?.isDependencyBlocked, true);
+  assert.equal(window.taskSemantics.f3?.isPendingReschedule, true);
+  assert.equal(window.taskSemantics.f1?.isCalendarConflict, true);
+  assert.equal(window.taskSemantics.f1?.scheduleType, 'beforeDue');
   assert.equal(window.availableMinutes, 8490);
   assert.equal(Boolean(window.overlaps?.f1?.includes('f4')), true);
 });
@@ -513,10 +548,60 @@ runTest('calendar-aware plan slice preserves task overlap output while layering 
   });
 
   assert.equal(plan.busyBlocks.length, 3);
-  assert.equal(plan.blockedTaskIds.includes('f1'), true);
+  assert.equal(plan.blockedTaskIds.includes('f3'), true);
   assert.equal(plan.blockedTaskIds.includes('f4'), true);
+  assert.equal(plan.calendarConflictTaskIds.includes('f1'), true);
+  assert.equal(plan.conflictTaskIds.includes('f4'), true);
+  assert.equal(plan.pendingTaskIds.includes('f3'), true);
   assert.equal(plan.availableMinutes, 8490);
   assert.equal(Boolean(plan.overlaps?.f1?.includes('f4')), true);
+});
+
+runTest('planning semantics surface unschedulable tasks separately from dependency blocks', () => {
+  const plan = buildPlanWindow([
+    normalizeTask({
+      id: 'blocker_task',
+      title: 'Blocker',
+      projectId: 'work',
+      status: 'todo',
+      scheduledStart: '2026-04-17T12:30:00.000Z',
+      scheduledEnd: '2026-04-17T13:00:00.000Z',
+      durationMinutes: 30
+    }),
+    normalizeTask({
+      id: 'blocked_task',
+      title: 'Blocked child',
+      projectId: 'work',
+      status: 'todo',
+      isAutoScheduled: true,
+      blockedByTaskIds: ['blocker_task'],
+      scheduledStatus: 'ON_TRACK',
+      scheduledStart: '2026-04-17T13:15:00.000Z',
+      scheduledEnd: '2026-04-17T14:00:00.000Z',
+      dueAt: '2026-04-17T17:00:00.000Z',
+      durationMinutes: 45
+    }),
+    normalizeTask({
+      id: 'cannot_fit',
+      title: 'Cannot fit',
+      projectId: 'work',
+      status: 'todo',
+      isAutoScheduled: true,
+      scheduledStatus: 'UNFIT_PAST_DUE',
+      dueAt: '2026-04-17T11:00:00.000Z',
+      durationMinutes: 60
+    })
+  ], {
+    now: FIXTURE_NOW,
+    horizonMinutes: 60 * 24 * 7
+  });
+
+  assert.deepEqual(plan.blockedTaskIds, ['blocked_task']);
+  assert.deepEqual(plan.unschedulableTaskIds, ['cannot_fit']);
+  assert.equal(plan.pendingTaskIds.length, 0);
+  assert.equal(plan.taskSemantics.blocked_task?.isDependencyBlocked, true);
+  assert.equal(plan.taskSemantics.cannot_fit?.isUnschedulable, true);
+  assert.equal(plan.taskSemantics.cannot_fit?.scheduleType, 'unfitPastDue');
 });
 
 runTest('feature gate keeps AI disabled by default', () => {
