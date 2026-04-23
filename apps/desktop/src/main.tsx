@@ -26,6 +26,7 @@ import {
   requireEntitlement
 } from './entitlement.js';
 import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
+import { getTaskScheduleSummary } from './taskService.js';
 
 let entitlement = getEntitlementSnapshot();
 let canMutate = canMutateTasks();
@@ -786,6 +787,21 @@ style.textContent = `
     text-transform: uppercase;
   }
 
+  .status-chip.tone-on {
+    background: rgba(96, 165, 250, 0.14);
+    color: #bfdbfe;
+  }
+
+  .status-chip.tone-off {
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--text-muted);
+  }
+
+  .status-chip.tone-error {
+    background: rgba(239, 68, 68, 0.14);
+    color: #fecaca;
+  }
+
   .task-title {
     font-size: 17px;
     font-weight: 700;
@@ -839,12 +855,20 @@ style.textContent = `
     font-size: 13px;
   }
 
-  .conflict,
+  .task-alert,
   .error {
     margin-top: 10px;
-    color: #b42318;
     font-size: 12px;
     line-height: 1.5;
+  }
+
+  .task-alert.warning {
+    color: #fbbf24;
+  }
+
+  .task-alert.error,
+  .error {
+    color: #b42318;
   }
 
   .agenda-panel,
@@ -1440,13 +1464,25 @@ function buildPlannerState(shellState) {
       .filter(([, peers]) => peers.length > 0)
   );
   const blockedTaskIds = planWindow.blockedTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
+  const conflictTaskIds = planWindow.conflictTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
+  const calendarConflictTaskIds = planWindow.calendarConflictTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
+  const unschedulableTaskIds = planWindow.unschedulableTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
+  const pendingTaskIds = planWindow.pendingTaskIds.filter((taskId) => visibleTaskIds.has(taskId));
+  const taskSemantics = Object.fromEntries(
+    Object.entries(planWindow.taskSemantics || {}).filter(([taskId]) => visibleTaskIds.has(taskId))
+  );
 
   return {
     viewState,
     planWindow,
     visibleTasks,
     overlaps,
-    blockedTaskIds
+    blockedTaskIds,
+    conflictTaskIds,
+    calendarConflictTaskIds,
+    unschedulableTaskIds,
+    pendingTaskIds,
+    taskSemantics
   };
 }
 
@@ -1493,6 +1529,9 @@ function updateSummary(plannerState, shellState) {
   const permissionLabel = overlay.permissionStatus === 'granted'
     ? `${plannerState.planWindow.busyBlocks.length} busy blocks active in ${activeLabel}`
     : `Calendar overlay ${overlay.permissionStatus}`;
+  const pendingLabel = plannerState.pendingTaskIds.length
+    ? `${plannerState.pendingTaskIds.length} pending reschedule`
+    : 'No pending reschedule';
 
   metricsEl.innerHTML = `
     <div class="metric-grid">
@@ -1517,11 +1556,19 @@ function updateSummary(plannerState, shellState) {
         <div class="metric-value">${escapeHtml(String(plannerState.blockedTaskIds.length))}</div>
       </div>
       <div class="metric-card">
+        <strong>Conflict tasks</strong>
+        <div class="metric-value">${escapeHtml(String(plannerState.conflictTaskIds.length))}</div>
+      </div>
+      <div class="metric-card">
+        <strong>Can't fit</strong>
+        <div class="metric-value">${escapeHtml(String(plannerState.unschedulableTaskIds.length))}</div>
+      </div>
+      <div class="metric-card">
         <strong>Available minutes</strong>
         <div class="metric-value">${escapeHtml(String(plannerState.planWindow.availableMinutes))}</div>
       </div>
     </div>
-    <p class="metric-note">${escapeHtml(permissionLabel)} | Refreshed: ${escapeHtml(formatSyncDate(overlay.refreshedAt))}</p>
+    <p class="metric-note">${escapeHtml(permissionLabel)} | ${escapeHtml(pendingLabel)} | Refreshed: ${escapeHtml(formatSyncDate(overlay.refreshedAt))}</p>
   `;
 }
 
@@ -1706,9 +1753,22 @@ function renderInboxPanel() {
 }
 
 function renderTasks(plannerState, shellState) {
-  const { visibleTasks, overlaps, blockedTaskIds } = plannerState;
+  const {
+    visibleTasks,
+    overlaps,
+    blockedTaskIds,
+    calendarConflictTaskIds,
+    conflictTaskIds,
+    unschedulableTaskIds,
+    pendingTaskIds,
+    taskSemantics
+  } = plannerState;
   const meta = plannerState.viewState.meta;
-  const blockedTaskSet = new Set(blockedTaskIds);
+  const calendarConflictTaskSet = new Set(calendarConflictTaskIds);
+  const conflictTaskSet = new Set(conflictTaskIds);
+  const unschedulableTaskSet = new Set(unschedulableTaskIds);
+  const pendingTaskSet = new Set(pendingTaskIds);
+  const taskTitleById = new Map(appData.tasks.map((task) => [task.id, task.title]));
   taskListEl.innerHTML = '';
   surfaceCountEl.textContent = `${visibleTasks.length} visible`;
   surfaceCaptionEl.textContent = activePlanWindow === 'today'
@@ -1723,8 +1783,28 @@ function renderTasks(plannerState, shellState) {
   }
 
   visibleTasks.forEach((task) => {
-    const conflictIds = overlaps[task.id] || [];
-    const isCalendarBlocked = blockedTaskSet.has(task.id);
+    const semantics = taskSemantics[task.id] || {};
+    const conflictIds = semantics.overlapTaskIds?.length ? semantics.overlapTaskIds : overlaps[task.id] || [];
+    const schedule = getTaskScheduleSummary(task);
+    const conflictLabels = conflictIds.map((taskId) => taskTitleById.get(taskId) || taskId);
+    const blockerLabels = (semantics.blockedByOpenTaskIds || []).map((taskId) => taskTitleById.get(taskId) || taskId);
+    const alerts = [
+      blockerLabels.length
+        ? `<div class="task-alert warning">Blocked by open tasks: ${escapeHtml(blockerLabels.join(', '))}</div>`
+        : '',
+      conflictTaskSet.has(task.id) && conflictLabels.length
+        ? `<div class="task-alert error">Task overlap with: ${escapeHtml(conflictLabels.join(', '))}</div>`
+        : '',
+      calendarConflictTaskSet.has(task.id)
+        ? '<div class="task-alert error">Calendar busy block overlaps this task.</div>'
+        : '',
+      pendingTaskSet.has(task.id)
+        ? '<div class="task-alert warning">Motion would treat this task as pending reschedule.</div>'
+        : '',
+      unschedulableTaskSet.has(task.id)
+        ? '<div class="task-alert error">Motion would treat this task as unable to fit in the current schedule window.</div>'
+        : ''
+    ].filter(Boolean).join('');
     const item = document.createElement('article');
     item.className = 'task-item';
     item.innerHTML = `
@@ -1732,6 +1812,7 @@ function renderTasks(plannerState, shellState) {
         <div class="task-meta-row">
           <span class="project-chip">${escapeHtml(task.projectName || 'Inbox')}</span>
           <span class="status-chip">${escapeHtml(task.status)}</span>
+          ${schedule.shouldDisplay ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
         <div class="task-note">${escapeHtml(task.description || 'No notes')}</div>
@@ -1739,9 +1820,9 @@ function renderTasks(plannerState, shellState) {
           <span>Due: ${escapeHtml(formatDisplayDateTime(task.dueAt))}</span>
           <span>Duration: ${escapeHtml(String(task.durationMinutes))} min</span>
           <span>Recurrence: ${escapeHtml(task.recurrence.pattern)}</span>
+          ${schedule.shouldDisplay ? `<span>Schedule: ${escapeHtml(schedule.label)}</span>` : ''}
         </div>
-        ${conflictIds.length ? `<div class="conflict">Task overlap with: ${escapeHtml(conflictIds.join(', '))}</div>` : ''}
-        ${isCalendarBlocked ? '<div class="conflict">Calendar busy block overlaps this task.</div>' : ''}
+        ${alerts}
       </div>
       <div class="task-side">
         <div class="task-time">${escapeHtml(formatCompactDate(task.startAt || task.dueAt))}</div>
