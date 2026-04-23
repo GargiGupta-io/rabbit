@@ -17,6 +17,7 @@ import {
   resolveTaskAction,
   upsertTask
 } from './state.js';
+import { getProjectTaskFormDefaults } from './projectService.js';
 import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
 import {
@@ -38,7 +39,7 @@ let activePlanWindow = 'all';
 let search = '';
 let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
-let taskForm = createTaskFormState(appData);
+let taskForm = createProjectAwareTaskFormState();
 
 const root = document.getElementById('root');
 if (!root) {
@@ -1368,14 +1369,103 @@ function setPlanWindowFilter(windowFilter) {
   });
 }
 
+function sanitizeTaskFormText(value, fallback = '') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim();
+  return normalized || fallback;
+}
+
+function normalizeTaskFormDateTimeValue(value) {
+  const candidate = sanitizeTaskFormText(value);
+  if (!candidate) {
+    return '';
+  }
+
+  const parsed = new Date(candidate);
+  if (Number.isNaN(parsed.valueOf())) {
+    return '';
+  }
+
+  const local = new Date(parsed.valueOf() - parsed.getTimezoneOffset() * 60 * 1000);
+  return local.toISOString().slice(0, 16);
+}
+
+function createProjectAwareTaskFormState(input: any = {}) {
+  const base = createTaskFormState(appData, input);
+  const rawStageDefinitionId = sanitizeTaskFormText(input?.stageDefinitionId);
+  const projectDefaults = getProjectTaskFormDefaults({
+    projects: appData.projects,
+    projectDefinitions: appData.projectDefinitions,
+    projectId: base.projectId,
+    stageDefinitionId: rawStageDefinitionId,
+    now: appData.calendarOverlay?.refreshedAt || new Date().toISOString()
+  } as any);
+  const hasCustomStageId = Boolean(
+    input?.hasCustomStageId &&
+    rawStageDefinitionId &&
+    projectDefaults.stageOptions.some((stage) => stage.id === rawStageDefinitionId)
+  );
+  const stageDefinitionId = hasCustomStageId
+    ? rawStageDefinitionId
+    : projectDefaults.selectedStageId || '';
+  const activeProjectDefaults = getProjectTaskFormDefaults({
+    projects: appData.projects,
+    projectDefinitions: appData.projectDefinitions,
+    projectId: base.projectId,
+    stageDefinitionId,
+    now: appData.calendarOverlay?.refreshedAt || new Date().toISOString()
+  } as any);
+  const defaultStartAtInput = normalizeTaskFormDateTimeValue(activeProjectDefaults.defaultStartAt);
+  const defaultDueAtInput = normalizeTaskFormDateTimeValue(activeProjectDefaults.defaultDueAt);
+  const customStartAtInput = normalizeTaskFormDateTimeValue(input?.startAtInput || input?.startAt || input?.scheduledStart);
+  const customDueAtInput = normalizeTaskFormDateTimeValue(input?.dueAtInput || input?.dueAt);
+  const hasCustomStartAt = Boolean(input?.hasCustomStartAt && customStartAtInput);
+  const hasCustomDueAt = Boolean(input?.hasCustomDueAt && customDueAtInput);
+  const resolvedDueAtInput = hasCustomDueAt
+    ? customDueAtInput
+    : defaultDueAtInput || base.dueAtInput;
+  const startAtCandidate = hasCustomStartAt
+    ? customStartAtInput
+    : defaultStartAtInput || base.startAtInput;
+  const resolvedStartAtInput = base.scheduleMode === 'fixed'
+    ? (startAtCandidate || resolvedDueAtInput)
+    : startAtCandidate;
+  const recurrenceInterval = Math.max(1, Number(input?.recurrenceInterval) || 1);
+
+  return {
+    ...base,
+    projectDefinitionId: activeProjectDefaults.projectDefinitionId,
+    stageDefinitionId,
+    stageName: activeProjectDefaults.selectedStage?.label || '',
+    stageOptions: activeProjectDefaults.stageOptions,
+    recurrenceInterval,
+    startAtInput: resolvedStartAtInput,
+    dueAtInput: resolvedDueAtInput,
+    defaultStartAtInput,
+    defaultDueAtInput,
+    hasCustomStageId,
+    hasCustomStartAt,
+    hasCustomDueAt
+  };
+}
+
 function renderTaskForm() {
-  taskForm = createTaskFormState(appData, taskForm);
+  taskForm = createProjectAwareTaskFormState(taskForm);
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
     ? 'Motion-style auto-scheduled task'
     : taskForm.scheduleMode === 'manual'
       ? 'Manual task outside auto-scheduling'
       : 'Fixed-time task';
+  const stageOptions = taskForm.stageOptions.length
+    ? taskForm.stageOptions.map((option) => `
+      <option value="${escapeHtml(option.id)}" ${option.id === taskForm.stageDefinitionId ? 'selected' : ''}>
+        ${escapeHtml(option.label)}${option.dueDate ? ` • due ${escapeHtml(option.dueDate)}` : ''}
+      </option>
+    `).join('')
+    : '<option value="">No project stage</option>';
   const projectOptions = options.projectOptions.map((option) => `
     <option value="${escapeHtml(option.id)}" ${option.id === taskForm.projectId ? 'selected' : ''}>
       ${escapeHtml(option.label)}
@@ -1446,6 +1536,10 @@ function renderTaskForm() {
         <select name="assigneeUserId">${assigneeOptions}</select>
       </label>
       <label class="task-form-field">
+        Stage
+        <select name="stageDefinitionId" ${taskForm.stageOptions.length ? '' : 'disabled'}>${stageOptions}</select>
+      </label>
+      <label class="task-form-field">
         Priority
         <select name="priorityLevel">${priorityOptions}</select>
       </label>
@@ -1466,8 +1560,8 @@ function renderTaskForm() {
         <input name="dueAtInput" type="datetime-local" value="${escapeHtml(taskForm.dueAtInput)}" />
       </label>
       <label class="task-form-field">
-        ${taskForm.scheduleMode === 'fixed' ? 'Starts' : 'Start window'}
-        <input name="startAtInput" type="datetime-local" value="${escapeHtml(taskForm.startAtInput)}" ${taskForm.scheduleMode === 'fixed' ? '' : 'disabled'} />
+        ${taskForm.scheduleMode === 'fixed' ? 'Starts' : 'Earliest start'}
+        <input name="startAtInput" type="datetime-local" value="${escapeHtml(taskForm.startAtInput)}" />
       </label>
       <label class="task-form-field">
         Duration
@@ -1485,10 +1579,22 @@ function renderTaskForm() {
         Recurrence
         <select name="recurrencePattern">${recurrenceOptions}</select>
       </label>
+      <label class="task-form-field">
+        Repeat every
+        <input
+          name="recurrenceInterval"
+          type="number"
+          min="1"
+          max="30"
+          step="1"
+          value="${escapeHtml(String(taskForm.recurrenceInterval))}"
+          ${taskForm.recurrencePattern === 'none' ? 'disabled' : ''}
+        />
+      </label>
     </div>
     <div class="task-form-foot">
       <div class="task-form-summary">
-        Workspace: ${escapeHtml(taskForm.workspaceName)} | Project: ${escapeHtml(taskForm.projectName)} | Assignee: ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
+        Workspace: ${escapeHtml(taskForm.workspaceName)} | Project: ${escapeHtml(taskForm.projectName)} | Stage: ${escapeHtml(taskForm.stageName || 'No project stage')} | Due: ${escapeHtml(taskForm.dueAtInput || 'No due date')} | Assignee: ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
       </div>
       <div class="task-form-actions">
         <button type="button" id="task-form-reset">Reset</button>
@@ -1499,7 +1605,7 @@ function renderTaskForm() {
 }
 
 function updateTaskForm(patch) {
-  taskForm = createTaskFormState(appData, {
+  taskForm = createProjectAwareTaskFormState({
     ...taskForm,
     ...patch
   });
@@ -1507,7 +1613,7 @@ function updateTaskForm(patch) {
 }
 
 function resetTaskForm() {
-  taskForm = createTaskFormState(appData, {
+  taskForm = createProjectAwareTaskFormState({
     projectId: taskForm.projectId
   });
   renderTaskForm();
@@ -1523,6 +1629,55 @@ function getTaskFormFieldValue(target: HTMLInputElement | HTMLSelectElement | HT
 function handleTaskFormFieldChange(target: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
   const name = target.name;
   if (!name) {
+    return;
+  }
+
+  if (name === 'projectId') {
+    updateTaskForm({
+      projectId: getTaskFormFieldValue(target),
+      stageDefinitionId: '',
+      dueAtInput: '',
+      startAtInput: '',
+      hasCustomStageId: false,
+      hasCustomDueAt: false,
+      hasCustomStartAt: false
+    });
+    return;
+  }
+
+  if (name === 'stageDefinitionId') {
+    updateTaskForm({
+      stageDefinitionId: getTaskFormFieldValue(target),
+      dueAtInput: '',
+      startAtInput: '',
+      hasCustomStageId: Boolean(target.value),
+      hasCustomDueAt: false,
+      hasCustomStartAt: false
+    });
+    return;
+  }
+
+  if (name === 'dueAtInput') {
+    updateTaskForm({
+      dueAtInput: getTaskFormFieldValue(target),
+      hasCustomDueAt: Boolean(target.value)
+    });
+    return;
+  }
+
+  if (name === 'startAtInput') {
+    updateTaskForm({
+      startAtInput: getTaskFormFieldValue(target),
+      hasCustomStartAt: Boolean(target.value)
+    });
+    return;
+  }
+
+  if (name === 'recurrencePattern') {
+    updateTaskForm({
+      recurrencePattern: getTaskFormFieldValue(target),
+      recurrenceInterval: target.value === 'none' ? 1 : taskForm.recurrenceInterval || 1
+    });
     return;
   }
 
@@ -2040,7 +2195,7 @@ function persistAppData() {
 function renderWorkspace() {
   const shellState = getShellState(appData);
   const plannerState = buildPlannerState(shellState);
-  taskForm = createTaskFormState(appData, taskForm);
+  taskForm = createProjectAwareTaskFormState(taskForm);
 
   shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
   shell.dataset.theme = shellState.theme.dataTheme;
