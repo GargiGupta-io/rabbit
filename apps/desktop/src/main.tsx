@@ -2,12 +2,13 @@ import {
   activateShellTab,
   activateShellView,
   applyTaskMutation,
-  buildProjectSeedData,
+  buildTaskDraftFromFormState,
+  createTaskFormState,
   decorateTaskWithProject,
   formatDisplayDateTime,
   getInboxStateSummary,
-  getProjectById,
   getShellState,
+  getTaskFormOptions,
   getShellThemeClassName,
   getSyncStateSummary,
   getTaskFilters,
@@ -37,6 +38,7 @@ let activePlanWindow = 'all';
 let search = '';
 let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
+let taskForm = createTaskFormState(appData);
 
 const root = document.getElementById('root');
 if (!root) {
@@ -110,42 +112,7 @@ shell.innerHTML = `
           </div>
         </section>
 
-        <section class="panel composer-panel">
-          <div class="composer-header">
-            <div>
-              <strong>Quick add</strong>
-              <p>Capture a task into the current planning surface.</p>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <label>
-              Title
-              <input id="title" type="text" placeholder="Task title" />
-            </label>
-            <label>
-              Project
-              <select id="project"></select>
-            </label>
-            <label>
-              Due
-              <input id="due" type="datetime-local" />
-            </label>
-            <label>
-              Duration
-              <input id="duration" type="number" min="5" max="720" step="5" value="30" />
-            </label>
-            <label>
-              Recurrence
-              <select id="recurrence">
-                <option value="none">none</option>
-                <option value="daily">daily</option>
-                <option value="weekly">weekly</option>
-              </select>
-            </label>
-            <button id="add" type="button">Add task</button>
-          </div>
-        </section>
+        <section class="panel composer-panel" id="task-form-panel"></section>
 
         <section class="panel editor-panel" id="editor" aria-live="polite"></section>
 
@@ -710,11 +677,93 @@ style.textContent = `
     font-size: 13px;
   }
 
+  .composer-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(96, 165, 250, 0.12);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
   .form-row {
     display: grid;
     gap: 12px;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     align-items: end;
+  }
+
+  .task-form-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .task-form-field {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .task-form-field.span-2 {
+    grid-column: span 2;
+  }
+
+  .task-form-field textarea,
+  .task-form-field input,
+  .task-form-field select {
+    width: 100%;
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 11px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-strong);
+    font: inherit;
+  }
+
+  .task-form-field textarea {
+    min-height: 84px;
+    resize: vertical;
+  }
+
+  .task-form-foot {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .task-form-summary {
+    color: var(--text-soft);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .task-form-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .task-form-actions button {
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-strong);
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .task-form-actions .primary {
+    background: #f8fafc;
+    border-color: #f8fafc;
+    color: #111827;
   }
 
   .editor-panel:empty {
@@ -1127,6 +1176,14 @@ style.textContent = `
       grid-template-columns: 1fr;
     }
 
+    .task-form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .task-form-field.span-2 {
+      grid-column: span 1;
+    }
+
     .view-stat-grid,
     .task-side {
       width: auto;
@@ -1152,12 +1209,7 @@ const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivE
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
-const titleEl = shell.querySelector('#title') as HTMLInputElement;
-const projectEl = shell.querySelector('#project') as HTMLSelectElement;
-const dueEl = shell.querySelector('#due') as HTMLInputElement;
-const durationEl = shell.querySelector('#duration') as HTMLInputElement;
-const recurrenceEl = shell.querySelector('#recurrence') as HTMLSelectElement;
-const addBtn = shell.querySelector('#add') as HTMLButtonElement;
+const taskFormPanelEl = shell.querySelector('#task-form-panel') as HTMLDivElement;
 const editorEl = shell.querySelector('#editor') as HTMLElement;
 const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
@@ -1300,16 +1352,6 @@ function getSyncPresentation(sync) {
   };
 }
 
-function hydrateProjects() {
-  projectEl.innerHTML = '';
-  buildProjectSeedData(appData.projects).forEach((project) => {
-    const option = document.createElement('option');
-    option.value = project.id;
-    option.textContent = project.name;
-    projectEl.appendChild(option);
-  });
-}
-
 function setFilter(filter) {
   activeFilter = filter;
   filterContainer.querySelectorAll('.filter').forEach((button) => {
@@ -1326,29 +1368,167 @@ function setPlanWindowFilter(windowFilter) {
   });
 }
 
-function buildTaskDraft() {
-  const title = titleEl.value.trim();
-  const projectId = projectEl.value;
-  const dueAt = dueEl.value ? new Date(dueEl.value).toISOString() : null;
-  const durationMinutes = Number(durationEl.value || 30);
-  const recurrence = { pattern: recurrenceEl.value };
-  const project = getProjectById(appData.projects, projectId);
+function renderTaskForm() {
+  taskForm = createTaskFormState(appData, taskForm);
+  const options = getTaskFormOptions(appData, taskForm);
+  const scheduleHint = taskForm.scheduleMode === 'auto'
+    ? 'Motion-style auto-scheduled task'
+    : taskForm.scheduleMode === 'manual'
+      ? 'Manual task outside auto-scheduling'
+      : 'Fixed-time task';
+  const projectOptions = options.projectOptions.map((option) => `
+    <option value="${escapeHtml(option.id)}" ${option.id === taskForm.projectId ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
+  const assigneeOptions = options.assigneeOptions.map((option) => `
+    <option value="${escapeHtml(option.id)}" ${option.id === taskForm.assigneeUserId ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
+  const statusOptions = options.statusOptions.map((option) => `
+    <option value="${escapeHtml(option.id)}" ${option.id === taskForm.statusId ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
+  const priorityOptions = options.priorityOptions.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === taskForm.priorityLevel ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
+  const deadlineOptions = options.deadlineOptions.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === taskForm.deadlineType ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
+  const scheduleModeOptions = options.scheduleModeOptions.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === taskForm.scheduleMode ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
+  const scheduleOptions = [
+    '<option value="">No schedule</option>',
+    ...options.scheduleOptions.map((option) => `
+      <option value="${escapeHtml(option.id)}" ${option.id === taskForm.scheduleId ? 'selected' : ''}>
+        ${escapeHtml(option.label)}
+      </option>
+    `)
+  ].join('');
+  const recurrenceOptions = options.recurrenceOptions.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === taskForm.recurrencePattern ? 'selected' : ''}>
+      ${escapeHtml(option.label)}
+    </option>
+  `).join('');
 
-  return {
-    title,
-    projectId,
-    projectName: project?.name || 'Inbox',
-    dueAt,
-    durationMinutes,
-    recurrence
-  };
+  taskFormPanelEl.innerHTML = `
+    <div class="composer-header">
+      <div>
+        <strong>Task form</strong>
+        <p>Motion-style defaults with project, schedule, and priority context.</p>
+      </div>
+      <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
+    </div>
+    <div class="task-form-grid">
+      <label class="task-form-field span-2">
+        Task name
+        <input name="title" type="text" placeholder="What needs to happen?" value="${escapeHtml(taskForm.title)}" />
+      </label>
+      <label class="task-form-field span-2">
+        Description
+        <textarea name="description" placeholder="Add context, notes, or meeting details">${escapeHtml(taskForm.description)}</textarea>
+      </label>
+      <label class="task-form-field">
+        Project
+        <select name="projectId">${projectOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Assignee
+        <select name="assigneeUserId">${assigneeOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Priority
+        <select name="priorityLevel">${priorityOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Status
+        <select name="statusId">${statusOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Schedule mode
+        <select name="scheduleMode">${scheduleModeOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Schedule
+        <select name="scheduleId">${scheduleOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Due
+        <input name="dueAtInput" type="datetime-local" value="${escapeHtml(taskForm.dueAtInput)}" />
+      </label>
+      <label class="task-form-field">
+        ${taskForm.scheduleMode === 'fixed' ? 'Starts' : 'Start window'}
+        <input name="startAtInput" type="datetime-local" value="${escapeHtml(taskForm.startAtInput)}" ${taskForm.scheduleMode === 'fixed' ? '' : 'disabled'} />
+      </label>
+      <label class="task-form-field">
+        Duration
+        <input name="durationMinutes" type="number" min="5" max="720" step="5" value="${escapeHtml(String(taskForm.durationMinutes))}" />
+      </label>
+      <label class="task-form-field">
+        Min chunk
+        <input name="minimumDuration" type="number" min="5" max="720" step="5" value="${escapeHtml(String(taskForm.minimumDuration))}" />
+      </label>
+      <label class="task-form-field">
+        Deadline
+        <select name="deadlineType">${deadlineOptions}</select>
+      </label>
+      <label class="task-form-field">
+        Recurrence
+        <select name="recurrencePattern">${recurrenceOptions}</select>
+      </label>
+    </div>
+    <div class="task-form-foot">
+      <div class="task-form-summary">
+        Workspace: ${escapeHtml(taskForm.workspaceName)} | Project: ${escapeHtml(taskForm.projectName)} | Assignee: ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
+      </div>
+      <div class="task-form-actions">
+        <button type="button" id="task-form-reset">Reset</button>
+        <button type="button" id="task-form-submit" class="primary" ${canMutate ? '' : 'disabled'}>Create task</button>
+      </div>
+    </div>
+  `;
 }
 
-function clearDraft() {
-  titleEl.value = '';
-  dueEl.value = '';
-  durationEl.value = '30';
-  recurrenceEl.value = 'none';
+function updateTaskForm(patch) {
+  taskForm = createTaskFormState(appData, {
+    ...taskForm,
+    ...patch
+  });
+  renderTaskForm();
+}
+
+function resetTaskForm() {
+  taskForm = createTaskFormState(appData, {
+    projectId: taskForm.projectId
+  });
+  renderTaskForm();
+}
+
+function getTaskFormFieldValue(target: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
+  if (target instanceof HTMLInputElement && target.type === 'number') {
+    return target.value === '' ? '' : Number(target.value);
+  }
+  return target.value;
+}
+
+function handleTaskFormFieldChange(target: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
+  const name = target.name;
+  if (!name) {
+    return;
+  }
+
+  updateTaskForm({
+    [name]: getTaskFormFieldValue(target)
+  });
 }
 
 function showError(message) {
@@ -1417,7 +1597,6 @@ function refreshEntitlementState() {
   const calendarStatus = entitlementSummary.calendarReadEnabled ? 'enabled' : 'disabled';
   const mutationState = canMutate ? 'enabled' : 'read-only';
   entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | Authority: ${entitlementSummary.authorityStatus} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
-  addBtn.disabled = !canMutate;
   updateEntitlementPanel();
 
   if (!canMutate && entitlementCheck.reason) {
@@ -1861,6 +2040,7 @@ function persistAppData() {
 function renderWorkspace() {
   const shellState = getShellState(appData);
   const plannerState = buildPlannerState(shellState);
+  taskForm = createTaskFormState(appData, taskForm);
 
   shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
   shell.dataset.theme = shellState.theme.dataTheme;
@@ -1868,6 +2048,7 @@ function renderWorkspace() {
   renderTabStrip(shellState);
   renderViewHeader(shellState, plannerState);
   updateSummary(plannerState, shellState);
+  renderTaskForm();
   renderTasks(plannerState, shellState);
   renderAgenda(shellState);
   renderInboxPanel();
@@ -1880,13 +2061,50 @@ function renderAll() {
   renderWorkspace();
 }
 
-addBtn.addEventListener('click', () => {
+taskFormPanelEl.addEventListener('input', (event) => {
+  const target = event.target;
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLTextAreaElement
+  ) {
+    handleTaskFormFieldChange(target);
+  }
+});
+
+taskFormPanelEl.addEventListener('change', (event) => {
+  const target = event.target;
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLTextAreaElement
+  ) {
+    handleTaskFormFieldChange(target);
+  }
+});
+
+taskFormPanelEl.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  if (target.id === 'task-form-reset') {
+    resetTaskForm();
+    showError('');
+    return;
+  }
+
+  if (target.id !== 'task-form-submit') {
+    return;
+  }
+
   if (!canMutate) {
     showError('This install is currently read-only due to entitlement status.');
     return;
   }
 
-  const draft = buildTaskDraft();
+  const draft = buildTaskDraftFromFormState(taskForm);
   const result = upsertTask(tasks, draft);
   if (!result.ok) {
     showError(result.error);
@@ -1895,7 +2113,7 @@ addBtn.addEventListener('click', () => {
 
   appData = applyTaskMutation(appData, result);
   tasks = appData.tasks.slice();
-  clearDraft();
+  resetTaskForm();
   showError('');
   renderAll();
 });
@@ -2054,7 +2272,6 @@ if (typeof window !== 'undefined') {
 }
 
 function run() {
-  hydrateProjects();
   setFilter('all');
   setPlanWindowFilter('all');
   renderAll();
