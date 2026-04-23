@@ -675,6 +675,99 @@ export function getStageInstanceByDefinitionId(project = {}, stageDefinitionId) 
     : null;
 }
 
+function parseDateOnly(value) {
+  const normalized = normalizeDate(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = new Date(`${normalized}T00:00:00.000Z`);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
+}
+
+function toIsoAtHour(dateOnly, hour = 9) {
+  const parsed = parseDateOnly(dateOnly);
+  if (!parsed) {
+    return null;
+  }
+
+  const next = new Date(parsed.valueOf());
+  next.setUTCHours(hour, 0, 0, 0);
+  return next.toISOString();
+}
+
+function getOrderedStageDefinitions(project = {}, projectDefinitions = []) {
+  const projectDefinition = getProjectDefinitionById(projectDefinitions, project?.projectDefinitionId);
+  if (!projectDefinition) {
+    return [];
+  }
+
+  const explicitOrder = Array.isArray(projectDefinition.stageDefinitionReferences)
+    ? projectDefinition.stageDefinitionReferences
+        .map((reference) => getStageDefinitionById(projectDefinitions, reference.stageDefinitionId))
+        .filter(Boolean)
+    : [];
+
+  if (explicitOrder.length) {
+    return explicitOrder;
+  }
+
+  return Array.isArray(projectDefinition.stages) ? projectDefinition.stages.slice() : [];
+}
+
+export function getProjectStageOptions(project = {}, projectDefinitions = []) {
+  return getOrderedStageDefinitions(project, projectDefinitions).map((stageDefinition) => {
+    const stageInstance = getStageInstanceByDefinitionId(project, stageDefinition.id);
+    return {
+      id: stageDefinition.id,
+      label: stageDefinition.name,
+      color: stageDefinition.color || '#889096',
+      dueDate: stageInstance?.dueDate || null,
+      scheduledStatus: stageInstance?.scheduledStatus || null
+    };
+  });
+}
+
+export function getProjectTaskFormDefaults({
+  projects = [],
+  projectDefinitions = [],
+  projectId,
+  stageDefinitionId = null,
+  now = new Date().toISOString()
+} = {}) {
+  const project = getProjectById(projects, projectId);
+  const stageOptions = getProjectStageOptions(project, projectDefinitions);
+  const selectedStageId = stageOptions.some((stage) => stage.id === sanitizeText(stageDefinitionId))
+    ? sanitizeText(stageDefinitionId)
+    : sanitizeNullableText(project?.activeStageDefinitionId) || stageOptions[0]?.id || null;
+  const selectedStageIndex = stageOptions.findIndex((stage) => stage.id === selectedStageId);
+  const selectedStage = selectedStageIndex >= 0 ? stageOptions[selectedStageIndex] : null;
+  const previousStage = selectedStageIndex > 0 ? stageOptions[selectedStageIndex - 1] : null;
+  const todayDate = normalizeDate(now) || normalizeDate(new Date().toISOString());
+
+  let startDate = selectedStageIndex > 0
+    ? previousStage?.dueDate || project?.startDate || todayDate
+    : project?.startDate || todayDate;
+  let dueDate = selectedStage?.dueDate || project?.dueDate || todayDate;
+
+  if (startDate && todayDate && parseDateOnly(startDate)?.valueOf() < parseDateOnly(todayDate)?.valueOf()) {
+    startDate = todayDate;
+  }
+
+  if (dueDate && todayDate && parseDateOnly(dueDate)?.valueOf() < parseDateOnly(todayDate)?.valueOf()) {
+    dueDate = todayDate;
+  }
+
+  return {
+    projectDefinitionId: sanitizeNullableText(project?.projectDefinitionId),
+    selectedStageId,
+    selectedStage,
+    stageOptions,
+    defaultStartAt: toIsoAtHour(startDate, 9),
+    defaultDueAt: toIsoAtHour(dueDate, 17)
+  };
+}
+
 export function decorateTaskWithProject(task, projectSource = [], options = {}) {
   const domain = Array.isArray(projectSource)
     ? { projects: projectSource, workspaces: [], projectDefinitions: [] }

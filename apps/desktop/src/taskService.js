@@ -454,6 +454,11 @@ function toIsoFromLocalInput(value) {
   return parsed.toISOString();
 }
 
+function toDateOnlyFromLocalInput(value) {
+  const iso = toIsoFromLocalInput(value);
+  return iso ? iso.slice(0, 10) : null;
+}
+
 export function buildTaskDraftFromFormState(formState = {}) {
   const scheduleMode = normalizeTaskFormMode(formState.scheduleMode);
   const durationMinutes = clampDuration(
@@ -462,24 +467,32 @@ export function buildTaskDraftFromFormState(formState = {}) {
   const minimumDuration = normalizeMinimumDuration(formState.minimumDuration, durationMinutes);
   const dueAt = toIsoFromLocalInput(formState.dueAtInput);
   const startAt = toIsoFromLocalInput(formState.startAtInput);
+  const startOn = scheduleMode === 'fixed' ? null : toDateOnlyFromLocalInput(formState.startAtInput);
   const isFixedTimeTask = scheduleMode === 'fixed';
   const isAutoScheduled = scheduleMode === 'auto';
   const scheduledStart = isFixedTimeTask ? (startAt || dueAt) : null;
   const scheduledEnd = scheduledStart ? deriveScheduledEnd(scheduledStart, durationMinutes) : null;
   const effectiveDueAt = dueAt || scheduledEnd;
+  const recurrencePattern = sanitizeText(formState.recurrencePattern, 'none');
+  const recurrenceInterval = recurrencePattern === 'none'
+    ? 1
+    : Math.max(1, Number(formState.recurrenceInterval) || 1);
 
   return {
     title: sanitizeText(formState.title),
     description: sanitizeText(formState.description),
     projectId: sanitizeText(formState.projectId) || 'inbox',
     projectName: sanitizeText(formState.projectName) || 'Inbox',
+    projectDefinitionId: sanitizeNullableText(formState.projectDefinitionId),
+    stageDefinitionId: sanitizeNullableText(formState.stageDefinitionId),
     workspaceId: sanitizeText(formState.workspaceId) || DEFAULT_WORKSPACE_ID,
     assigneeUserId: sanitizeNullableText(formState.assigneeUserId),
     statusId: sanitizeText(formState.statusId) || TASK_STATUS_IDS[TASK_STATUSES.Todo],
     priorityLevel: normalizePriorityLevel(formState.priorityLevel),
     deadlineType: normalizeDeadlineType(formState.deadlineType, effectiveDueAt),
     dueAt: effectiveDueAt,
-    startAt: scheduledStart || startAt,
+    startAt: isFixedTimeTask ? (scheduledStart || startAt) : null,
+    startOn,
     scheduledStart,
     scheduledEnd,
     durationMinutes,
@@ -489,9 +502,10 @@ export function buildTaskDraftFromFormState(formState = {}) {
     scheduleId: sanitizeNullableText(formState.scheduleId),
     scheduleOverridden: scheduleMode === 'manual' || isFixedTimeTask,
     recurrence: {
-      pattern: sanitizeText(formState.recurrencePattern, 'none'),
-      interval: 1
-    }
+      pattern: recurrencePattern,
+      interval: recurrenceInterval
+    },
+    scheduleMeetingWithinDays: normalizeNullableNumber(formState.scheduleMeetingWithinDays)
   };
 }
 
