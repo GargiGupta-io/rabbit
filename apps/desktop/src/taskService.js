@@ -30,6 +30,7 @@ export const TASK_SCHEDULE_TYPES = [
   'unfitSchedulable',
   'stale'
 ];
+export const TASK_FORM_MODES = ['auto', 'manual', 'fixed'];
 
 export const TASK_SCHEDULE_TYPE_INFO = {
   completed: {
@@ -87,6 +88,7 @@ export const TASK_SCHEDULE_TYPE_INFO = {
 const ALLOWED_PRIORITY_LEVELS = new Set(TASK_PRIORITY_LEVELS);
 const ALLOWED_DEADLINE_TYPES = new Set(TASK_DEADLINE_TYPES);
 const ALLOWED_SCHEDULED_STATUSES = new Set(TASK_SCHEDULED_STATUSES);
+const ALLOWED_TASK_FORM_MODES = new Set(TASK_FORM_MODES);
 
 const MINUTE = 60 * 1000;
 const DEFAULT_WORKSPACE_ID = 'ws_personal';
@@ -359,7 +361,9 @@ export function getTaskScheduleType(task, { now = Date.now() } = {}) {
     return 'completed';
   }
 
-  if (!task.isAutoScheduled) {
+  const isScheduledByMotion = task.isAutoScheduled || task.isFixedTimeTask;
+
+  if (!isScheduledByMotion) {
     return 'notScheduled';
   }
 
@@ -387,6 +391,10 @@ export function getTaskScheduleType(task, { now = Date.now() } = {}) {
     return 'beforeDue';
   }
 
+  if (task.isFixedTimeTask && (task.scheduledStart || task.startAt || task.dueAt)) {
+    return isPastDue(task, now) ? 'pastDue' : 'beforeDue';
+  }
+
   if (task.isUnfit) {
     return 'unfit';
   }
@@ -410,6 +418,80 @@ export function getTaskScheduleSummary(task, options = {}) {
     shortLabel: base.shortLabel,
     tone: base.tone,
     shouldDisplay
+  };
+}
+
+function normalizeTaskFormMode(value) {
+  const normalized = sanitizeText(value).toLowerCase();
+  return ALLOWED_TASK_FORM_MODES.has(normalized) ? normalized : 'auto';
+}
+
+function normalizeDateTimeLocalInput(value) {
+  const normalized = sanitizeText(value);
+  if (!normalized) {
+    return '';
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.valueOf())) {
+    return '';
+  }
+
+  return normalized.slice(0, 16);
+}
+
+function toIsoFromLocalInput(value) {
+  const normalized = normalizeDateTimeLocalInput(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.valueOf())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
+export function buildTaskDraftFromFormState(formState = {}) {
+  const scheduleMode = normalizeTaskFormMode(formState.scheduleMode);
+  const durationMinutes = clampDuration(
+    Number(formState.durationMinutes ?? formState.duration) || 30
+  );
+  const minimumDuration = normalizeMinimumDuration(formState.minimumDuration, durationMinutes);
+  const dueAt = toIsoFromLocalInput(formState.dueAtInput);
+  const startAt = toIsoFromLocalInput(formState.startAtInput);
+  const isFixedTimeTask = scheduleMode === 'fixed';
+  const isAutoScheduled = scheduleMode === 'auto';
+  const scheduledStart = isFixedTimeTask ? (startAt || dueAt) : null;
+  const scheduledEnd = scheduledStart ? deriveScheduledEnd(scheduledStart, durationMinutes) : null;
+  const effectiveDueAt = dueAt || scheduledEnd;
+
+  return {
+    title: sanitizeText(formState.title),
+    description: sanitizeText(formState.description),
+    projectId: sanitizeText(formState.projectId) || 'inbox',
+    projectName: sanitizeText(formState.projectName) || 'Inbox',
+    workspaceId: sanitizeText(formState.workspaceId) || DEFAULT_WORKSPACE_ID,
+    assigneeUserId: sanitizeNullableText(formState.assigneeUserId),
+    statusId: sanitizeText(formState.statusId) || TASK_STATUS_IDS[TASK_STATUSES.Todo],
+    priorityLevel: normalizePriorityLevel(formState.priorityLevel),
+    deadlineType: normalizeDeadlineType(formState.deadlineType, effectiveDueAt),
+    dueAt: effectiveDueAt,
+    startAt: scheduledStart || startAt,
+    scheduledStart,
+    scheduledEnd,
+    durationMinutes,
+    minimumDuration,
+    isAutoScheduled,
+    isFixedTimeTask,
+    scheduleId: sanitizeNullableText(formState.scheduleId),
+    scheduleOverridden: scheduleMode === 'manual' || isFixedTimeTask,
+    recurrence: {
+      pattern: sanitizeText(formState.recurrencePattern, 'none'),
+      interval: 1
+    }
   };
 }
 
