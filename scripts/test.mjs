@@ -9,6 +9,36 @@ import { buildCalendarBusyBlocks, normalizeCalendarEvent, normalizeCalendarOverl
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from '../apps/desktop/src/entitlementClient.js';
 import { getTaskScheduleSummary, getTaskScheduleType } from '../apps/desktop/src/taskService.js';
 import { getProjectTaskFormDefaults } from '../apps/desktop/src/projectService.js';
+import { applyClientTransform, resolveClientRequest } from '../apps/desktop/src/apiClient.js';
+import {
+  bulkUpdateTasks,
+  completeTask,
+  getLazyTaskById,
+  getPastDueTasks,
+  getTaskById,
+  queryTasks,
+  updateTask
+} from '../apps/desktop/src/tasksClient.js';
+import { getViews } from '../apps/desktop/src/viewsClient.js';
+import {
+  fetchUncachedCalendarList,
+  getCalendarEvents,
+  getCalendars,
+  getSchedulingAssistantEventsV4,
+  searchCalendarEvents
+} from '../apps/desktop/src/calendarClient.js';
+import {
+  getInboxItems,
+  getUnreadInboxCount,
+  markInboxItemsAsRead
+} from '../apps/desktop/src/inboxClient.js';
+import {
+  fetchBootstrap,
+  getCurrentUser,
+  getFeaturePermissions,
+  getMySettings,
+  updateTaskDefaults
+} from '../apps/desktop/src/bootstrapClient.js';
 import {
   activateShellView,
   buildSidebarSections,
@@ -283,6 +313,160 @@ runTest('task form draft builder carries project stage defaults and recurrence i
   assert.equal(draft.recurrence.pattern, 'weekly');
   assert.equal(draft.recurrence.interval, 2);
   assert.equal(draft.dueAt, '2026-05-15T11:30:00.000Z');
+});
+
+runTest('task client wrappers mirror Motion task query and mutation shapes', () => {
+  const queryRequest = resolveClientRequest(queryTasks, {
+    include: ['project', 'workspace'],
+    filters: { completed: 'exclude' }
+  });
+  const taskByIdRequest = resolveClientRequest(getTaskById, {
+    id: 'task_123',
+    include: ['project', 'workspace']
+  });
+  const lazyRequest = resolveClientRequest(getLazyTaskById, {
+    id: 'task_123',
+    include: []
+  });
+  const updateRequest = resolveClientRequest(updateTask, {
+    id: 'task_123',
+    title: 'Rename task',
+    statusId: 'status_done'
+  });
+  const completeRequest = resolveClientRequest(completeTask, {
+    id: 'task_123',
+    completedTime: '2026-04-17T12:00:00.000Z'
+  });
+  const bulkRequest = resolveClientRequest(bulkUpdateTasks, {
+    taskIds: ['task_123', 'task_456'],
+    patch: { priorityLevel: 'HIGH' }
+  });
+  const pastDueRequest = resolveClientRequest(getPastDueTasks, {
+    include: ['project']
+  });
+
+  assert.equal(queryRequest.method, 'POST');
+  assert.equal(queryRequest.uri, '/v2/tasks/query');
+  assert.deepEqual(queryRequest.key, ['v2/tasks', 'query', { include: ['project', 'workspace'], filters: { completed: 'exclude' } }]);
+  assert.deepEqual(queryRequest.body, { include: ['project', 'workspace'], filters: { completed: 'exclude' } });
+  assert.equal(taskByIdRequest.uri, '/v2/tasks/task_123?include=project,workspace');
+  assert.deepEqual(taskByIdRequest.key, ['v2/tasks', 'by-id', 'task_123']);
+  assert.deepEqual(lazyRequest.key, ['lazy', 'v2/tasks', 'by-id', 'task_123']);
+  assert.equal(updateRequest.uri, '/v2/tasks/task_123');
+  assert.deepEqual(updateRequest.body, { title: 'Rename task', statusId: 'status_done' });
+  assert.equal(completeRequest.uri, '/v2/tasks/task_123/complete');
+  assert.deepEqual(completeRequest.body, { id: 'task_123', completedTime: '2026-04-17T12:00:00.000Z' });
+  assert.equal(bulkRequest.uri, '/v2/tasks/bulk-update');
+  assert.deepEqual(bulkRequest.body, { taskIds: ['task_123', 'task_456'], patch: { priorityLevel: 'HIGH' } });
+  assert.equal(pastDueRequest.uri, '/v2/tasks/past_due?include=project');
+});
+
+runTest('views client wrapper applies Motion-style column and completed defaults', () => {
+  const transformed = applyClientTransform(getViews, {
+    ids: ['view_my_tasks', 'view_team_schedule'],
+    models: {
+      views: {
+        view_my_tasks: {
+          definition: {
+            type: 'projects-and-tasks',
+            columns: [{ key: 'title' }, { key: 'status', visible: false }],
+            filters: {
+              tasks: { filters: {} },
+              projects: { filters: {} }
+            }
+          }
+        },
+        view_team_schedule: {
+          definition: {
+            type: 'team-schedule',
+            columns: [{ key: 'assignee' }],
+            filters: {
+              tasks: { filters: {} },
+              projects: { filters: {} }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  assert.equal(transformed.models.views.view_my_tasks.definition.columns[0].visible, true);
+  assert.equal(transformed.models.views.view_my_tasks.definition.filters.tasks.filters.completed, 'include');
+  assert.equal(transformed.models.views.view_my_tasks.definition.filters.projects.filters.completed, 'include');
+  assert.equal(transformed.models.views.view_team_schedule.definition.columns[0].visible, undefined);
+});
+
+runTest('calendar client wrappers align with extracted query keys and search transforms', () => {
+  const calendarsRequest = resolveClientRequest(getCalendars);
+  const uncachedRequest = resolveClientRequest(fetchUncachedCalendarList, {
+    providerTypes: ['GOOGLE']
+  });
+  const eventsRequest = resolveClientRequest(getCalendarEvents, {
+    providerIds: ['prov_b', 'prov_a']
+  });
+  const searchRequest = resolveClientRequest(searchCalendarEvents, {
+    query: 'kickoff',
+    limit: 10
+  });
+  const schedulingAssistantRequest = resolveClientRequest(getSchedulingAssistantEventsV4, {
+    attendees: ['user_1'],
+    dateRange: { start: '2026-04-17', end: '2026-04-18' }
+  });
+  const transformedSearch = applyClientTransform(searchCalendarEvents, {
+    calendarEvents: [{ id: 'evt_1' }, { id: 'evt_2' }]
+  });
+
+  assert.equal(calendarsRequest.uri, '/v2/calendars');
+  assert.deepEqual(calendarsRequest.key, ['calendars']);
+  assert.equal(uncachedRequest.uri, '/calendar_list');
+  assert.deepEqual(uncachedRequest.key, ['uncached_calendar_list']);
+  assert.deepEqual(uncachedRequest.body, { providerTypes: ['GOOGLE'] });
+  assert.equal(eventsRequest.uri, '/v2/calendar_events/gantt?providerIds%5B%5D=prov_a&providerIds%5B%5D=prov_b');
+  assert.deepEqual(eventsRequest.key, ['calendar-events', 'calendars', 'prov_a', 'prov_b']);
+  assert.deepEqual(searchRequest.uri, {
+    pathname: '/v2/calendar_events/search',
+    search: { query: 'kickoff', limit: 10 }
+  });
+  assert.deepEqual(searchRequest.key, ['calendar-events', 'kickoff']);
+  assert.equal(schedulingAssistantRequest.uri, '/v4/calendar-events/scheduling-assistant');
+  assert.equal(schedulingAssistantRequest.method, 'POST');
+  assert.deepEqual(transformedSearch, [{ id: 'evt_1' }, { id: 'evt_2' }]);
+});
+
+runTest('inbox and bootstrap client wrappers expose Motion-like query keys and settings surfaces', () => {
+  const inboxItemsRequest = resolveClientRequest(getInboxItems);
+  const unreadRequest = resolveClientRequest(getUnreadInboxCount);
+  const markReadRequest = resolveClientRequest(markInboxItemsAsRead, {
+    type: 'multiple',
+    itemIds: ['notif_2', 'notif_1']
+  });
+  const bootstrapRequest = resolveClientRequest(fetchBootstrap, {
+    workspaceId: 'ws_motion_team',
+    viewId: 'view_my_tasks'
+  });
+  const settingsRequest = resolveClientRequest(getMySettings);
+  const meRequest = resolveClientRequest(getCurrentUser);
+  const permissionsRequest = resolveClientRequest(getFeaturePermissions);
+  const taskDefaultsRequest = resolveClientRequest(updateTaskDefaults, {
+    defaultDurationMinutes: 30
+  });
+
+  assert.deepEqual(inboxItemsRequest.key, ['inbox', 'items']);
+  assert.equal(inboxItemsRequest.uri, '/v2/notifications/items');
+  assert.deepEqual(unreadRequest.key, ['inbox', 'unread-count']);
+  assert.deepEqual(markReadRequest.key, ['inbox', 'mark-item-as-read', 'notif_2', 'notif_1']);
+  assert.equal(markReadRequest.uri, '/v2/notifications/mark-status');
+  assert.equal(bootstrapRequest.method, 'POST');
+  assert.deepEqual(bootstrapRequest.key, ['bootstrap', { workspaceId: 'ws_motion_team', viewId: 'view_my_tasks' }]);
+  assert.equal(settingsRequest.uri, '/v2/users/me/settings');
+  assert.deepEqual(settingsRequest.key, ['v2', 'users', 'me', 'settings']);
+  assert.equal(settingsRequest.queryOptions.staleTime, 60 * 60 * 1000);
+  assert.equal(meRequest.uri, '/v2/users/me');
+  assert.deepEqual(meRequest.key, ['v2', 'users', 'me']);
+  assert.equal(permissionsRequest.uri, '/v2/users/me/feature-permissions');
+  assert.deepEqual(permissionsRequest.key, ['v2', 'users', 'me', 'feature-permissions']);
+  assert.deepEqual(taskDefaultsRequest.invalidate, [['v2', 'users', 'me', 'settings']]);
+  assert.deepEqual(taskDefaultsRequest.body, { defaultDurationMinutes: 30 });
 });
 
 runTest('saved views are grouped into workspace, private, team, and project sidebar sections', () => {

@@ -768,4 +768,42 @@ Phase 6 is closed properly now instead of just being “the last thing we worked
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 36 begins Phase 7 by adding typed client wrappers for the highest-value Motion API surfaces.*
+## ? Step 36 — Phase 7 API Client Wrapper Baseline
+*Completed: 2026-04-25*
+
+**What was built**
+- `apps/desktop/src/apiClient.js` — adds a small local contract layer for query and mutation wrappers so request shape, query keys, and response transforms can be expressed consistently.
+- `apps/desktop/src/tasksClient.js` — adds Motion-shaped task query and mutation wrappers for `v2/tasks` queries, task-by-id lookups, and task mutations.
+- `apps/desktop/src/viewsClient.js` — adds `v3/views` wrappers and the view-response normalization hook that applies Motion-style visible-column and completed-filter defaults.
+- `apps/desktop/src/calendarClient.js` — adds wrapper definitions for calendars, uncached calendar list fetches, calendar-event queries, and scheduling-assistant requests.
+- `apps/desktop/src/inboxClient.js` — adds inbox item, unread-count, and mark-as-read wrappers aligned with Motion's notification endpoints and keys.
+- `apps/desktop/src/bootstrapClient.js` — adds bootstrap, user, settings, feature-permission, and task-default wrappers for the bootstrap-like state Motion caches locally.
+- `scripts/test.mjs` — adds deterministic tests for client request shapes, query keys, invalidation targets, and response transforms.
+
+**In plain English**
+The repo now has a real API-client baseline instead of only app-state and sync code. We can describe how Motion-shaped requests should look for tasks, views, calendars, inbox, and user/bootstrap state without wiring the full transport stack yet. That gives the next sync and cache steps something concrete to build on instead of inventing request shapes ad hoc.
+
+**Files changed**
++ created: `apps/desktop/src/apiClient.js`
++ created: `apps/desktop/src/tasksClient.js`
++ created: `apps/desktop/src/viewsClient.js`
++ created: `apps/desktop/src/calendarClient.js`
++ created: `apps/desktop/src/inboxClient.js`
++ created: `apps/desktop/src/bootstrapClient.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/apiClient.js`
+- `node --check apps/desktop/src/tasksClient.js`
+- `node --check apps/desktop/src/viewsClient.js`
+- `node --check apps/desktop/src/calendarClient.js`
+- `node --check apps/desktop/src/inboxClient.js`
+- `node --check apps/desktop/src/bootstrapClient.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 37 reshapes the sync client and local event model toward the extracted Motion sync DTO direction.*
