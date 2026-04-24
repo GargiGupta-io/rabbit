@@ -18,6 +18,7 @@ import {
   resolveTaskAction,
   upsertTask
 } from './state.js';
+import { createDesktopShellBridge } from './desktopShellBridge.js';
 import { getProjectTaskFormDefaults } from './projectService.js';
 import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
@@ -41,6 +42,12 @@ let search = '';
 let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
 let taskForm = createProjectAwareTaskFormState();
+const DESKTOP_SHELL_APP_VERSION = 'phase-8-step-41';
+const desktopShellBridge = createDesktopShellBridge({
+  appVersion: DESKTOP_SHELL_APP_VERSION,
+  distribution: 'microsoft',
+  maxTabs: 6
+});
 
 const root = document.getElementById('root');
 if (!root) {
@@ -1228,6 +1235,15 @@ function escapeHtml(value: unknown) {
     .replaceAll("'", '&#39;');
 }
 
+function sanitizeText(value: unknown, fallback = '') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = value.trim();
+  return normalized || fallback;
+}
+
 function formatCompactDate(value: unknown) {
   if (!value) {
     return 'No date';
@@ -1875,6 +1891,160 @@ function updateSyncStatus() {
   `;
 }
 
+function focusSearchInput() {
+  searchEl.focus();
+  searchEl.select();
+}
+
+function focusTaskComposer() {
+  const titleInput = taskFormPanelEl.querySelector('input[name="title"]');
+  if (titleInput instanceof HTMLInputElement) {
+    titleInput.focus();
+    titleInput.select();
+  }
+}
+
+function syncDesktopShell(shellState) {
+  const syncState = getSyncStateSummary(appData);
+  const inboxState = getInboxStateSummary(appData);
+  const showTrayText = inboxState.unreadCount > 0
+    || syncState.pendingCount > 0
+    || shellState.agenda?.counts?.ongoing > 0;
+
+  desktopShellBridge.syncShellState({
+    shellState,
+    syncState,
+    inboxState,
+    appVersion: DESKTOP_SHELL_APP_VERSION,
+    distribution: 'microsoft',
+    maxTabs: Math.max(6, Array.isArray(shellState.tabs) ? shellState.tabs.length : 0),
+    appBarSettings: {
+      showTrayText
+    }
+  });
+}
+
+function performTaskAction(taskId, action, options: { clearComposerError?: boolean } = {}) {
+  if (!canMutate) {
+    showError('This install is currently read-only due to entitlement status.');
+    return false;
+  }
+
+  const result = resolveTaskAction(tasks, taskId, action);
+  if (!result.ok) {
+    showError(result.error);
+    return false;
+  }
+
+  appData = applyTaskMutation(appData, result);
+  tasks = appData.tasks.slice();
+  const nextTask = tasks.find((task) => task.id === taskId);
+  if (action === 'complete' && sanitizeText(taskId) && nextTask?.status === 'done') {
+    desktopShellBridge.send('appBar:taskCompleted', { taskId });
+  }
+  if (options.clearComposerError !== false) {
+    showError('');
+  }
+  renderAll();
+  return true;
+}
+
+function selectMyTasksSurface() {
+  const matchingTab = Array.isArray(appData.shell?.tabs)
+    ? appData.shell.tabs.find((tab) => tab.itemType === 'view' && tab.itemId === 'view_my_tasks')
+    : null;
+
+  if (matchingTab?.id) {
+    setActiveShellTab(matchingTab.id);
+    return;
+  }
+
+  setActiveShellView('view_my_tasks');
+}
+
+function openTaskFromDesktopShell(taskId) {
+  const task = tasks.find((entry) => entry.id === taskId);
+  if (!task) {
+    showError(`Desktop shell requested unknown task ${taskId}.`);
+    return false;
+  }
+
+  selectMyTasksSurface();
+  search = task.title;
+  renderAll();
+  focusSearchInput();
+  return true;
+}
+
+function openEventFromDesktopShell() {
+  search = '';
+  setActiveShellTab('tab_calendar');
+  renderAll();
+  return true;
+}
+
+function openNewTaskFromDesktopShell() {
+  resetTaskForm();
+  showError('');
+  renderAll();
+  focusTaskComposer();
+}
+
+function installDesktopShellBridgeHandlers() {
+  desktopShellBridge.on('tabs:get', () => {
+    syncDesktopShell(getShellState(appData));
+  });
+
+  desktopShellBridge.on('tabs:select', (tabId) => {
+    if (!sanitizeText(tabId)) {
+      return;
+    }
+    setActiveShellTab(tabId);
+    renderAll();
+  });
+
+  desktopShellBridge.on('tabs:didChangeOnlineStatus', () => {
+    renderAll();
+  });
+
+  desktopShellBridge.on('appBar:getInitialData', () => {
+    syncDesktopShell(getShellState(appData));
+  });
+
+  desktopShellBridge.on('appBar:search', () => {
+    focusSearchInput();
+  });
+
+  desktopShellBridge.on('appBar:openTask', (payload: { taskId?: string } = {}) => {
+    openTaskFromDesktopShell(payload.taskId);
+  });
+
+  desktopShellBridge.on('appBar:completeTask', (payload: { taskId?: string } = {}) => {
+    if (!sanitizeText(payload.taskId)) {
+      return;
+    }
+    performTaskAction(payload.taskId, 'complete');
+  });
+
+  desktopShellBridge.on('appBar:openEvent', () => {
+    openEventFromDesktopShell();
+  });
+
+  desktopShellBridge.on('appBar:openNew', (payload: { type?: string } = {}) => {
+    if (payload.type === 'task') {
+      openNewTaskFromDesktopShell();
+      return;
+    }
+    showError(`Desktop shell quick-create for ${payload.type || 'unknown'} is not wired yet.`);
+  });
+
+  desktopShellBridge.on('main:showMainWindow', () => {
+    if (typeof window !== 'undefined' && typeof window.focus === 'function') {
+      window.focus();
+    }
+  });
+}
+
 function updateSummary(plannerState, shellState) {
   const summary = getTaskStateSummary(tasks);
   const meta = plannerState.viewState.meta;
@@ -2223,6 +2393,7 @@ function renderWorkspace() {
 
   shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
   shell.dataset.theme = shellState.theme.dataTheme;
+  searchEl.value = search;
   renderSidebar(shellState);
   renderTabStrip(shellState);
   renderViewHeader(shellState, plannerState);
@@ -2231,6 +2402,7 @@ function renderWorkspace() {
   renderTasks(plannerState, shellState);
   renderAgenda(shellState);
   renderInboxPanel();
+  syncDesktopShell(shellState);
 }
 
 function renderAll() {
@@ -2388,22 +2560,7 @@ taskListEl.addEventListener('click', (event) => {
   if (!action || !id) {
     return;
   }
-
-  if (!canMutate) {
-    showError('This install is currently read-only due to entitlement status.');
-    return;
-  }
-
-  const result = resolveTaskAction(tasks, id, action);
-  if (!result.ok) {
-    showError(result.error);
-    return;
-  }
-
-  appData = applyTaskMutation(appData, result);
-  tasks = appData.tasks.slice();
-  showError('');
-  renderAll();
+  performTaskAction(id, action);
 });
 
 entitlementPanelEl.addEventListener('change', (event) => {
@@ -2444,6 +2601,8 @@ entitlementPanelEl.addEventListener('click', async (event) => {
     renderAll();
   }
 });
+
+installDesktopShellBridgeHandlers();
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => renderAll());
