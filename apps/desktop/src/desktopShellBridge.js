@@ -1,6 +1,7 @@
 export const DEFAULT_DESKTOP_DISTRIBUTION = 'microsoft';
 export const DEFAULT_SHELL_APP_VERSION = '0.0.0-dev';
 export const DEFAULT_MAX_TABS = 6;
+export const DEFAULT_QUICK_MEETING_PROVIDER = 'GOOGLE_MEET';
 
 export const MAIN_SENDABLE_CHANNELS = Object.freeze([
   'appVersion',
@@ -185,6 +186,12 @@ function getActiveTab(shellState = {}) {
     || null;
 }
 
+function getActiveTabIndex(shellState = {}) {
+  const tabs = Array.isArray(shellState.tabs) ? shellState.tabs : [];
+  const activeTab = getActiveTab(shellState);
+  return tabs.findIndex((tab) => sanitizeText(tab?.id) === sanitizeText(activeTab?.id));
+}
+
 function getAgendaBuckets(shellState = {}) {
   const agenda = isPlainObject(shellState.agenda) ? shellState.agenda : {};
   return [
@@ -263,9 +270,18 @@ export function createDesktopAgendaPayload(shellState = {}) {
 }
 
 export function createCanNavigatePayload(input = {}) {
+  if (typeof input?.canGoBack === 'boolean' || typeof input?.canGoForward === 'boolean') {
+    return {
+      canGoBack: Boolean(input?.canGoBack),
+      canGoForward: Boolean(input?.canGoForward)
+    };
+  }
+
+  const tabs = Array.isArray(input?.tabs) ? input.tabs : [];
+  const activeIndex = Number.isInteger(input?.activeIndex) ? input.activeIndex : getActiveTabIndex({ tabs, activeTabId: input?.activeTabId });
   return {
-    canGoBack: Boolean(input?.canGoBack),
-    canGoForward: Boolean(input?.canGoForward)
+    canGoBack: activeIndex > 0,
+    canGoForward: activeIndex >= 0 && activeIndex < tabs.length - 1
   };
 }
 
@@ -287,6 +303,37 @@ export function createAppBarSettingsPayload(input = {}) {
   };
 }
 
+export function createConferenceSettingsPayload(input = {}) {
+  const defaultConferenceType = sanitizeText(input?.defaultConferenceType, DEFAULT_QUICK_MEETING_PROVIDER).toUpperCase();
+  const email = sanitizeText(input?.email, 'gargig469@gmail.com');
+
+  return {
+    defaultConferenceType,
+    hasZoomAccount: Boolean(input?.hasZoomAccount),
+    hasPhoneNumber: Boolean(input?.hasPhoneNumber),
+    hasCustomLocation: input?.hasCustomLocation == null ? true : Boolean(input.hasCustomLocation),
+    hostEmailAccount: {
+      id: sanitizeText(input?.accountId, `acct_${email.split('@')[0] || 'host'}`),
+      userId: sanitizeText(input?.userId, 'user_gargi'),
+      email,
+      name: sanitizeText(input?.name, 'Gargi Gupta'),
+      providerType: sanitizeText(input?.providerType, 'GOOGLE').toUpperCase(),
+      profilePictureUrl: sanitizeText(input?.profilePictureUrl) || undefined
+    },
+    canEnableNotetaker: input?.canEnableNotetaker == null ? true : Boolean(input.canEnableNotetaker),
+    defaultNotetakerEnabled: Boolean(input?.defaultNotetakerEnabled),
+    hasAIWorkflows: Boolean(input?.hasAIWorkflows)
+  };
+}
+
+export function createQuickMeetingPayload(input = {}) {
+  const provider = sanitizeText(input?.conferenceProvider, DEFAULT_QUICK_MEETING_PROVIDER).toUpperCase();
+  return {
+    conferenceProvider: provider,
+    addNotetaker: Boolean(input?.addNotetaker)
+  };
+}
+
 export function createShellBridgeSnapshot({
   shellState = {},
   syncState = {},
@@ -302,6 +349,7 @@ export function createShellBridgeSnapshot({
   const themeMode = sanitizeText(shellState?.theme?.dataTheme || shellState?.theme?.mode, 'dark') === 'light'
     ? 'light'
     : 'dark';
+  const activeIndex = getActiveTabIndex(shellState);
   const showTrayText = appBarSettings.showTrayText == null
     ? Boolean((inboxState?.unreadCount || 0) > 0 || (syncState?.pendingCount || 0) > 0 || (shellState?.agenda?.counts?.ongoing || 0) > 0)
     : Boolean(appBarSettings.showTrayText);
@@ -314,10 +362,17 @@ export function createShellBridgeSnapshot({
     themeMode,
     tabs,
     maxTabs: Number.isInteger(maxTabs) && maxTabs > 0 ? maxTabs : Math.max(DEFAULT_MAX_TABS, tabs.length || 1),
-    navigation: createCanNavigatePayload(canNavigate),
+    navigation: createCanNavigatePayload({
+      ...canNavigate,
+      tabs,
+      activeIndex,
+      activeTabId: shellState?.activeTabId
+    }),
     activeNavigation: createDidNavigatePayload(shellState, canNavigate),
     agenda: createDesktopAgendaPayload(shellState),
-    appBarSettings: createAppBarSettingsPayload({ showTrayText })
+    appBarSettings: createAppBarSettingsPayload({ showTrayText }),
+    conferenceSettings: createConferenceSettingsPayload(appBarSettings),
+    meetingInsights: isPlainObject(appBarSettings?.meetingInsights) ? cloneValue(appBarSettings.meetingInsights) : {}
   };
 }
 
@@ -425,6 +480,8 @@ export function createDesktopShellBridge(options = {}) {
     }
     send('appBar:setAgenda', snapshot.agenda);
     send('appBar:settings:init', snapshot.appBarSettings);
+    send('appBar:setConferenceSettings', snapshot.conferenceSettings);
+    send('appBar:setMeetingInsights', snapshot.meetingInsights);
     send('updateTheme', snapshot.themeMode);
 
     return snapshot;
