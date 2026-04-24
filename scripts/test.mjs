@@ -40,7 +40,9 @@ import {
   updateTaskDefaults
 } from '../apps/desktop/src/bootstrapClient.js';
 import {
+  createPowerSyncUploadRequest,
   createPushEventBatchRequest,
+  normalizePowerSyncUploadResponse,
   normalizePushEventBatchResponse
 } from '../apps/desktop/src/syncClient.js';
 import {
@@ -709,6 +711,73 @@ runTest('sync client batch request wraps local outbox events into extracted push
   assert.equal(batch.events[1].data.partials.tasks.sync_push_2.deletedTime, '2026-04-17T12:25:00.000Z');
 });
 
+runTest('PowerSync upload request converts local sync events into CRUD operations', () => {
+  const created = createTaskSyncEvent({
+    action: 'create',
+    task: normalizeTask({
+      id: 'temp_task_1',
+      title: 'Create through PowerSync',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    revision: 'mut_ps_create',
+    occurredAt: '2026-04-17T12:40:00.000Z'
+  });
+  const updated = createTaskSyncEvent({
+    action: 'update',
+    task: normalizeTask({
+      id: 'temp_task_1',
+      title: 'Update through PowerSync',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    previousTask: normalizeTask({
+      id: 'temp_task_1',
+      title: 'Create through PowerSync',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    revision: 'mut_ps_update',
+    occurredAt: '2026-04-17T12:41:00.000Z'
+  });
+  const deleted = createTaskSyncEvent({
+    action: 'delete',
+    task: normalizeTask({
+      id: 'temp_task_2',
+      title: 'Delete through PowerSync',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    previousTask: normalizeTask({
+      id: 'temp_task_2',
+      title: 'Delete through PowerSync',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    revision: 'mut_ps_delete',
+    occurredAt: '2026-04-17T12:42:00.000Z'
+  });
+  const batch = createPowerSyncUploadRequest([created, updated, deleted], {
+    txId: 77
+  });
+
+  assert.deepEqual(batch.key, ['powersync', 'upload']);
+  assert.equal(batch.txId, 77);
+  assert.equal(batch.operationCount, 3);
+  assert.deepEqual(batch.operationTypes, ['PUT', 'PATCH', 'DELETE']);
+  assert.deepEqual(batch.tables, ['tasks']);
+  assert.equal(batch.operations[0].op, 'PUT');
+  assert.equal(batch.operations[0].type, 'tasks');
+  assert.equal(batch.operations[0].id, 'temp_task_1');
+  assert.equal(batch.operations[0].tx_id, 77);
+  assert.equal(batch.operations[0].data.title, 'Create through PowerSync');
+  assert.equal(JSON.parse(batch.operations[0].metadata).eventId, created.id);
+  assert.equal(batch.operations[1].op, 'PATCH');
+  assert.equal(batch.operations[1].data.title, 'Update through PowerSync');
+  assert.equal(batch.operations[2].op, 'DELETE');
+  assert.equal(batch.operations[2].old.id, 'temp_task_2');
+});
+
 runTest('sync batch response normalization and state application acknowledge successful events only', () => {
   const first = createTaskSyncEvent({
     action: 'create',
@@ -755,6 +824,75 @@ runTest('sync batch response normalization and state application acknowledge suc
   assert.equal(nextState.outbox[0].id, second.id);
   assert.equal(nextState.syncStatus, 'failed');
   assert.equal(nextState.syncCursor, 'cursor_after_push');
+  assert.equal(typeof nextState.lastSyncAt, 'string');
+});
+
+runTest('PowerSync upload response reconciliation keeps failed operations queued and remaps temp ids', () => {
+  const createdTask = normalizeTask({
+    id: 'temp_task_3',
+    title: 'PowerSync temp create',
+    projectId: 'inbox',
+    durationMinutes: 30
+  });
+  const created = createTaskSyncEvent({
+    action: 'create',
+    task: createdTask,
+    revision: 'mut_ps_ack_create',
+    occurredAt: '2026-04-17T12:45:00.000Z'
+  });
+  const updated = createTaskSyncEvent({
+    action: 'update',
+    task: normalizeTask({
+      ...createdTask,
+      title: 'PowerSync temp update'
+    }),
+    previousTask: createdTask,
+    revision: 'mut_ps_ack_update',
+    occurredAt: '2026-04-17T12:46:00.000Z'
+  });
+  const request = createPowerSyncUploadRequest([created, updated], {
+    txId: 91
+  });
+  const response = normalizePowerSyncUploadResponse({
+    success: false,
+    errors: [
+      { operation: 2, error: 'conflict' }
+    ],
+    idMappings: [
+      { tempId: 'temp_task_3', realId: 'task_real_3', table: 'tasks' }
+    ]
+  }, request);
+  const nextState = applySyncBatchResult({
+    ...fixtureState,
+    tasks: [createdTask],
+    outbox: [created, updated],
+    syncStatus: 'syncing',
+    deviceId: 'dev_powersync'
+  }, {
+    success: false,
+    errors: [
+      { operation: 2, error: 'conflict' }
+    ],
+    idMappings: [
+      { tempId: 'temp_task_3', realId: 'task_real_3', table: 'tasks' }
+    ]
+  }, {
+    request,
+    syncCursor: 'cursor_after_powersync'
+  });
+
+  assert.equal(response.successCount, 1);
+  assert.equal(response.failureCount, 1);
+  assert.deepEqual(response.acknowledgedIds, [created.id]);
+  assert.deepEqual(response.failedIds, [updated.id]);
+  assert.equal(response.taskIdMap.temp_task_3, 'task_real_3');
+  assert.equal(nextState.tasks[0].id, 'task_real_3');
+  assert.equal(nextState.outbox.length, 1);
+  assert.equal(nextState.outbox[0].entityId, 'task_real_3');
+  assert.equal(nextState.outbox[0].payload.task.id, 'task_real_3');
+  assert.equal(nextState.outbox[0].data.models.tasks.task_real_3.title, 'PowerSync temp update');
+  assert.equal(nextState.syncStatus, 'failed');
+  assert.equal(nextState.syncCursor, 'cursor_after_powersync');
   assert.equal(typeof nextState.lastSyncAt, 'string');
 });
 
@@ -806,6 +944,9 @@ runTest('sync state summary exposes pending local-only runtime status', () => {
   assert.equal(summary.syncStatus, 'pending');
   assert.equal(summary.pushEventCount, 1);
   assert.deepEqual(summary.pushEventTypes, ['push.task.create']);
+  assert.equal(summary.uploadOperationCount, 1);
+  assert.deepEqual(summary.uploadOperationTypes, ['PUT']);
+  assert.deepEqual(summary.uploadTables, ['tasks']);
 });
 
 runTest('calendar overlay normalization keeps deterministic busy blocks and derives all-day end time', () => {

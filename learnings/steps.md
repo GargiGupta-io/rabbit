@@ -863,4 +863,30 @@ The app now behaves more like Motion’s local client cache instead of only savi
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 39 adds PowerSync-style batch upload and reconciliation on top of the new cached query and sync-event baseline.*
+## ? Step 39 — Phase 7 PowerSync Reconciliation Baseline
+*Completed: 2026-04-26*
+
+**What was built**
+- `apps/desktop/src/syncClient.js` — adds PowerSync-style CRUD upload batching, upload-response normalization, temp-id mapping support, and outbox remapping helpers while keeping the earlier push-event helpers intact.
+- `apps/desktop/src/state.js` — upgrades sync summaries to include upload-operation state and teaches sync reconciliation to clear acknowledged events, keep failed ones queued, and remap task ids after server acknowledgement.
+- `scripts/test.mjs` — adds deterministic coverage for PowerSync CRUD request shaping, temp-id to real-id remapping, and partial-failure reconciliation.
+
+**In plain English**
+The sync layer can now package local changes the way a PowerSync-style uploader expects: as CRUD operations instead of only event envelopes. More importantly, when the server says “this create worked, this update failed, and this temporary id is now a real id,” the app can update its local task list and queued sync work correctly instead of getting stuck on the old temporary id.
+
+**Files changed**
+~ modified: `apps/desktop/src/syncClient.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/syncClient.js`
+- `node --check apps/desktop/src/state.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 40 runs the Phase 7 verification gate and closes the API, sync, and cache parity phase.*
