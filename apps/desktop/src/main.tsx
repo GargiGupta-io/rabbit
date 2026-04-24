@@ -3,6 +3,7 @@ import {
   activateShellView,
   applyTaskMutation,
   buildTaskDraftFromFormState,
+  getClientCacheSummary,
   createTaskFormState,
   decorateTaskWithProject,
   formatDisplayDateTime,
@@ -1822,7 +1823,11 @@ function buildPlannerState(shellState) {
 
 function updateSyncStatus() {
   const sync = getSyncStateSummary(appData);
+  const cache = getClientCacheSummary(appData);
   const presentation = getSyncPresentation(sync);
+  const cacheKeysLabel = cache.displayKeys.length
+    ? cache.displayKeys.join(' | ')
+    : 'No persisted query keys yet.';
 
   syncPanelEl.innerHTML = `
     <div class="sync-header">
@@ -1847,7 +1852,26 @@ function updateSyncStatus() {
         <div class="sync-value">${escapeHtml(sync.deviceId || 'Unknown')}</div>
       </div>
     </div>
+    <div class="sync-grid">
+      <div class="sync-stat">
+        <strong>Cached queries</strong>
+        <div class="sync-value">${escapeHtml(String(cache.queryCount))}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Views cache</strong>
+        <div class="sync-value">${escapeHtml(String(cache.viewCount))}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Settings groups</strong>
+        <div class="sync-value">${escapeHtml(String(cache.settingsGroupCount))}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Calendar cache</strong>
+        <div class="sync-value">${escapeHtml(String(cache.calendarCount))}</div>
+      </div>
+    </div>
     <p class="sync-note">${escapeHtml(presentation.detail)}</p>
+    <p class="sync-note">${escapeHtml(`IndexedDB-style cache is hydrating ${cacheKeysLabel}. Active workspace: ${cache.activeWorkspaceId || 'Unknown'} | Active view: ${cache.activeViewId || 'Unknown'} | User: ${cache.userEmail}`)}</p>
   `;
 }
 

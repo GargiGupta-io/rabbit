@@ -22,6 +22,7 @@ import {
   normalizePushEventBatchResponse
 } from './syncClient.js';
 import { deriveShellStateSnapshot, getShellViewMeta, selectTasksForShellView } from './shellService.js';
+import { normalizeQueryCacheState } from './storage.js';
 
 export * from './taskService.js';
 export * from './projectService.js';
@@ -32,6 +33,49 @@ export * from './shellService.js';
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function parseNowValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.valueOf())) {
+      return parsed.valueOf();
+    }
+  }
+
+  return Date.now();
+}
+
+function formatQueryKeyLabel(key = []) {
+  return (Array.isArray(key) ? key : [])
+    .map((segment) => {
+      if (segment == null) {
+        return '';
+      }
+      if (typeof segment === 'string' || typeof segment === 'number') {
+        return String(segment);
+      }
+      return '[args]';
+    })
+    .filter(Boolean)
+    .join('/');
+}
+
+function isQueryFresh(entry = {}, nowMs = Date.now()) {
+  if (!Number.isFinite(entry?.staleTimeMs) || entry.staleTimeMs <= 0) {
+    return true;
+  }
+
+  const updatedAt = new Date(entry.updatedAt || '').valueOf();
+  if (Number.isNaN(updatedAt)) {
+    return true;
+  }
+
+  return updatedAt + entry.staleTimeMs >= nowMs;
 }
 
 export function buildSeedData({ workspaces, projectDefinitions, projects, tasks } = {}) {
@@ -130,6 +174,62 @@ export function applySyncBatchResult(appData = {}, rawResponse = {}, options = {
       : sync.syncCursor,
     deviceId: sync.deviceId,
     syncStatus: nextSyncStatus
+  };
+}
+
+export function getClientCacheSummary(appData = {}, options = {}) {
+  const queryCache = normalizeQueryCacheState(appData.queryCache, appData);
+  const nowMs = parseNowValue(options.now);
+  const queries = Array.isArray(queryCache.queries) ? queryCache.queries : [];
+  const byScope = Object.fromEntries(
+    queries
+      .filter((entry) => entry?.scope)
+      .map((entry) => [entry.scope, entry])
+  );
+  const successfulCount = queries.filter((entry) => entry.status === 'success').length;
+  const idleCount = queries.filter((entry) => entry.fetchStatus === 'idle').length;
+  const staleCount = queries.filter((entry) => !isQueryFresh(entry, nowMs)).length;
+  const bootstrap = byScope.bootstrap?.data || {};
+  const currentUser = byScope.currentUser?.data || {};
+  const settings = byScope.settings?.data || {};
+  const pageViewSettings = byScope.pageViewSettings?.data || {};
+  const views = byScope.views?.data || {};
+  const calendar = byScope.uncachedCalendarList?.data || {};
+  const workspaces = byScope.workspaces?.data || {};
+  const viewIds = Array.isArray(views.ids) ? views.ids : [];
+  const calendarIds = Array.isArray(calendar.calendarList?.ids) ? calendar.calendarList.ids : [];
+  const workspaceIds = Array.isArray(workspaces.ids) ? workspaces.ids : [];
+  const settingsGroups = Object.keys(settings).filter((key) => settings[key] && typeof settings[key] === 'object');
+  const keyLabels = queries.map((entry) => formatQueryKeyLabel(entry.key));
+
+  return {
+    queryCache,
+    queryCount: queries.length,
+    successfulCount,
+    idleCount,
+    staleCount,
+    freshCount: queries.length - staleCount,
+    keyLabels,
+    displayKeys: keyLabels.slice(0, 3),
+    hydratedAt: queryCache.hydratedAt,
+    persistence: queryCache.persistence,
+    bootstrap,
+    currentUser,
+    settings,
+    pageViewSettings,
+    views,
+    calendar,
+    workspaces,
+    userEmail: currentUser.email || 'unknown',
+    onboardingComplete: Boolean(currentUser.onboardingComplete || settings.onboarding?.isOnboardingComplete),
+    activeWorkspaceId: pageViewSettings.activeWorkspaceId || settings.workspaces?.focusedWorkspaceId || null,
+    activeViewId: pageViewSettings.activeViewId || bootstrap.activeViewId || null,
+    settingsGroupCount: settingsGroups.length,
+    viewCount: viewIds.length,
+    calendarCount: calendarIds.length,
+    workspaceCount: workspaceIds.length,
+    calendarPermissionStatus: calendar.permissionStatus || appData.calendarOverlay?.permissionStatus || 'unknown',
+    calendarFetchStatus: byScope.uncachedCalendarList?.fetchStatus || 'idle'
   };
 }
 
