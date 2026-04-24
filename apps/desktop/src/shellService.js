@@ -1264,14 +1264,180 @@ export function activateShellTab(shell = {}, tabId = '') {
   };
 }
 
+function createShellTabForView(view = {}, tabs = []) {
+  const viewId = sanitizeText(view.id);
+  if (!viewId) {
+    return null;
+  }
+
+  const existingIds = new Set((Array.isArray(tabs) ? tabs : []).map((tab) => sanitizeText(tab.id)));
+  const baseId = `tab_${viewId.replace(/^view_/, '') || 'view'}`;
+  let nextId = baseId;
+  let suffix = 2;
+
+  while (existingIds.has(nextId)) {
+    nextId = `${baseId}_${suffix}`;
+    suffix += 1;
+  }
+
+  return {
+    id: nextId,
+    title: sanitizeText(view.name, 'View'),
+    route: sanitizeText(view.route, '/web/calendar'),
+    itemType: 'view',
+    itemId: viewId,
+    closable: true,
+    active: false
+  };
+}
+
+function getShellTabCandidate(savedViews = [], tabs = [], requestedViewId = '') {
+  const normalizedViews = normalizeSavedViews(savedViews);
+  const normalizedTabs = normalizeShellTabs(tabs);
+  const requestedId = sanitizeText(requestedViewId);
+  const openViewIds = new Set(
+    normalizedTabs
+      .filter((tab) => tab.itemType === 'view')
+      .map((tab) => sanitizeText(tab.itemId))
+      .filter(Boolean)
+  );
+
+  if (requestedId) {
+    return getSavedViewById(normalizedViews, requestedId);
+  }
+
+  return normalizedViews.find((view) => !openViewIds.has(view.id)) || normalizedViews[0] || null;
+}
+
 export function activateShellView(shell = {}, viewId = '') {
   const tabs = normalizeShellTabs(shell.tabs);
   const savedViews = normalizeSavedViews(shell.savedViews);
   const activeView = getSavedViewById(savedViews, viewId);
   const matchingTab = tabs.find((tab) => tab.itemType === 'view' && tab.itemId === activeView?.id) || null;
-  const nextTabs = tabs.map((tab) => ({
+  const insertedTab = !matchingTab && activeView
+    ? createShellTabForView(activeView, tabs)
+    : null;
+  const nextTabs = (insertedTab ? tabs.concat(insertedTab) : tabs).map((tab) => ({
     ...tab,
-    active: matchingTab ? tab.id === matchingTab.id : tab.active
+    active: (matchingTab ? tab.id === matchingTab.id : tab.id === insertedTab?.id) || (!matchingTab && !insertedTab && tab.active)
+  }));
+  const activeTab = nextTabs.find((tab) => tab.active) || matchingTab || insertedTab || tabs.find((tab) => tab.active) || tabs[0] || null;
+
+  return {
+    ...shell,
+    theme: normalizeShellTheme(shell.theme),
+    tabs: nextTabs,
+    savedViews,
+    activeTabId: activeTab?.id || sanitizeText(shell.activeTabId, DEFAULT_TAB_ID),
+    activeViewId: activeView?.id || DEFAULT_VIEW_ID
+  };
+}
+
+export function addShellViewTab(shell = {}, viewId = '') {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const candidateView = getShellTabCandidate(savedViews, tabs, viewId);
+  if (!candidateView) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: getActiveShellTab(tabs, shell.activeTabId)?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  const existingTab = tabs.find((tab) => tab.itemType === 'view' && tab.itemId === candidateView.id);
+  if (existingTab) {
+    return activateShellTab({
+      ...shell,
+      tabs,
+      savedViews
+    }, existingTab.id);
+  }
+
+  const createdTab = createShellTabForView(candidateView, tabs);
+  const nextTabs = tabs
+    .map((tab) => ({
+      ...tab,
+      active: false
+    }))
+    .concat(createdTab ? [{ ...createdTab, active: true }] : []);
+
+  return {
+    ...shell,
+    theme: normalizeShellTheme(shell.theme),
+    tabs: nextTabs,
+    savedViews,
+    activeTabId: createdTab?.id || DEFAULT_TAB_ID,
+    activeViewId: candidateView.id
+  };
+}
+
+export function moveShellTab(shell = {}, tabId = '', toIndex = 0) {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const sourceIndex = tabs.findIndex((tab) => tab.id === tabId);
+  if (sourceIndex < 0 || tabs.length <= 1) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: getActiveShellTab(tabs, shell.activeTabId)?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  const targetIndex = Math.max(0, Math.min(tabs.length - 1, Number.isFinite(toIndex) ? Math.trunc(toIndex) : sourceIndex));
+  if (targetIndex === sourceIndex) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: getActiveShellTab(tabs, shell.activeTabId)?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  const reordered = tabs.slice();
+  const [movedTab] = reordered.splice(sourceIndex, 1);
+  reordered.splice(targetIndex, 0, movedTab);
+
+  return {
+    ...shell,
+    theme: normalizeShellTheme(shell.theme),
+    tabs: reordered.map((tab) => ({ ...tab })),
+    savedViews,
+    activeTabId: getActiveShellTab(reordered, shell.activeTabId)?.id || DEFAULT_TAB_ID,
+    activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+  };
+}
+
+export function removeShellTab(shell = {}, tabId = '') {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const sourceIndex = tabs.findIndex((tab) => tab.id === tabId);
+  const targetTab = sourceIndex >= 0 ? tabs[sourceIndex] : null;
+  if (!targetTab || !targetTab.closable || tabs.length <= 1) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: getActiveShellTab(tabs, shell.activeTabId)?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  const nextTabsBase = tabs.filter((tab) => tab.id !== tabId);
+  const fallbackIndex = Math.max(0, Math.min(sourceIndex, nextTabsBase.length - 1));
+  const fallbackTab = nextTabsBase[fallbackIndex] || nextTabsBase[0] || null;
+  const nextTabs = nextTabsBase.map((tab) => ({
+    ...tab,
+    active: tab.id === fallbackTab?.id
   }));
 
   return {
@@ -1279,9 +1445,47 @@ export function activateShellView(shell = {}, viewId = '') {
     theme: normalizeShellTheme(shell.theme),
     tabs: nextTabs,
     savedViews,
-    activeTabId: matchingTab?.id || sanitizeText(shell.activeTabId, DEFAULT_TAB_ID),
-    activeViewId: activeView?.id || DEFAULT_VIEW_ID
+    activeTabId: fallbackTab?.id || DEFAULT_TAB_ID,
+    activeViewId: fallbackTab?.itemType === 'view'
+      ? sanitizeText(fallbackTab.itemId, DEFAULT_VIEW_ID)
+      : 'calendar'
   };
+}
+
+export function navigateShellTabs(shell = {}, direction = 'forward') {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const activeTab = getActiveShellTab(tabs, shell.activeTabId);
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeTab?.id);
+  if (activeIndex < 0 || tabs.length <= 1) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: activeTab?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  const delta = sanitizeText(direction, 'forward').toLowerCase() === 'backward' ? -1 : 1;
+  const nextIndex = Math.max(0, Math.min(tabs.length - 1, activeIndex + delta));
+  if (nextIndex === activeIndex) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: activeTab?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  return activateShellTab({
+    ...shell,
+    tabs,
+    savedViews
+  }, tabs[nextIndex].id);
 }
 
 export function getShellThemeClassName(theme = {}) {
