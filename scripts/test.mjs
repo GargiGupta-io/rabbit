@@ -46,16 +46,22 @@ import {
   normalizePushEventBatchResponse
 } from '../apps/desktop/src/syncClient.js';
 import {
+  addShellViewTab,
   activateShellView,
   buildSidebarSections,
   deriveShellStateSnapshot,
   getShellViewMeta,
+  moveShellTab,
+  navigateShellTabs,
+  removeShellTab,
   selectTasksForShellView
 } from '../apps/desktop/src/shellService.js';
 import {
+  createConferenceSettingsPayload,
   createDesktopAgendaPayload,
   createDesktopShellBridge,
   createDesktopTabPayload,
+  createQuickMeetingPayload,
   createShellBridgeSnapshot,
   RECEIVABLE_CHANNELS,
   SENDABLE_CHANNELS
@@ -536,6 +542,48 @@ runTest('activating a saved view syncs the matching tab and resolves Motion-like
   assert.equal(meta.columns.length >= 4, true);
 });
 
+runTest('activating a non-open saved view now creates a real tab for that view', () => {
+  const nextShell = activateShellView(fixtureState.shell, 'view_my_deadlines');
+  const snapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: nextShell
+  });
+
+  assert.equal(snapshot.activeViewId, 'view_my_deadlines');
+  assert.equal(snapshot.tabs.some((tab) => tab.itemId === 'view_my_deadlines'), true);
+  assert.equal(snapshot.activeTab?.itemId, 'view_my_deadlines');
+});
+
+runTest('shell tab helpers add, move, remove, and navigate tabs like a native shell surface', () => {
+  const added = addShellViewTab(fixtureState.shell, 'view_team_schedule');
+  const addedSnapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: added
+  });
+  const teamTab = addedSnapshot.tabs.find((tab) => tab.itemId === 'view_team_schedule');
+  const moved = moveShellTab(added, teamTab?.id, 1);
+  const movedSnapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: moved
+  });
+  const navigated = navigateShellTabs(moved, 'backward');
+  const navigatedSnapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: navigated
+  });
+  const removed = removeShellTab(added, teamTab?.id);
+  const removedSnapshot = deriveShellStateSnapshot({
+    ...fixtureState,
+    shell: removed
+  });
+
+  assert.equal(addedSnapshot.tabs.length, fixtureState.shell.tabs.length + 1);
+  assert.equal(teamTab?.closable, true);
+  assert.equal(movedSnapshot.tabs[1]?.id, teamTab?.id);
+  assert.equal(navigatedSnapshot.activeTabId, movedSnapshot.tabs[0]?.id);
+  assert.equal(removedSnapshot.tabs.some((tab) => tab.id === teamTab?.id), false);
+});
+
 runTest('saved view runtime preserves views-v3-style definitions and summaries', () => {
   const summary = getViewStateSummary(fixtureState, {
     now: FIXTURE_NOW
@@ -611,13 +659,38 @@ runTest('desktop shell bridge snapshot and provider sync follow Motion-like shel
   assert.equal(snapshot.distribution, 'apple');
   assert.equal(snapshot.themeMode, 'dark');
   assert.equal(snapshot.tabs.length, 3);
+  assert.equal(snapshot.navigation.canGoBack, false);
+  assert.equal(snapshot.navigation.canGoForward, true);
   assert.equal(snapshot.appBarSettings.showTrayText, true);
+  assert.equal(snapshot.conferenceSettings.defaultConferenceType, 'GOOGLE_MEET');
   assert.equal(sent[0].channel, 'appVersion');
   assert.equal(sent.some((entry) => entry.channel === 'tabs:set'), true);
   assert.equal(sent.some((entry) => entry.channel === 'tabs:didNavigate'), true);
   assert.equal(sent.some((entry) => entry.channel === 'appBar:setAgenda'), true);
+  assert.equal(sent.some((entry) => entry.channel === 'appBar:setConferenceSettings'), true);
+  assert.equal(sent.some((entry) => entry.channel === 'appBar:setMeetingInsights'), true);
   assert.equal(sent.some((entry) => entry.channel === 'updateTheme' && entry.args[0] === 'dark'), true);
   assert.equal(selectedTabId, 'tab_my_tasks');
+});
+
+runTest('desktop shell bridge normalizes conference and quick meeting payloads', () => {
+  const conferenceSettings = createConferenceSettingsPayload({
+    email: 'demo@example.com',
+    defaultConferenceType: 'zoom',
+    hasZoomAccount: true,
+    hasAIWorkflows: true
+  });
+  const quickMeeting = createQuickMeetingPayload({
+    conferenceProvider: 'microsoft_teams',
+    addNotetaker: true
+  });
+
+  assert.equal(conferenceSettings.defaultConferenceType, 'ZOOM');
+  assert.equal(conferenceSettings.hostEmailAccount.email, 'demo@example.com');
+  assert.equal(conferenceSettings.hasZoomAccount, true);
+  assert.equal(conferenceSettings.hasAIWorkflows, true);
+  assert.equal(quickMeeting.conferenceProvider, 'MICROSOFT_TEAMS');
+  assert.equal(quickMeeting.addNotetaker, true);
 });
 
 runTest('fixture inbox state seeds a structured personal inbox baseline', () => {

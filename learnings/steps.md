@@ -942,3 +942,34 @@ The app now has a real desktop shell seam instead of letting `main.tsx` own ever
 
 ---
 *Next: Step 42 brings tab, app-bar, search, and quick-action behavior closer to the extracted native shell surfaces.*
+
+---
+## Step 42 - Phase 8 Desktop Action Surface Alignment
+*Completed: 2026-04-26*
+
+**What was built**
+- `apps/desktop/src/shellService.js` - adds native-shell-style tab helpers for creating view tabs, moving tabs, removing closable tabs, and navigating between tabs.
+- `apps/desktop/src/desktopShellBridge.js` - expands the bridge snapshot with tab-navigation hints, conference settings, and quick-meeting payload normalization so the app-bar contract looks closer to the extracted shell.
+- `apps/desktop/src/main.tsx` - wires header quick actions, tab add/close behavior, keyboard shortcuts, quick-meeting creation, and more shell event handlers through the desktop bridge.
+- `scripts/test.mjs` - adds deterministic coverage for new tab behaviors and the richer bridge payloads.
+
+**In plain English**
+The desktop shell now behaves more like a real app shell instead of just displaying shell-shaped panels. You can open additional view tabs, close and reorder them, trigger search and new-task actions from buttons or shortcuts, and create a quick meeting that lands in the calendar overlay through the same shell contract. That makes the app feel much closer to Motion’s desktop surfaces instead of just looking like them.
+
+**Files changed**
+~ modified: `apps/desktop/src/shellService.js`
+~ modified: `apps/desktop/src/desktopShellBridge.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/desktopShellBridge.js`
+- `node --check apps/desktop/src/shellService.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 43 starts the macOS-specific shell polish pass without changing product behavior.*
