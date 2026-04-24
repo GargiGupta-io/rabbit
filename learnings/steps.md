@@ -914,3 +914,31 @@ Phase 7 is properly closed now instead of just being the last backend-oriented w
 
 ---
 *Next: Step 41 starts Phase 8 by abstracting native shell IPC contracts from the extracted desktop shell logic.*
+
+---
+## Step 41 - Phase 8 Native Shell Bridge Baseline
+*Completed: 2026-04-26*
+
+**What was built**
+- `apps/desktop/src/desktopShellBridge.js` - adds a local desktop shell bridge with Motion-shaped sendable and receivable channel catalogs, local `on/send/emit` behavior, and payload builders for tabs, agenda, navigation, and app-bar settings.
+- `apps/desktop/src/main.tsx` - routes the current shell through the bridge, syncs tab and agenda state out to the native shell contract, and handles incoming desktop-style actions for tab selection, search focus, open-task, open-event, complete-task, and new-task flows.
+- `scripts/test.mjs` - adds deterministic coverage for channel families, bridge payload shaping, and local bridge event dispatch.
+
+**In plain English**
+The app now has a real desktop shell seam instead of letting `main.tsx` own every tab, agenda, and app-bar interaction directly. Tabs and agenda state can be pushed through a Motion-like bridge contract, and desktop-style shell events like "select this tab", "search", or "complete this task" now have one place to enter the app.
+
+**Files changed**
++ created: `apps/desktop/src/desktopShellBridge.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/desktopShellBridge.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 42 brings tab, app-bar, search, and quick-action behavior closer to the extracted native shell surfaces.*

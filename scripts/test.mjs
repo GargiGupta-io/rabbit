@@ -53,6 +53,14 @@ import {
   selectTasksForShellView
 } from '../apps/desktop/src/shellService.js';
 import {
+  createDesktopAgendaPayload,
+  createDesktopShellBridge,
+  createDesktopTabPayload,
+  createShellBridgeSnapshot,
+  RECEIVABLE_CHANNELS,
+  SENDABLE_CHANNELS
+} from '../apps/desktop/src/desktopShellBridge.js';
+import {
   FIXTURE_CALENDAR_EVENTS_RAW,
   FIXTURE_CALENDARS_RAW,
   FIXTURE_CALENDAR_OVERLAY,
@@ -539,6 +547,77 @@ runTest('saved view runtime preserves views-v3-style definitions and summaries',
   assert.equal(summary.columns.length, 4);
   assert.equal(summary.filterSummary.includes('Private'), true);
   assert.equal(summary.filterSummary.includes('Assigned to me'), true);
+});
+
+runTest('desktop shell bridge exposes extracted sendable and receivable channel families', () => {
+  assert.equal(SENDABLE_CHANNELS.includes('tabs:set'), true);
+  assert.equal(SENDABLE_CHANNELS.includes('appBar:setAgenda'), true);
+  assert.equal(SENDABLE_CHANNELS.includes('updateTheme'), true);
+  assert.equal(RECEIVABLE_CHANNELS.includes('tabs:select'), true);
+  assert.equal(RECEIVABLE_CHANNELS.includes('appBar:search'), true);
+  assert.equal(RECEIVABLE_CHANNELS.includes('main:showMainWindow'), true);
+});
+
+runTest('desktop shell bridge derives tab and agenda payloads from shell state', () => {
+  const shellState = deriveShellStateSnapshot(fixtureState, {
+    now: FIXTURE_NOW
+  });
+  const tabs = createDesktopTabPayload(shellState);
+  const agenda = createDesktopAgendaPayload(shellState);
+
+  assert.equal(tabs.length, 3);
+  assert.equal(tabs.find((tab) => tab.id === shellState.activeTabId)?.active, true);
+  assert.equal(agenda.length, shellState.agenda.counts.total);
+  assert.equal(agenda.some((entry) => entry.sourceType === 'task'), true);
+  assert.equal(agenda.some((entry) => entry.sourceType === 'calendar'), true);
+  assert.equal(agenda.every((entry) => typeof entry.bucket === 'string'), true);
+});
+
+runTest('desktop shell bridge snapshot and provider sync follow Motion-like shell update shape', () => {
+  const shellState = deriveShellStateSnapshot(fixtureState, {
+    now: FIXTURE_NOW
+  });
+  const syncState = getSyncStateSummary(fixtureState);
+  const inboxState = getInboxStateSummary(fixtureState);
+  const sent = [];
+  const bridge = createDesktopShellBridge({
+    appVersion: 'test-shell',
+    distribution: 'apple',
+    send(channel, ...args) {
+      sent.push({ channel, args });
+    }
+  });
+  let selectedTabId = null;
+  bridge.on('tabs:select', (tabId) => {
+    selectedTabId = tabId;
+  });
+  const snapshot = createShellBridgeSnapshot({
+    shellState,
+    syncState,
+    inboxState,
+    appVersion: 'test-shell',
+    distribution: 'apple'
+  });
+
+  bridge.syncShellState({
+    shellState,
+    syncState,
+    inboxState,
+    appVersion: 'test-shell',
+    distribution: 'apple'
+  });
+  bridge.emit('tabs:select', 'tab_my_tasks');
+
+  assert.equal(snapshot.distribution, 'apple');
+  assert.equal(snapshot.themeMode, 'dark');
+  assert.equal(snapshot.tabs.length, 3);
+  assert.equal(snapshot.appBarSettings.showTrayText, true);
+  assert.equal(sent[0].channel, 'appVersion');
+  assert.equal(sent.some((entry) => entry.channel === 'tabs:set'), true);
+  assert.equal(sent.some((entry) => entry.channel === 'tabs:didNavigate'), true);
+  assert.equal(sent.some((entry) => entry.channel === 'appBar:setAgenda'), true);
+  assert.equal(sent.some((entry) => entry.channel === 'updateTheme' && entry.args[0] === 'dark'), true);
+  assert.equal(selectedTabId, 'tab_my_tasks');
 });
 
 runTest('fixture inbox state seeds a structured personal inbox baseline', () => {
