@@ -1,4 +1,5 @@
 import {
+  addShellViewTab,
   activateShellTab,
   activateShellView,
   applyTaskMutation,
@@ -15,10 +16,14 @@ import {
   getTaskFilters,
   getTaskStateSummary,
   getViewStateSummary,
+  moveShellTab,
+  navigateShellTabs,
+  removeShellTab,
   resolveTaskAction,
   upsertTask
 } from './state.js';
-import { createDesktopShellBridge } from './desktopShellBridge.js';
+import { normalizeCalendarEvent } from './calendarService.js';
+import { createDesktopShellBridge, createQuickMeetingPayload } from './desktopShellBridge.js';
 import { getProjectTaskFormDefaults } from './projectService.js';
 import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
@@ -82,7 +87,27 @@ shell.innerHTML = `
         <span class="workspace-kicker">Desktop shell</span>
         <h1>Motion-style planner shell</h1>
       </div>
-      <p class="workspace-status" id="entitlement-status"></p>
+      <div class="workspace-meta">
+        <p class="workspace-status" id="entitlement-status"></p>
+        <div class="shell-actions" id="shell-actions">
+          <button type="button" class="shell-action" data-shell-command="search">
+            <span>Search</span>
+            <span class="key-hint">Ctrl/Cmd K</span>
+          </button>
+          <button type="button" class="shell-action" data-shell-command="new-task">
+            <span>New task</span>
+            <span class="key-hint">Ctrl/Cmd Shift N</span>
+          </button>
+          <button type="button" class="shell-action" data-shell-command="quick-meeting">
+            <span>Quick meeting</span>
+            <span class="key-hint">Ctrl/Cmd Shift M</span>
+          </button>
+          <button type="button" class="shell-action" data-shell-command="menu">
+            <span>Menu</span>
+            <span class="key-hint">Alt / Ctrl M</span>
+          </button>
+        </div>
+      </div>
     </header>
 
     <div id="tab-strip" class="tab-strip"></div>
@@ -388,11 +413,66 @@ style.textContent = `
     text-align: right;
   }
 
+  .workspace-meta {
+    display: grid;
+    gap: 12px;
+    justify-items: end;
+  }
+
+  .shell-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .shell-action,
+  .tab-add,
+  .tab-close {
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-strong);
+    font: inherit;
+  }
+
+  .shell-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+
+  .shell-action:hover,
+  .shell-action:focus-visible,
+  .tab-add:hover,
+  .tab-add:focus-visible,
+  .tab-close:hover,
+  .tab-close:focus-visible {
+    border-color: rgba(255, 255, 255, 0.16);
+    outline: none;
+  }
+
+  .key-hint {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
   .tab-strip {
     display: flex;
     gap: 10px;
     padding: 0 24px 18px;
     overflow: auto;
+  }
+
+  .tab-shell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
   }
 
   .tab-button {
@@ -432,6 +512,17 @@ style.textContent = `
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-soft);
+  }
+
+  .tab-close,
+  .tab-add {
+    padding: 9px 12px;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .tab-close {
+    border-radius: 12px;
   }
 
   .workspace-body {
@@ -914,7 +1005,8 @@ style.textContent = `
   }
 
   .task-alert,
-  .error {
+  .error,
+  .editor-message {
     margin-top: 10px;
     font-size: 12px;
     line-height: 1.5;
@@ -927,6 +1019,18 @@ style.textContent = `
   .task-alert.error,
   .error {
     color: #b42318;
+  }
+
+  .editor-message.info {
+    color: var(--text-muted);
+  }
+
+  .editor-message.success {
+    color: #0f9f6e;
+  }
+
+  .editor-message.warning {
+    color: #f59e0b;
   }
 
   .agenda-panel,
@@ -1215,6 +1319,7 @@ const agendaPanelEl = shell.querySelector('#agenda-panel') as HTMLDivElement;
 const inboxPanelEl = shell.querySelector('#inbox-panel') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
 const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivElement;
+const shellActionsEl = shell.querySelector('#shell-actions') as HTMLDivElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
@@ -1703,16 +1808,20 @@ function handleTaskFormFieldChange(target: HTMLInputElement | HTMLSelectElement 
   });
 }
 
-function showError(message) {
+function showEditorMessage(message, tone = 'info') {
   editorEl.textContent = '';
   if (!message) {
     return;
   }
 
   const line = document.createElement('p');
-  line.className = 'error';
+  line.className = tone === 'error' ? 'error' : `editor-message ${tone}`;
   line.textContent = message;
   editorEl.appendChild(line);
+}
+
+function showError(message) {
+  showEditorMessage(message, 'error');
 }
 
 function updateEntitlementPanel() {
@@ -1919,7 +2028,11 @@ function syncDesktopShell(shellState) {
     distribution: 'microsoft',
     maxTabs: Math.max(6, Array.isArray(shellState.tabs) ? shellState.tabs.length : 0),
     appBarSettings: {
-      showTrayText
+      showTrayText,
+      defaultConferenceType: 'GOOGLE_MEET',
+      email: 'gargig469@gmail.com',
+      hasAIWorkflows: getEntitlementStateSummary(entitlement).aiEnabled,
+      meetingInsights: {}
     }
   });
 }
@@ -1976,9 +2089,26 @@ function openTaskFromDesktopShell(taskId) {
   return true;
 }
 
-function openEventFromDesktopShell() {
+function openTaskUrlFromDesktopShell(taskUrl = '') {
+  const taskId = resolveTaskIdFromUrl(taskUrl);
+  if (!taskId) {
+    showError(`Desktop shell task URL could not be matched: ${taskUrl}`);
+    return false;
+  }
+
+  return openTaskFromDesktopShell(taskId);
+}
+
+function openEventFromDesktopShell(payload: { providerId?: string } = {}) {
   search = '';
   setActiveShellTab('tab_calendar');
+  const providerId = sanitizeText(payload.providerId);
+  if (providerId) {
+    const matchingEvent = (appData.calendarOverlay?.importedEvents || []).find((event) => event.providerId === providerId || event.id === providerId);
+    if (matchingEvent) {
+      showEditorMessage(`Focused calendar surface for ${matchingEvent.title}.`, 'info');
+    }
+  }
   renderAll();
   return true;
 }
@@ -1988,6 +2118,30 @@ function openNewTaskFromDesktopShell() {
   showError('');
   renderAll();
   focusTaskComposer();
+}
+
+function requestShellSearch() {
+  desktopShellBridge.send('main:search');
+  desktopShellBridge.emit('appBar:search');
+}
+
+function requestShellNewTask() {
+  const payload = { type: 'task' };
+  desktopShellBridge.send('main:openNew', payload);
+  desktopShellBridge.emit('appBar:openNew', payload);
+}
+
+function requestQuickMeeting() {
+  const payload = createQuickMeetingPayload({
+    conferenceProvider: 'GOOGLE_MEET',
+    addNotetaker: false
+  });
+  desktopShellBridge.send('main:quickMeeting:create', payload);
+  desktopShellBridge.emit('appBar:quickMeeting:create', payload);
+}
+
+function requestShellMenu() {
+  desktopShellBridge.emit('windows:showMainMenu', { x: 0, y: 0 });
 }
 
 function installDesktopShellBridgeHandlers() {
@@ -2003,16 +2157,43 @@ function installDesktopShellBridgeHandlers() {
     renderAll();
   });
 
+  desktopShellBridge.on('tabs:add', () => {
+    addDesktopShellTab();
+    renderAll();
+  });
+
+  desktopShellBridge.on('tabs:move', (tabId, toIndex) => {
+    moveDesktopShellTab(tabId, toIndex);
+    renderAll();
+  });
+
+  desktopShellBridge.on('tabs:remove', (tabId) => {
+    removeDesktopShellTab(tabId);
+    renderAll();
+  });
+
+  desktopShellBridge.on('tabs:navigate', (payload = { direction: 'forward' }) => {
+    const direction = payload?.direction === 'backward' ? 'backward' : 'forward';
+    navigateDesktopShellTabs(direction);
+    renderAll();
+  });
+
   desktopShellBridge.on('tabs:didChangeOnlineStatus', () => {
     renderAll();
   });
 
   desktopShellBridge.on('appBar:getInitialData', () => {
+    desktopShellBridge.send('loadCalendar');
+    desktopShellBridge.send('loadScheduleSettings');
     syncDesktopShell(getShellState(appData));
   });
 
   desktopShellBridge.on('appBar:search', () => {
     focusSearchInput();
+  });
+
+  desktopShellBridge.on('openTask', (payload: { taskUrl?: string } = {}) => {
+    openTaskUrlFromDesktopShell(payload.taskUrl);
   });
 
   desktopShellBridge.on('appBar:openTask', (payload: { taskId?: string } = {}) => {
@@ -2026,8 +2207,8 @@ function installDesktopShellBridgeHandlers() {
     performTaskAction(payload.taskId, 'complete');
   });
 
-  desktopShellBridge.on('appBar:openEvent', () => {
-    openEventFromDesktopShell();
+  desktopShellBridge.on('appBar:openEvent', (payload: { providerId?: string } = {}) => {
+    openEventFromDesktopShell(payload);
   });
 
   desktopShellBridge.on('appBar:openNew', (payload: { type?: string } = {}) => {
@@ -2035,13 +2216,54 @@ function installDesktopShellBridgeHandlers() {
       openNewTaskFromDesktopShell();
       return;
     }
+    if (payload.type === 'event') {
+      openEventFromDesktopShell();
+      showEditorMessage('Desktop shell is pointing new event creation at the calendar surface.', 'info');
+      return;
+    }
     showError(`Desktop shell quick-create for ${payload.type || 'unknown'} is not wired yet.`);
+  });
+
+  desktopShellBridge.on('appBar:joinEvent', (payload: { conferenceLink?: string } = {}) => {
+    const link = sanitizeText(payload.conferenceLink);
+    if (!link) {
+      showError('Quick meeting join action did not provide a conference link.');
+      return;
+    }
+    showEditorMessage(`Join event requested: ${link}`, 'info');
+  });
+
+  desktopShellBridge.on('appBar:quickMeeting:create', (payload = createQuickMeetingPayload()) => {
+    handleQuickMeetingCreate(createQuickMeetingPayload(payload));
+  });
+
+  desktopShellBridge.on('appBar:settings:requestSettings', () => {
+    syncDesktopShell(getShellState(appData));
+  });
+
+  desktopShellBridge.on('appBar:settings:update', (payload: { showTrayText?: boolean } = {}) => {
+    showEditorMessage(payload.showTrayText ? 'Tray text visibility enabled.' : 'Tray text visibility hidden.', 'info');
+  });
+
+  desktopShellBridge.on('windows:showMainMenu', (payload = { x: 0, y: 0 }) => {
+    showEditorMessage(`Desktop shell menu requested at ${payload.x}, ${payload.y}.`, 'info');
   });
 
   desktopShellBridge.on('main:showMainWindow', () => {
     if (typeof window !== 'undefined' && typeof window.focus === 'function') {
       window.focus();
     }
+  });
+
+  desktopShellBridge.on('main:quickMeeting:created', (payload: { eventId?: string } = {}) => {
+    if (sanitizeText(payload.eventId)) {
+      showEditorMessage(`Desktop confirmed quick meeting ${payload.eventId}.`, 'success');
+    }
+  });
+
+  desktopShellBridge.on('main:quickMeeting:error', (payload: { error?: string } = {}) => {
+    const errorMessage = sanitizeText(payload.error, 'Quick meeting failed.');
+    showError(errorMessage);
   });
 }
 
@@ -2147,12 +2369,17 @@ function renderSidebar(shellState) {
 }
 
 function renderTabStrip(shellState) {
-  tabStripEl.innerHTML = shellState.tabs.map((tab) => `
-    <button type="button" class="tab-button ${shellState.activeTabId === tab.id ? 'active' : ''}" data-tab-id="${escapeHtml(tab.id)}">
-      <span class="tab-label">${escapeHtml(tab.title)}</span>
-      <span class="tab-kind">${escapeHtml(tab.itemType)}</span>
-    </button>
-  `).join('');
+  tabStripEl.innerHTML = shellState.tabs.map((tab, index) => `
+    <div class="tab-shell">
+      <button type="button" class="tab-button ${shellState.activeTabId === tab.id ? 'active' : ''}" data-tab-id="${escapeHtml(tab.id)}" data-tab-index="${escapeHtml(String(index))}">
+        <span class="tab-label">${escapeHtml(tab.title)}</span>
+        <span class="tab-kind">${escapeHtml(tab.itemType)}</span>
+      </button>
+      ${tab.closable ? `<button type="button" class="tab-close" aria-label="Close ${escapeHtml(tab.title)}" data-tab-close="${escapeHtml(tab.id)}">×</button>` : ''}
+    </div>
+  `).join('') + `
+    <button type="button" class="tab-add" data-tab-command="add">+</button>
+  `;
 }
 
 function renderViewHeader(shellState, plannerState) {
@@ -2378,6 +2605,137 @@ function setActiveShellView(viewId: string) {
   };
 }
 
+function addDesktopShellTab(viewId = '') {
+  appData = {
+    ...appData,
+    shell: addShellViewTab(appData.shell || {}, viewId)
+  };
+}
+
+function moveDesktopShellTab(tabId: string, toIndex: number) {
+  appData = {
+    ...appData,
+    shell: moveShellTab(appData.shell || {}, tabId, toIndex)
+  };
+}
+
+function removeDesktopShellTab(tabId: string) {
+  appData = {
+    ...appData,
+    shell: removeShellTab(appData.shell || {}, tabId)
+  };
+}
+
+function navigateDesktopShellTabs(direction: 'forward' | 'backward') {
+  appData = {
+    ...appData,
+    shell: navigateShellTabs(appData.shell || {}, direction)
+  };
+}
+
+function getActiveDesktopTab() {
+  const shellState = getShellState(appData);
+  return shellState.activeTab || null;
+}
+
+function resolveTaskIdFromUrl(taskUrl = '') {
+  const normalizedUrl = sanitizeText(taskUrl);
+  if (!normalizedUrl) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(normalizedUrl, 'https://app.usemotion.com');
+    const taskIdFromQuery = sanitizeText(parsed.searchParams.get('taskId'));
+    if (taskIdFromQuery && tasks.some((task) => task.id === taskIdFromQuery)) {
+      return taskIdFromQuery;
+    }
+  } catch {
+    // Fall through to substring matching.
+  }
+
+  return tasks.find((task) => normalizedUrl.includes(task.id))?.id || '';
+}
+
+function createQuickMeetingEvent(payload = { conferenceProvider: 'GOOGLE_MEET', addNotetaker: false }) {
+  const now = new Date();
+  const start = new Date(now.valueOf() + 15 * 60 * 1000);
+  const end = new Date(start.valueOf() + 30 * 60 * 1000);
+  const eventId = `quick_meeting_${now.valueOf()}`;
+  const provider = sanitizeText(payload.conferenceProvider, 'GOOGLE_MEET').toUpperCase();
+  const conferenceHost = provider === 'ZOOM'
+    ? 'https://zoom.us/j/'
+    : provider === 'MICROSOFT_TEAMS'
+      ? 'https://teams.microsoft.com/l/meetup-join/'
+      : 'https://meet.google.com/';
+  const normalizedEvent = normalizeCalendarEvent({
+    id: eventId,
+    externalId: eventId,
+    providerId: eventId,
+    title: 'Quick Meeting',
+    provider: 'google',
+    providerType: 'GOOGLE',
+    calendarId: 'team-primary',
+    email: 'gargig469@gmail.com',
+    status: 'busy',
+    start: start.toISOString(),
+    end: end.toISOString(),
+    createdTime: now.toISOString(),
+    updatedTime: now.toISOString(),
+    type: 'NORMAL',
+    visibility: 'DEFAULT',
+    conferenceLink: `${conferenceHost}${eventId}`,
+    conferenceType: provider.toLowerCase(),
+    organizer: {
+      displayName: 'Gargi Gupta',
+      email: 'gargig469@gmail.com'
+    },
+    attendees: [
+      {
+        displayName: 'Gargi Gupta',
+        email: 'gargig469@gmail.com',
+        isOptional: false,
+        isOrganizer: true,
+        status: 'accepted'
+      }
+    ],
+    notes: payload.addNotetaker ? 'Quick meeting with note taker requested.' : 'Quick meeting created from desktop shell.'
+  });
+
+  if (!normalizedEvent) {
+    throw new Error('Quick meeting payload could not be normalized into a calendar event.');
+  }
+
+  return {
+    eventId,
+    event: normalizedEvent
+  };
+}
+
+function handleQuickMeetingCreate(payload = { conferenceProvider: 'GOOGLE_MEET', addNotetaker: false }) {
+  try {
+    const { eventId, event } = createQuickMeetingEvent(payload);
+    appData = {
+      ...appData,
+      calendarOverlay: {
+        ...(appData.calendarOverlay || {}),
+        importedEvents: (appData.calendarOverlay?.importedEvents || []).concat(event),
+        refreshedAt: new Date().toISOString(),
+        permissionStatus: appData.calendarOverlay?.permissionStatus || 'granted'
+      }
+    };
+    desktopShellBridge.send('appBar:quickMeeting:created', { eventId });
+    desktopShellBridge.emit('main:quickMeeting:created', { eventId });
+    showEditorMessage(`Quick meeting created for ${formatCompactDate(event.startAt)} using ${payload.conferenceProvider}.`, 'success');
+    renderAll();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Quick meeting creation failed.';
+    desktopShellBridge.send('appBar:quickMeeting:error', { error: message });
+    desktopShellBridge.emit('main:quickMeeting:error', { error: message });
+    showError(message);
+  }
+}
+
 function persistAppData() {
   const saved = saveStoredData(appData);
   if (saved) {
@@ -2525,14 +2883,28 @@ sidebarNavEl.addEventListener('click', (event) => {
   }
 
   if (kind === 'route' && route === '/web/calendar') {
-    setActiveShellTab('tab_calendar');
-    renderAll();
+    desktopShellBridge.emit('tabs:select', 'tab_calendar');
   }
 });
 
 tabStripEl.addEventListener('click', (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const addButton = target.closest('button[data-tab-command="add"]');
+  if (addButton instanceof HTMLButtonElement) {
+    desktopShellBridge.emit('tabs:add');
+    return;
+  }
+
+  const closeButton = target.closest('button[data-tab-close]');
+  if (closeButton instanceof HTMLButtonElement) {
+    const tabId = closeButton.dataset.tabClose;
+    if (tabId) {
+      desktopShellBridge.emit('tabs:remove', tabId);
+    }
     return;
   }
 
@@ -2546,8 +2918,39 @@ tabStripEl.addEventListener('click', (event) => {
     return;
   }
 
-  setActiveShellTab(tabId);
-  renderAll();
+  desktopShellBridge.emit('tabs:select', tabId);
+});
+
+shellActionsEl.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const button = target.closest('button[data-shell-command]');
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const command = button.dataset.shellCommand;
+  if (command === 'search') {
+    requestShellSearch();
+    return;
+  }
+
+  if (command === 'new-task') {
+    requestShellNewTask();
+    return;
+  }
+
+  if (command === 'quick-meeting') {
+    requestQuickMeeting();
+    return;
+  }
+
+  if (command === 'menu') {
+    requestShellMenu();
+  }
 });
 
 taskListEl.addEventListener('click', (event) => {
@@ -2605,6 +3008,69 @@ entitlementPanelEl.addEventListener('click', async (event) => {
 installDesktopShellBridgeHandlers();
 
 if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (event) => {
+    const isPrimaryModifier = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+
+    if (isPrimaryModifier && key === 'k') {
+      event.preventDefault();
+      requestShellSearch();
+      return;
+    }
+
+    if (isPrimaryModifier && event.shiftKey && key === 'n') {
+      event.preventDefault();
+      requestShellNewTask();
+      return;
+    }
+
+    if (isPrimaryModifier && event.shiftKey && key === 'm') {
+      event.preventDefault();
+      requestQuickMeeting();
+      return;
+    }
+
+    if (isPrimaryModifier && key === 'w') {
+      const activeTab = getActiveDesktopTab();
+      if (activeTab?.closable) {
+        event.preventDefault();
+        desktopShellBridge.emit('tabs:remove', activeTab.id);
+      }
+      return;
+    }
+
+    if (isPrimaryModifier && event.shiftKey && key === '[') {
+      event.preventDefault();
+      desktopShellBridge.emit('tabs:move', getActiveDesktopTab()?.id, Math.max(0, (getShellState(appData).tabs.findIndex((tab) => tab.id === getActiveDesktopTab()?.id)) - 1));
+      return;
+    }
+
+    if (isPrimaryModifier && event.shiftKey && key === ']') {
+      event.preventDefault();
+      const shellState = getShellState(appData);
+      const currentIndex = shellState.tabs.findIndex((tab) => tab.id === getActiveDesktopTab()?.id);
+      desktopShellBridge.emit('tabs:move', getActiveDesktopTab()?.id, Math.min(shellState.tabs.length - 1, currentIndex + 1));
+      return;
+    }
+
+    if (event.altKey && !isPrimaryModifier && key === 'arrowleft') {
+      event.preventDefault();
+      desktopShellBridge.emit('tabs:navigate', { direction: 'backward' });
+      return;
+    }
+
+    if (event.altKey && !isPrimaryModifier && key === 'arrowright') {
+      event.preventDefault();
+      desktopShellBridge.emit('tabs:navigate', { direction: 'forward' });
+      return;
+    }
+
+    if ((event.altKey || isPrimaryModifier) && !event.shiftKey && key === 'm') {
+      event.preventDefault();
+      requestShellMenu();
+    }
+  });
+
   window.addEventListener('online', () => renderAll());
   window.addEventListener('offline', () => renderAll());
 }
