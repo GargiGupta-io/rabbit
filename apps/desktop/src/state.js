@@ -17,8 +17,12 @@ import {
 } from './projectService.js';
 import { appendOutboxEvent, normalizeSyncState } from './syncContract.js';
 import {
+  applyPowerSyncOutboxMappings,
+  applyPowerSyncTaskIdMappings,
+  createPowerSyncUploadRequest,
   createPushEventBatchRequest,
   filterAcknowledgedOutbox,
+  normalizePowerSyncUploadResponse,
   normalizePushEventBatchResponse
 } from './syncClient.js';
 import { deriveShellStateSnapshot, getShellViewMeta, selectTasksForShellView } from './shellService.js';
@@ -48,6 +52,10 @@ function parseNowValue(value) {
   }
 
   return Date.now();
+}
+
+function isPlainObject(value) {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function formatQueryKeyLabel(key = []) {
@@ -129,6 +137,7 @@ export function applyTaskMutation(appData = {}, result = {}) {
 export function getSyncStateSummary(appData = {}) {
   const sync = normalizeSyncState(appData, { deviceId: appData.deviceId });
   const pushBatch = createPushEventBatchRequest(sync.outbox);
+  const uploadBatch = createPowerSyncUploadRequest(sync.outbox);
   const pendingCount = sync.outbox.length;
   const hasPendingChanges = pendingCount > 0;
   const isFailed = sync.syncStatus === 'failed';
@@ -147,14 +156,28 @@ export function getSyncStateSummary(appData = {}) {
     isDegraded: hasPendingChanges || isFailed,
     pushBatch,
     pushEventCount: pushBatch.eventCount,
-    pushEventTypes: pushBatch.eventTypes
+    pushEventTypes: pushBatch.eventTypes,
+    uploadBatch,
+    uploadOperationCount: uploadBatch.operationCount,
+    uploadOperationTypes: uploadBatch.operationTypes,
+    uploadTables: uploadBatch.tables,
+    uploadTxId: uploadBatch.txId
   };
 }
 
 export function applySyncBatchResult(appData = {}, rawResponse = {}, options = {}) {
   const sync = normalizeSyncState(appData, { deviceId: appData.deviceId });
-  const response = normalizePushEventBatchResponse(rawResponse);
-  const nextOutbox = filterAcknowledgedOutbox(sync.outbox, response);
+  const request = isPlainObject(options.request)
+    ? options.request
+    : createPowerSyncUploadRequest(sync.outbox, options);
+  const response = Array.isArray(rawResponse?.acknowledgedIds) && typeof rawResponse?.successCount === 'number'
+    ? rawResponse
+    : Array.isArray(rawResponse?.events)
+      ? normalizePushEventBatchResponse(rawResponse)
+      : normalizePowerSyncUploadResponse(rawResponse, request);
+  const filteredOutbox = filterAcknowledgedOutbox(sync.outbox, response, request);
+  const nextOutbox = applyPowerSyncOutboxMappings(filteredOutbox, response.taskIdMap || {});
+  const nextTasks = applyPowerSyncTaskIdMappings(Array.isArray(appData.tasks) ? appData.tasks : [], response.taskIdMap || {});
   const nextSyncStatus = response.failureCount > 0
     ? 'failed'
     : nextOutbox.length > 0
@@ -165,6 +188,7 @@ export function applySyncBatchResult(appData = {}, rawResponse = {}, options = {
 
   return {
     ...appData,
+    tasks: nextTasks,
     outbox: nextOutbox,
     lastSyncAt: response.successCount > 0
       ? nowIso()
@@ -496,10 +520,6 @@ function sanitizeText(value, fallback = '') {
   }
   const normalized = value.trim();
   return normalized || fallback;
-}
-
-function isPlainObject(value) {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function toIsoString(value) {
