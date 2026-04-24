@@ -889,4 +889,28 @@ The sync layer can now package local changes the way a PowerSync-style uploader 
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 40 runs the Phase 7 verification gate and closes the API, sync, and cache parity phase.*
+## ? Step 40 — Phase 7 Verification and Deep Learn Closeout
+*Completed: 2026-04-26*
+
+**What was built**
+- `learnings/planning.md` — marks Phase 7 complete, makes Phase 8 the current detailed phase, and adds the Phase 7 deep-learn reference to the roadmap.
+- `learnings/plans/phase-7-plan.md` — records the Phase 7 closure state and acceptance-gate outcome.
+- `learnings/phase-7-api-sync-cache-deeplearn.md` — captures the Phase 7 learning write-up covering client wrappers, sync-event structure, query-cache behavior, and PowerSync-style reconciliation.
+- `learnings/steps.md` — logs Step 40 and points the handoff to Step 41.
+
+**In plain English**
+Phase 7 is properly closed now instead of just being the last backend-oriented work we touched. The verification gate passed again, the roadmap now treats API, sync, and cache parity as finished work, and the repo has a dedicated learning note explaining what changed and why it matters before the native desktop and macOS phase begins.
+
+**Files changed**
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-7-plan.md`
++ created: `learnings/phase-7-api-sync-cache-deeplearn.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 41 starts Phase 8 by abstracting native shell IPC contracts from the extracted desktop shell logic.*

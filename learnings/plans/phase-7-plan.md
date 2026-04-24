@@ -92,3 +92,15 @@ Create:
 - Sync events and batch upload direction are closer to the extracted Motion model.
 - Cache/query state is more explicit and less ad hoc.
 - `npm run test`, `npm run typecheck`, and `npm run build` pass.
+
+## Closure status (2026-04-26)
+
+- Completed through Steps 36 to 40.
+- Delivered:
+  - Motion-like API client wrappers for tasks, views, calendars, inbox, and bootstrap-style user state,
+  - extracted-style sync event envelopes with explicit push-event direction,
+  - persisted query-cache state for settings, views, calendar-list, and workspace data,
+  - PowerSync-style CRUD upload batching and temp-id reconciliation,
+  - verification gate with `test`, `typecheck`, and `build` passing.
+- Verified that Phase 7 now carries both event-oriented sync batches and CRUD-oriented upload batches, which brings the transport layer materially closer to the extracted Motion client contracts than the old Phase 3 sync baseline.
+- Deep-learn write-up: `learnings/phase-7-api-sync-cache-deeplearn.md`.

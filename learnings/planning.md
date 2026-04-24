@@ -133,16 +133,17 @@ New priority order:
   - `learnings/phase-6-calendar-scheduling-form-deeplearn.md`
 
 ### Phase 7 - API, Sync, and Cache Parity
-- Current detailed working phase.
+- Completed on 2026-04-26.
 - Goal: align API clients, sync event shape, PowerSync-style transport, bootstrap/cache/query behavior, and local-first reconciliation with extracted Motion contracts.
 - Source references:
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/`
   - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/events/`
   - `developer/motion-research/CODE_ASSETS/SYNC_ENGINE/dtos/`
   - `developer/motion-research/CODE_ASSETS/API_DEFINITIONS/methods/powersync/`
+  - `learnings/phase-7-api-sync-cache-deeplearn.md`
 
 ### Phase 8 - Native Desktop, Mac Parity, and Hardening
-- Queue after Phase 7.
+- Current detailed working phase.
 - Goal: move from product-behavior parity to real desktop fidelity:
   - native shell contracts,
   - macOS shortcut/window/menu fit,
@@ -167,8 +168,9 @@ New priority order:
 - `learnings/phase-5-domain-parity-deeplearn.md` - Phase 5 domain parity learning write-up
 - `learnings/plans/phase-6-plan.md` - completed Phase 6 calendar/scheduler/form parity plan
 - `learnings/phase-6-calendar-scheduling-form-deeplearn.md` - Phase 6 calendar, scheduling, and form parity learning write-up
-- `learnings/plans/phase-7-plan.md` - current Phase 7 API/sync/cache parity plan
-- `learnings/plans/phase-8-plan.md` - Phase 8 native/mac parity and hardening plan
+- `learnings/plans/phase-7-plan.md` - completed Phase 7 API/sync/cache parity plan
+- `learnings/phase-7-api-sync-cache-deeplearn.md` - Phase 7 API, sync, and cache parity learning write-up
+- `learnings/plans/phase-8-plan.md` - current Phase 8 native/mac parity and hardening plan
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
 Supporting research inside the repo:
@@ -200,10 +202,11 @@ Supporting research inside the repo:
 - Deep-learn write-up: `learnings/phase-6-calendar-scheduling-form-deeplearn.md`.
 
 ### Phase 7
-- Current active phase.
-- Starts at Step 36 in `learnings/plans/phase-7-plan.md`.
-- This phase moves from local product parity into API, sync-event, cache, and reconciliation parity with the extracted Motion contracts.
+- Completed.
+- Steps 36 to 40 delivered Motion-like API client wrappers, extracted-style sync events, persisted query-cache state, PowerSync-style upload reconciliation, and the Phase 7 verification gate.
+- Deep-learn write-up: `learnings/phase-7-api-sync-cache-deeplearn.md`.
 
 ### Phase 8
-- Queued.
+- Current active phase.
+- Starts at Step 41 in `learnings/plans/phase-8-plan.md`.
 - Final desktop and macOS pass after product parity is strong.
