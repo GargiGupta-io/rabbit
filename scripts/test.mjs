@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyTaskMutation, buildInboxSeedData, buildSeedData, buildTaskDraftFromFormState, createTaskFormState, createTaskId, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskFormOptions, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applySyncBatchResult, applyTaskMutation, buildInboxSeedData, buildSeedData, buildTaskDraftFromFormState, createTaskFormState, createTaskId, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskFormOptions, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
@@ -39,6 +39,10 @@ import {
   getMySettings,
   updateTaskDefaults
 } from '../apps/desktop/src/bootstrapClient.js';
+import {
+  createPushEventBatchRequest,
+  normalizePushEventBatchResponse
+} from '../apps/desktop/src/syncClient.js';
 import {
   activateShellView,
   buildSidebarSections,
@@ -596,11 +600,18 @@ runTest('task mutations emit normalized sync events for create and complete acti
   assert.equal(created.syncEvent?.action, 'create');
   assert.equal(created.syncEvent?.entityType, 'task');
   assert.equal(created.syncEvent?.entityId, created.tasks[0].id);
+  assert.equal(created.syncEvent?.type, 'task.created');
+  assert.equal(created.syncEvent?.pushType, 'push.task.create');
+  assert.equal(created.syncEvent?.$version, 1);
+  assert.equal(created.syncEvent?.data?.models?.tasks?.[created.tasks[0].id]?.title, 'Sync contract baseline');
   assert.equal(created.syncEvent?.payload?.task?.title, 'Sync contract baseline');
 
   const completed = resolveTaskAction(created.tasks, created.tasks[0].id, 'complete');
   assert.equal(completed.ok, true);
   assert.equal(completed.syncEvent?.action, 'complete');
+  assert.equal(completed.syncEvent?.type, 'task.updated');
+  assert.equal(completed.syncEvent?.pushType, 'push.task.update');
+  assert.equal(completed.syncEvent?.data?.models?.tasks?.[created.tasks[0].id]?.status, 'done');
   assert.equal(completed.syncEvent?.payload?.previousTask?.status, 'todo');
   assert.equal(completed.syncEvent?.payload?.task?.status, 'done');
 });
@@ -627,8 +638,102 @@ runTest('sync outbox normalization deduplicates repeated revision entries', () =
 
   assert.equal(outbox.length, 1);
   assert.equal(outbox[0].action, 'update');
+  assert.equal(outbox[0].type, 'task.updated');
+  assert.equal(outbox[0].pushType, 'push.task.update');
   assert.equal(outbox[0].deviceId, 'dev_test');
   assert.equal(outbox[0].payload?.previousTask?.title, previousTask.title);
+});
+
+runTest('sync client batch request wraps local outbox events into extracted push DTO direction', () => {
+  const created = createTaskSyncEvent({
+    action: 'create',
+    task: normalizeTask({
+      id: 'sync_push_1',
+      title: 'Push me',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    revision: 'mut_push_1',
+    occurredAt: '2026-04-17T12:20:00.000Z'
+  });
+  const deleted = createTaskSyncEvent({
+    action: 'delete',
+    task: normalizeTask({
+      id: 'sync_push_2',
+      title: 'Delete me',
+      projectId: 'work',
+      durationMinutes: 30,
+      archivedTime: '2026-04-17T12:25:00.000Z',
+      updatedAt: '2026-04-17T12:25:00.000Z',
+      status: 'deleted'
+    }),
+    previousTask: normalizeTask({
+      id: 'sync_push_2',
+      title: 'Delete me',
+      projectId: 'work',
+      durationMinutes: 30
+    }),
+    revision: 'mut_push_2',
+    occurredAt: '2026-04-17T12:25:00.000Z'
+  });
+  const batch = createPushEventBatchRequest([created, deleted]);
+
+  assert.equal(batch.eventCount, 2);
+  assert.deepEqual(batch.key, ['sync-events', 'push']);
+  assert.deepEqual(batch.eventTypes, ['push.task.create', 'push.task.delete']);
+  assert.equal(batch.events[0].type, 'push.task.create');
+  assert.equal(batch.events[0].metadata.syncType, 'task.created');
+  assert.equal(batch.events[1].type, 'push.task.delete');
+  assert.equal(batch.events[1].data.partials.tasks.sync_push_2.deletedTime, '2026-04-17T12:25:00.000Z');
+});
+
+runTest('sync batch response normalization and state application acknowledge successful events only', () => {
+  const first = createTaskSyncEvent({
+    action: 'create',
+    task: normalizeTask({
+      id: 'sync_ack_1',
+      title: 'Ack first',
+      projectId: 'inbox',
+      durationMinutes: 30
+    }),
+    revision: 'mut_ack_1',
+    occurredAt: '2026-04-17T12:30:00.000Z'
+  });
+  const second = createTaskSyncEvent({
+    action: 'update',
+    task: normalizeTask({
+      id: 'sync_ack_2',
+      title: 'Ack second',
+      projectId: 'inbox',
+      durationMinutes: 30
+    }),
+    revision: 'mut_ack_2',
+    occurredAt: '2026-04-17T12:31:00.000Z'
+  });
+  const response = normalizePushEventBatchResponse({
+    events: [
+      { id: first.id, success: true, metadata: { serverRevision: 'srv_1' } },
+      { id: second.id, success: false, error: 'conflict' }
+    ]
+  });
+  const nextState = applySyncBatchResult({
+    ...fixtureState,
+    outbox: [first, second],
+    syncStatus: 'syncing',
+    deviceId: 'dev_syncing'
+  }, response, {
+    syncCursor: 'cursor_after_push'
+  });
+
+  assert.equal(response.successCount, 1);
+  assert.equal(response.failureCount, 1);
+  assert.deepEqual(response.acknowledgedIds, [first.id]);
+  assert.deepEqual(response.failedIds, [second.id]);
+  assert.equal(nextState.outbox.length, 1);
+  assert.equal(nextState.outbox[0].id, second.id);
+  assert.equal(nextState.syncStatus, 'failed');
+  assert.equal(nextState.syncCursor, 'cursor_after_push');
+  assert.equal(typeof nextState.lastSyncAt, 'string');
 });
 
 runTest('app state mutation helper appends outbox events and marks sync as pending', () => {
@@ -677,6 +782,8 @@ runTest('sync state summary exposes pending local-only runtime status', () => {
   assert.equal(summary.hasPendingChanges, true);
   assert.equal(summary.isDegraded, true);
   assert.equal(summary.syncStatus, 'pending');
+  assert.equal(summary.pushEventCount, 1);
+  assert.deepEqual(summary.pushEventTypes, ['push.task.create']);
 });
 
 runTest('calendar overlay normalization keeps deterministic busy blocks and derives all-day end time', () => {

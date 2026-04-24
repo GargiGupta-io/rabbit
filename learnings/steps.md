@@ -806,4 +806,33 @@ The repo now has a real API-client baseline instead of only app-state and sync c
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 37 reshapes the sync client and local event model toward the extracted Motion sync DTO direction.*
+## ? Step 37 — Phase 7 Sync DTO Alignment
+*Completed: 2026-04-25*
+
+**What was built**
+- `apps/desktop/src/syncContract.js` — reshapes local task mutation events so they keep the app-friendly action fields while also carrying extracted-style sync metadata such as `type`, `pushType`, `$version`, `data`, and `metadata`.
+- `apps/desktop/src/syncClient.js` — adds batch-request and batch-response helpers for `push.task.*` events so the outbox can be prepared and acknowledged in a Motion-like sync-engine shape.
+- `apps/desktop/src/state.js` — adds sync batch summary and acknowledgement handling so successful push responses clear the outbox while failures stay queued.
+- `scripts/test.mjs` — adds deterministic coverage for extracted-style sync event shapes, push batch requests, and acknowledgement behavior.
+
+**In plain English**
+The outbox is no longer just a queue of custom local events. It now carries the same kind of event naming split Motion uses: a synced event type like `task.created` and a push event type like `push.task.create`, along with structured event data and metadata. That means the next transport step can work from a much more realistic sync shape instead of translating from a thin ad hoc event format.
+
+**Files changed**
+~ modified: `apps/desktop/src/syncContract.js`
++ created: `apps/desktop/src/syncClient.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/syncContract.js`
+- `node --check apps/desktop/src/syncClient.js`
+- `node --check apps/desktop/src/state.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 38 adds bootstrap, query, and cache state shaped by the extracted Motion cache-key evidence.*
