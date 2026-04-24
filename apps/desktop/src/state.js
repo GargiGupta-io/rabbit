@@ -16,13 +16,23 @@ import {
   getWorkspaceById
 } from './projectService.js';
 import { appendOutboxEvent, normalizeSyncState } from './syncContract.js';
+import {
+  createPushEventBatchRequest,
+  filterAcknowledgedOutbox,
+  normalizePushEventBatchResponse
+} from './syncClient.js';
 import { deriveShellStateSnapshot, getShellViewMeta, selectTasksForShellView } from './shellService.js';
 
 export * from './taskService.js';
 export * from './projectService.js';
 export { buildPlanWindow, generatePlanSlice, rankConflicts } from './scheduler.js';
 export * from './syncContract.js';
+export * from './syncClient.js';
 export * from './shellService.js';
+
+function nowIso() {
+  return new Date().toISOString();
+}
 
 export function buildSeedData({ workspaces, projectDefinitions, projects, tasks } = {}) {
   const projectDomain = buildProjectDomainSeedData({
@@ -74,6 +84,7 @@ export function applyTaskMutation(appData = {}, result = {}) {
 
 export function getSyncStateSummary(appData = {}) {
   const sync = normalizeSyncState(appData, { deviceId: appData.deviceId });
+  const pushBatch = createPushEventBatchRequest(sync.outbox);
   const pendingCount = sync.outbox.length;
   const hasPendingChanges = pendingCount > 0;
   const isFailed = sync.syncStatus === 'failed';
@@ -89,7 +100,36 @@ export function getSyncStateSummary(appData = {}) {
     isSyncing,
     isSynced,
     isLocalOnly,
-    isDegraded: hasPendingChanges || isFailed
+    isDegraded: hasPendingChanges || isFailed,
+    pushBatch,
+    pushEventCount: pushBatch.eventCount,
+    pushEventTypes: pushBatch.eventTypes
+  };
+}
+
+export function applySyncBatchResult(appData = {}, rawResponse = {}, options = {}) {
+  const sync = normalizeSyncState(appData, { deviceId: appData.deviceId });
+  const response = normalizePushEventBatchResponse(rawResponse);
+  const nextOutbox = filterAcknowledgedOutbox(sync.outbox, response);
+  const nextSyncStatus = response.failureCount > 0
+    ? 'failed'
+    : nextOutbox.length > 0
+      ? 'pending'
+      : response.successCount > 0
+        ? 'synced'
+        : sync.syncStatus;
+
+  return {
+    ...appData,
+    outbox: nextOutbox,
+    lastSyncAt: response.successCount > 0
+      ? nowIso()
+      : sync.lastSyncAt,
+    syncCursor: typeof options.syncCursor === 'string' && options.syncCursor.trim()
+      ? options.syncCursor.trim()
+      : sync.syncCursor,
+    deviceId: sync.deviceId,
+    syncStatus: nextSyncStatus
   };
 }
 
