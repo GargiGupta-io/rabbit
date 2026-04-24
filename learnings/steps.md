@@ -835,4 +835,32 @@ The outbox is no longer just a queue of custom local events. It now carries the 
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
 
 ---
-*Next: Step 38 adds bootstrap, query, and cache state shaped by the extracted Motion cache-key evidence.*
+## ? Step 38 — Phase 7 Cache State Alignment
+*Completed: 2026-04-26*
+
+**What was built**
+- `apps/desktop/src/storage.js` — derives and persists an IndexedDB-style query cache snapshot for bootstrap, current-user, settings, page-view settings, feature permissions, views, calendar-list state, and workspace queries.
+- `apps/desktop/src/state.js` — adds a cache summary helper so runtime code can read query counts, active workspace/view, cached settings groups, and extracted key labels from one place.
+- `apps/desktop/src/main.tsx` — extends the right-rail sync panel so it also surfaces cached-query counts, cached views/settings/calendar state, and the key Motion-like query families being persisted locally.
+- `scripts/test.mjs` — adds deterministic coverage for extracted cache-key evidence and verifies that the saved payload keeps query-cache state across save and reload.
+
+**In plain English**
+The app now behaves more like Motion’s local client cache instead of only saving raw tasks and shell state. It keeps a named query cache for things like user settings, saved views, calendar-list state, and workspace data, and it shows that cache in the UI so the desktop shell is honest about what local state has already been hydrated. That makes the next reconciliation step build on a much more realistic client-state model.
+
+**Files changed**
+~ modified: `apps/desktop/src/storage.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/storage.js`
+- `node --check apps/desktop/src/state.js`
+- `node --check scripts/test.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 39 adds PowerSync-style batch upload and reconciliation on top of the new cached query and sync-event baseline.*

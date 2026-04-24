@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applySyncBatchResult, applyTaskMutation, buildInboxSeedData, buildSeedData, buildTaskDraftFromFormState, createTaskFormState, createTaskId, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskFormOptions, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
+import { applySyncBatchResult, applyTaskMutation, buildInboxSeedData, buildSeedData, buildTaskDraftFromFormState, createTaskFormState, createTaskId, getClientCacheSummary, getInboxStateSummary, getProjectDefinitionById, getStageDefinitionById, getSyncStateSummary, getTaskDefinitionById, getTaskFilters, getTaskFormOptions, getTaskStateSummary, getViewStateSummary, getWorkspaceById, upsertTask, resolveTaskAction, normalizeTask } from '../apps/desktop/src/state.js';
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
@@ -471,6 +471,28 @@ runTest('inbox and bootstrap client wrappers expose Motion-like query keys and s
   assert.deepEqual(permissionsRequest.key, ['v2', 'users', 'me', 'feature-permissions']);
   assert.deepEqual(taskDefaultsRequest.invalidate, [['v2', 'users', 'me', 'settings']]);
   assert.deepEqual(taskDefaultsRequest.body, { defaultDurationMinutes: 30 });
+});
+
+runTest('client cache summary mirrors extracted settings, views, calendar-list, and workspace keys', () => {
+  const summary = getClientCacheSummary(fixtureState, {
+    now: FIXTURE_NOW
+  });
+
+  assert.equal(summary.queryCount, 8);
+  assert.equal(summary.viewCount, 4);
+  assert.equal(summary.calendarCount, 2);
+  assert.equal(summary.workspaceCount, 2);
+  assert.equal(summary.settingsGroupCount >= 8, true);
+  assert.equal(summary.calendarPermissionStatus, 'granted');
+  assert.equal(summary.calendarFetchStatus, 'idle');
+  assert.equal(summary.userEmail, 'gargig469@gmail.com');
+  assert.equal(summary.activeViewId, 'view_my_tasks');
+  assert.equal(summary.activeWorkspaceId, 'ws_private_my_tasks');
+  assert.equal(summary.onboardingComplete, true);
+  assert.equal(summary.keyLabels.includes('v2/users/me/settings'), true);
+  assert.equal(summary.keyLabels.includes('v3/views'), true);
+  assert.equal(summary.keyLabels.includes('uncached_calendar_list'), true);
+  assert.equal(summary.keyLabels.some((label) => label.startsWith('v2/workspaces/[args]')), true);
 });
 
 runTest('saved views are grouped into workspace, private, team, and project sidebar sections', () => {
@@ -1351,6 +1373,8 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.metadata.source, 'desktop');
     assert.equal(saved.metadata.syncState, 'pending');
     assert.equal(saved.metadata.shellState, 'present');
+    assert.equal(saved.metadata.queryCacheState, 'present');
+    assert.equal(saved.metadata.cachedQueryCount, 8);
     assert.equal(Array.isArray(saved.outbox), true);
     assert.equal(saved.outbox.length, 1);
     assert.equal(saved.syncCursor, 'cursor_step15');
@@ -1367,11 +1391,18 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.shell.theme.mode, 'dark');
     assert.equal(saved.shell.tabs.length, 3);
     assert.equal(saved.shell.savedViews.length, 4);
+    assert.equal(Array.isArray(saved.queryCache?.queries), true);
+    assert.equal(saved.queryCache.queries.length, 8);
+    assert.equal(saved.queryCache.queries.some((entry) => JSON.stringify(entry.key) === JSON.stringify(['v2', 'users', 'me', 'settings'])), true);
+    assert.equal(saved.queryCache.queries.some((entry) => JSON.stringify(entry.key) === JSON.stringify(['v3', 'views'])), true);
+    assert.equal(saved.queryCache.queries.some((entry) => JSON.stringify(entry.key) === JSON.stringify(['uncached_calendar_list'])), true);
     assert.equal(savedSnapshot.syncStatus, 'pending');
     assert.equal(savedSnapshot.outbox.length, 1);
     assert.equal(savedSnapshot.calendarOverlay.source.provider, 'google');
     assert.equal(savedSnapshot.tasks[0].scheduledStatus, 'ON_TRACK');
     assert.equal(savedSnapshot.shell.activeViewId, 'view_my_tasks');
+    assert.equal(Array.isArray(savedSnapshot.queryCache?.queries), true);
+    assert.equal(savedSnapshot.queryCache.queries.length, 8);
 
     const loaded = loadStoredData();
     assert.equal(Array.isArray(loaded.tasks), true);
@@ -1395,6 +1426,11 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(loaded.shell.tabs.length, 3);
     assert.equal(loaded.shell.savedViews.length, 4);
     assert.equal(loaded.shell.agenda.counts.total, 6);
+    assert.equal(Array.isArray(loaded.queryCache?.queries), true);
+    assert.equal(loaded.queryCache.queries.length, 8);
+    assert.equal(loaded.queryCache.queries.some((entry) => JSON.stringify(entry.key) === JSON.stringify(['v2', 'users', 'me', 'settings'])), true);
+    assert.equal(loaded.queryCache.queries.some((entry) => JSON.stringify(entry.key) === JSON.stringify(['v3', 'views'])), true);
+    assert.equal(loaded.queryCache.queries.some((entry) => JSON.stringify(entry.key) === JSON.stringify(['uncached_calendar_list'])), true);
     assert.equal(Array.isArray(loaded.metadata?.revision) || typeof loaded.metadata?.revision === 'string', true);
   });
 });
