@@ -36,6 +36,7 @@ import {
 } from './entitlement.js';
 import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
 import { getTaskScheduleSummary } from './taskService.js';
+import { createDesktopPlatformProfile, getShellCommandForKeyboardEvent } from './desktopPlatform.js';
 
 let entitlement = getEntitlementSnapshot();
 let canMutate = canMutateTasks();
@@ -48,9 +49,13 @@ let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
 let taskForm = createProjectAwareTaskFormState();
 const DESKTOP_SHELL_APP_VERSION = 'phase-8-step-41';
+const INITIAL_DESKTOP_PLATFORM = createDesktopPlatformProfile({
+  preferredDistribution: 'apple',
+  targetPlatform: 'macos'
+});
 const desktopShellBridge = createDesktopShellBridge({
   appVersion: DESKTOP_SHELL_APP_VERSION,
-  distribution: 'microsoft',
+  distribution: INITIAL_DESKTOP_PLATFORM.distribution,
   maxTabs: 6
 });
 
@@ -83,28 +88,35 @@ shell.innerHTML = `
 
   <section class="shell-workspace">
     <header class="workspace-header">
-      <div class="workspace-heading">
-        <span class="workspace-kicker">Desktop shell</span>
-        <h1>Motion-style planner shell</h1>
+      <div class="header-leading">
+        <div class="window-chrome" id="window-chrome" aria-hidden="true">
+          <span class="traffic-light close"></span>
+          <span class="traffic-light minimize"></span>
+          <span class="traffic-light zoom"></span>
+        </div>
+        <div class="workspace-heading">
+          <span class="workspace-kicker" id="workspace-kicker">Desktop shell</span>
+          <h1>Motion-style planner shell</h1>
+        </div>
       </div>
       <div class="workspace-meta">
         <p class="workspace-status" id="entitlement-status"></p>
         <div class="shell-actions" id="shell-actions">
           <button type="button" class="shell-action" data-shell-command="search">
             <span>Search</span>
-            <span class="key-hint">Ctrl/Cmd K</span>
+            <span class="key-hint" data-key-hint="search">Ctrl/Cmd K</span>
           </button>
           <button type="button" class="shell-action" data-shell-command="new-task">
             <span>New task</span>
-            <span class="key-hint">Ctrl/Cmd Shift N</span>
+            <span class="key-hint" data-key-hint="new-task">Ctrl/Cmd Shift N</span>
           </button>
           <button type="button" class="shell-action" data-shell-command="quick-meeting">
             <span>Quick meeting</span>
-            <span class="key-hint">Ctrl/Cmd Shift M</span>
+            <span class="key-hint" data-key-hint="quick-meeting">Ctrl/Cmd Shift M</span>
           </button>
           <button type="button" class="shell-action" data-shell-command="menu">
-            <span>Menu</span>
-            <span class="key-hint">Alt / Ctrl M</span>
+            <span data-menu-label>Menu</span>
+            <span class="key-hint" data-key-hint="menu">Alt / Ctrl M</span>
           </button>
         </div>
       </div>
@@ -390,6 +402,38 @@ style.textContent = `
     gap: 16px;
   }
 
+  .header-leading {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+
+  .window-chrome {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 12px;
+  }
+
+  .traffic-light {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: inline-block;
+  }
+
+  .traffic-light.close {
+    background: #ff5f57;
+  }
+
+  .traffic-light.minimize {
+    background: #febc2e;
+  }
+
+  .traffic-light.zoom {
+    background: #28c840;
+  }
+
   .workspace-heading h1 {
     margin: 4px 0 0;
     font-size: 28px;
@@ -417,6 +461,16 @@ style.textContent = `
     display: grid;
     gap: 12px;
     justify-items: end;
+  }
+
+  .desktop-shell[data-platform="windows"] .window-chrome,
+  .desktop-shell.platform-windows .window-chrome {
+    opacity: 0.5;
+  }
+
+  .desktop-shell[data-platform="macos"] .workspace-header,
+  .desktop-shell.platform-macos .workspace-header {
+    padding-top: 18px;
   }
 
   .shell-actions {
@@ -1320,6 +1374,8 @@ const inboxPanelEl = shell.querySelector('#inbox-panel') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
 const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivElement;
 const shellActionsEl = shell.querySelector('#shell-actions') as HTMLDivElement;
+const windowChromeEl = shell.querySelector('#window-chrome') as HTMLDivElement;
+const workspaceKickerEl = shell.querySelector('#workspace-kicker') as HTMLSpanElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
@@ -1347,6 +1403,14 @@ function sanitizeText(value: unknown, fallback = '') {
 
   const normalized = value.trim();
   return normalized || fallback;
+}
+
+function getDesktopPlatformProfileState() {
+  return createDesktopPlatformProfile({
+    runtimePlatform: appData?.metadata?.platform,
+    preferredDistribution: 'apple',
+    targetPlatform: 'macos'
+  });
 }
 
 function formatCompactDate(value: unknown) {
@@ -2000,6 +2064,42 @@ function updateSyncStatus() {
   `;
 }
 
+function renderDesktopPlatformChrome(platformProfile) {
+  shell.dataset.platform = platformProfile.id;
+  shell.dataset.distribution = platformProfile.distribution;
+  shell.classList.toggle('platform-macos', platformProfile.isMacLike);
+  shell.classList.toggle('platform-windows', platformProfile.isWindowsLike);
+  windowChromeEl.style.visibility = platformProfile.windowChrome.showTrafficLights ? 'visible' : 'hidden';
+  workspaceKickerEl.textContent = platformProfile.isMacLike
+    ? 'macOS desktop shell'
+    : 'Desktop shell';
+
+  shellActionsEl.querySelectorAll('[data-key-hint]').forEach((element) => {
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+
+    const hintId = element.dataset.keyHint;
+    const shortcut = hintId === 'search'
+      ? platformProfile.shortcuts.search
+      : hintId === 'new-task'
+        ? platformProfile.shortcuts.addTask
+        : hintId === 'quick-meeting'
+          ? platformProfile.shortcuts.quickMeeting
+          : hintId === 'menu'
+            ? platformProfile.shortcuts.appMenu
+            : null;
+    if (shortcut?.label) {
+      element.textContent = shortcut.label;
+    }
+  });
+
+  const menuLabelEl = shellActionsEl.querySelector('[data-menu-label]');
+  if (menuLabelEl instanceof HTMLElement) {
+    menuLabelEl.textContent = platformProfile.menuBehavior.label;
+  }
+}
+
 function focusSearchInput() {
   searchEl.focus();
   searchEl.select();
@@ -2014,6 +2114,7 @@ function focusTaskComposer() {
 }
 
 function syncDesktopShell(shellState) {
+  const platformProfile = getDesktopPlatformProfileState();
   const syncState = getSyncStateSummary(appData);
   const inboxState = getInboxStateSummary(appData);
   const showTrayText = inboxState.unreadCount > 0
@@ -2025,7 +2126,7 @@ function syncDesktopShell(shellState) {
     syncState,
     inboxState,
     appVersion: DESKTOP_SHELL_APP_VERSION,
-    distribution: 'microsoft',
+    distribution: platformProfile.distribution,
     maxTabs: Math.max(6, Array.isArray(shellState.tabs) ? shellState.tabs.length : 0),
     appBarSettings: {
       showTrayText,
@@ -2114,6 +2215,10 @@ function openEventFromDesktopShell(payload: { providerId?: string } = {}) {
 }
 
 function openNewTaskFromDesktopShell() {
+  const platformProfile = getDesktopPlatformProfileState();
+  if (platformProfile.optionSpace.usesDedicatedWindow) {
+    desktopShellBridge.send('openOptionSpace');
+  }
   resetTaskForm();
   showError('');
   renderAll();
@@ -2142,6 +2247,23 @@ function requestQuickMeeting() {
 
 function requestShellMenu() {
   desktopShellBridge.emit('windows:showMainMenu', { x: 0, y: 0 });
+}
+
+function requestOpenCalendarSurface() {
+  desktopShellBridge.send('navigateInApp', '/web/calendar');
+  desktopShellBridge.emit('tabs:select', 'tab_calendar');
+}
+
+function requestOpenProjectManagerSurface() {
+  desktopShellBridge.send('navigateInApp', '/web/views/project-timelines');
+  setActiveShellView('view_project_timelines');
+  renderAll();
+}
+
+function requestOpenSchedulerSurface() {
+  desktopShellBridge.send('navigateInApp', '/web/views/team-schedule');
+  setActiveShellView('view_team_schedule');
+  renderAll();
 }
 
 function installDesktopShellBridgeHandlers() {
@@ -2246,7 +2368,8 @@ function installDesktopShellBridgeHandlers() {
   });
 
   desktopShellBridge.on('windows:showMainMenu', (payload = { x: 0, y: 0 }) => {
-    showEditorMessage(`Desktop shell menu requested at ${payload.x}, ${payload.y}.`, 'info');
+    const platformProfile = getDesktopPlatformProfileState();
+    showEditorMessage(`${platformProfile.menuBehavior.label} requested at ${payload.x}, ${payload.y}.`, 'info');
   });
 
   desktopShellBridge.on('main:showMainWindow', () => {
@@ -2745,12 +2868,14 @@ function persistAppData() {
 }
 
 function renderWorkspace() {
+  const platformProfile = getDesktopPlatformProfileState();
   const shellState = getShellState(appData);
   const plannerState = buildPlannerState(shellState);
   taskForm = createProjectAwareTaskFormState(taskForm);
 
   shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
   shell.dataset.theme = shellState.theme.dataTheme;
+  renderDesktopPlatformChrome(platformProfile);
   searchEl.value = search;
   renderSidebar(shellState);
   renderTabStrip(shellState);
@@ -2800,6 +2925,9 @@ taskFormPanelEl.addEventListener('click', (event) => {
 
   if (target.id === 'task-form-reset') {
     resetTaskForm();
+    if (getDesktopPlatformProfileState().optionSpace.usesDedicatedWindow) {
+      desktopShellBridge.send('closeOptionSpace');
+    }
     showError('');
     return;
   }
@@ -2823,6 +2951,9 @@ taskFormPanelEl.addEventListener('click', (event) => {
   appData = applyTaskMutation(appData, result);
   tasks = appData.tasks.slice();
   resetTaskForm();
+  if (getDesktopPlatformProfileState().optionSpace.usesDedicatedWindow) {
+    desktopShellBridge.send('closeOptionSpace');
+  }
   showError('');
   renderAll();
 });
@@ -3009,64 +3140,77 @@ installDesktopShellBridgeHandlers();
 
 if (typeof window !== 'undefined') {
   window.addEventListener('keydown', (event) => {
-    const isPrimaryModifier = event.ctrlKey || event.metaKey;
-    const key = event.key.toLowerCase();
+    const platformProfile = getDesktopPlatformProfileState();
+    const command = getShellCommandForKeyboardEvent(platformProfile, event);
+    if (!command) {
+      return;
+    }
 
-    if (isPrimaryModifier && key === 'k') {
-      event.preventDefault();
+    event.preventDefault();
+
+    if (command === 'search') {
       requestShellSearch();
       return;
     }
 
-    if (isPrimaryModifier && event.shiftKey && key === 'n') {
-      event.preventDefault();
+    if (command === 'new-task') {
       requestShellNewTask();
       return;
     }
 
-    if (isPrimaryModifier && event.shiftKey && key === 'm') {
-      event.preventDefault();
+    if (command === 'open-calendar') {
+      requestOpenCalendarSurface();
+      return;
+    }
+
+    if (command === 'open-project-manager') {
+      requestOpenProjectManagerSurface();
+      return;
+    }
+
+    if (command === 'open-scheduler') {
+      requestOpenSchedulerSurface();
+      return;
+    }
+
+    if (command === 'quick-meeting') {
       requestQuickMeeting();
       return;
     }
 
-    if (isPrimaryModifier && key === 'w') {
+    if (command === 'close-tab') {
       const activeTab = getActiveDesktopTab();
       if (activeTab?.closable) {
-        event.preventDefault();
         desktopShellBridge.emit('tabs:remove', activeTab.id);
       }
       return;
     }
 
-    if (isPrimaryModifier && event.shiftKey && key === '[') {
-      event.preventDefault();
-      desktopShellBridge.emit('tabs:move', getActiveDesktopTab()?.id, Math.max(0, (getShellState(appData).tabs.findIndex((tab) => tab.id === getActiveDesktopTab()?.id)) - 1));
-      return;
-    }
-
-    if (isPrimaryModifier && event.shiftKey && key === ']') {
-      event.preventDefault();
+    if (command === 'move-tab-left' || command === 'move-tab-right') {
       const shellState = getShellState(appData);
-      const currentIndex = shellState.tabs.findIndex((tab) => tab.id === getActiveDesktopTab()?.id);
-      desktopShellBridge.emit('tabs:move', getActiveDesktopTab()?.id, Math.min(shellState.tabs.length - 1, currentIndex + 1));
+      const activeTab = getActiveDesktopTab();
+      const currentIndex = shellState.tabs.findIndex((tab) => tab.id === activeTab?.id);
+      if (currentIndex < 0 || !activeTab?.id) {
+        return;
+      }
+      const nextIndex = command === 'move-tab-left'
+        ? Math.max(0, currentIndex - 1)
+        : Math.min(shellState.tabs.length - 1, currentIndex + 1);
+      desktopShellBridge.emit('tabs:move', activeTab.id, nextIndex);
       return;
     }
 
-    if (event.altKey && !isPrimaryModifier && key === 'arrowleft') {
-      event.preventDefault();
+    if (command === 'navigate-backward') {
       desktopShellBridge.emit('tabs:navigate', { direction: 'backward' });
       return;
     }
 
-    if (event.altKey && !isPrimaryModifier && key === 'arrowright') {
-      event.preventDefault();
+    if (command === 'navigate-forward') {
       desktopShellBridge.emit('tabs:navigate', { direction: 'forward' });
       return;
     }
 
-    if ((event.altKey || isPrimaryModifier) && !event.shiftKey && key === 'm') {
-      event.preventDefault();
+    if (command === 'menu') {
       requestShellMenu();
     }
   });
