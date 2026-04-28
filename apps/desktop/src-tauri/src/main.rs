@@ -1,6 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 // Minimal Rust entrypoint placeholder.
-// When you install the real Tauri toolchain, this command bridge is where
-// secure privileged operations begin.
+// Keep this boundary intentionally small: no wildcard IPC forwarding,
+// no blanket permission grants, and typed validation at every command edge.
+
+const MAX_PING_PAYLOAD_LEN: usize = 128;
 
 #[cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 fn main() {
@@ -10,7 +14,28 @@ fn main() {
     .expect("failed to run desktop app");
 }
 
+#[derive(Deserialize)]
+struct PingRequest {
+  payload: String,
+}
+
+#[derive(Serialize)]
+struct PingResponse {
+  echoed: String,
+}
+
 #[tauri::command]
-fn ping(payload: String) -> String {
-  format!("pong:{}", payload)
+fn ping(request: PingRequest) -> Result<PingResponse, String> {
+  let payload = request.payload.trim();
+  if payload.is_empty() {
+    return Err("payload is required".into());
+  }
+
+  if payload.chars().count() > MAX_PING_PAYLOAD_LEN {
+    return Err("payload exceeds max length".into());
+  }
+
+  Ok(PingResponse {
+    echoed: format!("pong:{}", payload),
+  })
 }
