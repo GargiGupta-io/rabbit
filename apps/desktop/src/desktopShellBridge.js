@@ -1,7 +1,14 @@
+import {
+  DEFAULT_CURRENT_USER_EMAIL,
+  DEFAULT_CURRENT_USER_ID,
+  DEFAULT_CURRENT_USER_NAME
+} from './identityDefaults.js';
+
 export const DEFAULT_DESKTOP_DISTRIBUTION = 'microsoft';
 export const DEFAULT_SHELL_APP_VERSION = '0.0.0-dev';
 export const DEFAULT_MAX_TABS = 6;
 export const DEFAULT_QUICK_MEETING_PROVIDER = 'GOOGLE_MEET';
+export const DEFAULT_BRIDGE_SECURITY_MODE = 'restricted';
 
 export const MAIN_SENDABLE_CHANNELS = Object.freeze([
   'appVersion',
@@ -62,6 +69,21 @@ export const SENDABLE_CHANNELS = Object.freeze([
   ...OPTION_SPACE_SENDABLE_CHANNELS,
   ...TAB_SENDABLE_CHANNELS,
   ...APP_BAR_SENDABLE_CHANNELS
+]);
+
+export const SYNC_SNAPSHOT_CHANNELS = Object.freeze([
+  'appVersion',
+  'desktopDistribution',
+  'hasNativeDesktopTabs',
+  'tabs:set',
+  'tabs:setMaxTabs',
+  'canNavigate',
+  'tabs:didNavigate',
+  'appBar:setAgenda',
+  'appBar:settings:init',
+  'appBar:setConferenceSettings',
+  'appBar:setMeetingInsights',
+  'updateTheme'
 ]);
 
 export const MAIN_RECEIVABLE_CHANNELS = Object.freeze([
@@ -174,6 +196,14 @@ function cloneValue(value) {
   }
 
   return value;
+}
+
+function createChannelSet(channels = []) {
+  return new Set(
+    channels
+      .map((channel) => sanitizeText(channel))
+      .filter(Boolean)
+  );
 }
 
 function getActiveTab(shellState = {}) {
@@ -305,7 +335,7 @@ export function createAppBarSettingsPayload(input = {}) {
 
 export function createConferenceSettingsPayload(input = {}) {
   const defaultConferenceType = sanitizeText(input?.defaultConferenceType, DEFAULT_QUICK_MEETING_PROVIDER).toUpperCase();
-  const email = sanitizeText(input?.email, 'gargig469@gmail.com');
+  const email = sanitizeText(input?.email, DEFAULT_CURRENT_USER_EMAIL);
 
   return {
     defaultConferenceType,
@@ -314,9 +344,9 @@ export function createConferenceSettingsPayload(input = {}) {
     hasCustomLocation: input?.hasCustomLocation == null ? true : Boolean(input.hasCustomLocation),
     hostEmailAccount: {
       id: sanitizeText(input?.accountId, `acct_${email.split('@')[0] || 'host'}`),
-      userId: sanitizeText(input?.userId, 'user_gargi'),
+      userId: sanitizeText(input?.userId, DEFAULT_CURRENT_USER_ID),
       email,
-      name: sanitizeText(input?.name, 'Gargi Gupta'),
+      name: sanitizeText(input?.name, DEFAULT_CURRENT_USER_NAME),
       providerType: sanitizeText(input?.providerType, 'GOOGLE').toUpperCase(),
       profilePictureUrl: sanitizeText(input?.profilePictureUrl) || undefined
     },
@@ -407,11 +437,73 @@ export function createDesktopShellBridge(options = {}) {
   const handlers = new Map();
   const subscribedChannels = new Set();
   const sentMessages = [];
+  const securityEvents = [];
   const sendTransport = typeof options.send === 'function' ? options.send : getDefaultSendTransport();
   const receiveTransport = typeof options.receive === 'function' ? options.receive : getDefaultReceiveTransport();
   const defaultDistribution = sanitizeText(options.distribution, DEFAULT_DESKTOP_DISTRIBUTION) || DEFAULT_DESKTOP_DISTRIBUTION;
   const defaultAppVersion = sanitizeText(options.appVersion, DEFAULT_SHELL_APP_VERSION) || DEFAULT_SHELL_APP_VERSION;
   const defaultMaxTabs = Number.isInteger(options.maxTabs) && options.maxTabs > 0 ? options.maxTabs : DEFAULT_MAX_TABS;
+  const securityMode = sanitizeText(
+    options.securityMode,
+    options.allowUnsafeChannels === true ? 'compatibility' : DEFAULT_BRIDGE_SECURITY_MODE
+  );
+  const allowUnsafeChannels = Boolean(options.allowUnsafeChannels);
+  const throwOnSecurityViolation = options.throwOnSecurityViolation !== false;
+  const sendableChannelSet = createChannelSet(SENDABLE_CHANNELS);
+  const receivableChannelSet = createChannelSet(RECEIVABLE_CHANNELS);
+  const syncChannelSet = createChannelSet(SYNC_SNAPSHOT_CHANNELS);
+
+  function recordSecurityEvent(direction, channel, reason) {
+    const event = {
+      direction,
+      channel: sanitizeText(channel) || String(channel || ''),
+      reason,
+      mode: securityMode,
+      blockedAt: new Date().toISOString()
+    };
+    securityEvents.push(event);
+    return event;
+  }
+
+  function requireAllowedChannel(direction, channel, allowedChannels) {
+    const normalizedChannel = sanitizeText(channel);
+    if (allowUnsafeChannels) {
+      return normalizedChannel;
+    }
+
+    if (normalizedChannel && allowedChannels.has(normalizedChannel)) {
+      return normalizedChannel;
+    }
+
+    recordSecurityEvent(direction, channel, 'unsupported-channel');
+    if (throwOnSecurityViolation) {
+      const error = new Error(`Desktop shell bridge blocked ${direction} on unsupported channel "${channel}"`);
+      error.code = 'DESKTOP_BRIDGE_CHANNEL_BLOCKED';
+      error.direction = direction;
+      error.channel = channel;
+      throw error;
+    }
+
+    return null;
+  }
+
+  function requireSyncChannel(channel) {
+    const normalizedChannel = sanitizeText(channel);
+    if (allowUnsafeChannels || syncChannelSet.has(normalizedChannel)) {
+      return normalizedChannel;
+    }
+
+    recordSecurityEvent('sync', channel, 'unsupported-sync-channel');
+    if (throwOnSecurityViolation) {
+      const error = new Error(`Desktop shell bridge blocked sync on unsupported channel "${channel}"`);
+      error.code = 'DESKTOP_BRIDGE_SYNC_CHANNEL_BLOCKED';
+      error.direction = 'sync';
+      error.channel = channel;
+      throw error;
+    }
+
+    return null;
+  }
 
   function ensureChannelSubscription(channel) {
     if (typeof receiveTransport !== 'function' || subscribedChannels.has(channel)) {
@@ -425,34 +517,49 @@ export function createDesktopShellBridge(options = {}) {
   }
 
   function on(channel, cb) {
-    const callbacks = handlers.get(channel) || [];
-    handlers.set(channel, callbacks.concat(cb));
-    ensureChannelSubscription(channel);
+    const normalizedChannel = requireAllowedChannel('receive', channel, receivableChannelSet);
+    if (!normalizedChannel) {
+      return () => {};
+    }
+
+    const callbacks = handlers.get(normalizedChannel) || [];
+    handlers.set(normalizedChannel, callbacks.concat(cb));
+    ensureChannelSubscription(normalizedChannel);
 
     return () => {
-      const nextCallbacks = (handlers.get(channel) || []).filter((entry) => entry !== cb);
-      handlers.set(channel, nextCallbacks);
+      const nextCallbacks = (handlers.get(normalizedChannel) || []).filter((entry) => entry !== cb);
+      handlers.set(normalizedChannel, nextCallbacks);
     };
   }
 
   function send(channel, ...args) {
+    const normalizedChannel = requireAllowedChannel('send', channel, sendableChannelSet);
+    if (!normalizedChannel) {
+      return null;
+    }
+
     const entry = {
-      channel,
+      channel: normalizedChannel,
       args: cloneValue(args),
       sentAt: new Date().toISOString()
     };
     sentMessages.push(entry);
 
     if (typeof sendTransport === 'function') {
-      sendTransport(channel, ...args);
+      sendTransport(normalizedChannel, ...args);
     }
 
     return entry;
   }
 
   function emit(channel, ...args) {
-    dispatchHandlers(handlers, channel, args);
-    return (handlers.get(channel) || []).length;
+    const normalizedChannel = requireAllowedChannel('emit', channel, receivableChannelSet);
+    if (!normalizedChannel) {
+      return 0;
+    }
+
+    dispatchHandlers(handlers, normalizedChannel, args);
+    return (handlers.get(normalizedChannel) || []).length;
   }
 
   function syncShellState(input = {}, overrides = {}) {
@@ -469,20 +576,38 @@ export function createDesktopShellBridge(options = {}) {
           maxTabs: overrides.maxTabs || input.maxTabs || defaultMaxTabs
         });
 
-    send('appVersion', snapshot.appVersion);
-    send('desktopDistribution', snapshot.distribution);
-    send('hasNativeDesktopTabs', true, snapshot.maxTabs, snapshot.tabs.length);
-    send('tabs:set', snapshot.tabs);
-    send('tabs:setMaxTabs', snapshot.maxTabs);
-    send('canNavigate', snapshot.navigation);
+    [
+      ['appVersion', snapshot.appVersion],
+      ['desktopDistribution', snapshot.distribution],
+      ['hasNativeDesktopTabs', true, snapshot.maxTabs, snapshot.tabs.length],
+      ['tabs:set', snapshot.tabs],
+      ['tabs:setMaxTabs', snapshot.maxTabs],
+      ['canNavigate', snapshot.navigation]
+    ].forEach(([channel, ...args]) => {
+      const normalizedChannel = requireSyncChannel(channel);
+      if (normalizedChannel) {
+        send(normalizedChannel, ...args);
+      }
+    });
+
     if (snapshot.activeNavigation?.tabId) {
-      send('tabs:didNavigate', snapshot.activeNavigation);
+      const normalizedChannel = requireSyncChannel('tabs:didNavigate');
+      if (normalizedChannel) {
+        send(normalizedChannel, snapshot.activeNavigation);
+      }
     }
-    send('appBar:setAgenda', snapshot.agenda);
-    send('appBar:settings:init', snapshot.appBarSettings);
-    send('appBar:setConferenceSettings', snapshot.conferenceSettings);
-    send('appBar:setMeetingInsights', snapshot.meetingInsights);
-    send('updateTheme', snapshot.themeMode);
+    [
+      ['appBar:setAgenda', snapshot.agenda],
+      ['appBar:settings:init', snapshot.appBarSettings],
+      ['appBar:setConferenceSettings', snapshot.conferenceSettings],
+      ['appBar:setMeetingInsights', snapshot.meetingInsights],
+      ['updateTheme', snapshot.themeMode]
+    ].forEach(([channel, ...args]) => {
+      const normalizedChannel = requireSyncChannel(channel);
+      if (normalizedChannel) {
+        send(normalizedChannel, ...args);
+      }
+    });
 
     return snapshot;
   }
@@ -498,9 +623,19 @@ export function createDesktopShellBridge(options = {}) {
     clearSentMessages() {
       sentMessages.length = 0;
     },
+    getSecurityState() {
+      return {
+        mode: securityMode,
+        allowUnsafeChannels,
+        throwOnSecurityViolation,
+        violationCount: securityEvents.length,
+        events: securityEvents.map((event) => cloneValue(event))
+      };
+    },
     channelCatalog: {
       sendable: SENDABLE_CHANNELS,
-      receivable: RECEIVABLE_CHANNELS
+      receivable: RECEIVABLE_CHANNELS,
+      syncSendable: SYNC_SNAPSHOT_CHANNELS
     }
   };
 }
