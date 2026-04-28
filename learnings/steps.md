@@ -973,3 +973,35 @@ The desktop shell now behaves more like a real app shell instead of just display
 
 ---
 *Next: Step 43 starts the macOS-specific shell polish pass without changing product behavior.*
+
+---
+## Step 43 - Phase 8 MacOS Shell Polish
+*Completed: 2026-04-26*
+
+**What was built**
+- `apps/desktop/src/desktopPlatform.js` - adds a macOS-first platform profile for shortcut intent, menu behavior, window chrome expectations, and option-space semantics.
+- `apps/desktop/src/main.tsx` - applies Mac-specific shell polish by using the platform profile for key hints, traffic-light chrome, product-level shortcuts, and option-space quick-add behavior.
+- `apps/desktop/src-tauri/tauri.conf.json` - updates the native window config toward hidden-title and overlay title-bar behavior for the macOS target.
+- `learnings/phase-8-macos-shell-validation.md` - records the manual validation checklist for running this shell on a real Mac later.
+- `scripts/test.mjs` - adds regression coverage for the macOS profile and shortcut matching.
+
+**In plain English**
+The app now has a real macOS personality instead of only a generic desktop shell. It shows Mac-style traffic lights, prefers Mac-native shortcut labels and intent, routes quick-add through an option-space-style flow, and records the native window assumptions that need to be verified on a real Mac session. The product behavior stays the same, but the shell now fits the actual target platform much better.
+
+**Files changed**
++ created: `apps/desktop/src/desktopPlatform.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `apps/desktop/src-tauri/tauri.conf.json`
++ created: `learnings/phase-8-macos-shell-validation.md`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/desktopPlatform.js`
+- `Get-Content apps/desktop/src-tauri/tauri.conf.json | ConvertFrom-Json | Out-Null`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+
+---
+*Next: Step 44 implements the hardening pass over the desktop bridge and release assumptions.*

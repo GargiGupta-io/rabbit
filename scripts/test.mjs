@@ -67,6 +67,13 @@ import {
   SENDABLE_CHANNELS
 } from '../apps/desktop/src/desktopShellBridge.js';
 import {
+  createDesktopPlatformProfile,
+  getShellCommandForKeyboardEvent,
+  matchesDesktopShortcut,
+  normalizeDesktopDistribution,
+  normalizeDesktopPlatform
+} from '../apps/desktop/src/desktopPlatform.js';
+import {
   FIXTURE_CALENDAR_EVENTS_RAW,
   FIXTURE_CALENDARS_RAW,
   FIXTURE_CALENDAR_OVERLAY,
@@ -604,6 +611,38 @@ runTest('desktop shell bridge exposes extracted sendable and receivable channel 
   assert.equal(RECEIVABLE_CHANNELS.includes('tabs:select'), true);
   assert.equal(RECEIVABLE_CHANNELS.includes('appBar:search'), true);
   assert.equal(RECEIVABLE_CHANNELS.includes('main:showMainWindow'), true);
+});
+
+runTest('desktop platform profile normalizes macOS target distribution and shell chrome expectations', () => {
+  const profile = createDesktopPlatformProfile({
+    runtimePlatform: 'Win32',
+    preferredDistribution: 'apple',
+    targetPlatform: 'macos'
+  });
+
+  assert.equal(normalizeDesktopPlatform('darwin'), 'macos');
+  assert.equal(normalizeDesktopPlatform('Win32'), 'windows');
+  assert.equal(normalizeDesktopDistribution('', 'darwin'), 'apple');
+  assert.equal(profile.distribution, 'apple');
+  assert.equal(profile.isMacLike, true);
+  assert.equal(profile.windowChrome.showTrafficLights, true);
+  assert.equal(profile.windowChrome.titleBarStyle, 'Overlay');
+  assert.equal(profile.optionSpace.shortcutLabel, '⌥Space');
+  assert.equal(profile.menuBehavior.label, 'App Menu');
+});
+
+runTest('desktop platform shortcut matcher resolves macOS shell commands by intent', () => {
+  const profile = createDesktopPlatformProfile({
+    preferredDistribution: 'apple',
+    targetPlatform: 'macos'
+  });
+
+  assert.equal(matchesDesktopShortcut({ key: ' ', altKey: true }, profile.shortcuts.addTask), true);
+  assert.equal(matchesDesktopShortcut({ key: 'k', metaKey: true }, profile.shortcuts.search), true);
+  assert.equal(getShellCommandForKeyboardEvent(profile, { key: 'c', altKey: true }), 'open-calendar');
+  assert.equal(getShellCommandForKeyboardEvent(profile, { key: 'p', altKey: true }), 'open-project-manager');
+  assert.equal(getShellCommandForKeyboardEvent(profile, { key: 'a', altKey: true }), 'open-scheduler');
+  assert.equal(getShellCommandForKeyboardEvent(profile, { key: 'w', metaKey: true }), 'close-tab');
 });
 
 runTest('desktop shell bridge derives tab and agenda payloads from shell state', () => {
