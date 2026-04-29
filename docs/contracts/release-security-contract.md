@@ -33,16 +33,26 @@ Defines practical protections for v1. This is a hardening baseline, not absolute
 ### 5) Minimal Native Surface
 - Only expose narrowly scoped Rust bridge commands needed by the app shell.
 - Validate input/output for every command boundary.
+- Desktop shell traffic uses explicit allowlisted sendable and receivable channel catalogs only.
+- Shell snapshot sync uses a reduced channel subset rather than the whole bridge catalog.
 
-### 6) Tamper and Abuse Signals
+### 6) Permission Deny by Default
+- Release builds must not auto-grant clipboard, calendar, or open-external access for a whole origin.
+- Permission requests must be tied to explicit user actions and native review paths.
+
+### 7) Tamper and Abuse Signals
 - Log unexpected signature/update/auth anomalies.
 - Track abnormal offline/online entitlement behavior.
 - Flag unusual device/token churn for manual review.
 
-### 7) Incident Revocation and Recovery
+### 8) Incident Revocation and Recovery
 - Backend supports token/device revocation.
 - Emergency disable path for compromised credentials.
 - Recovery flow documented in operations notes.
+
+### 9) Release Data Hygiene
+- Fixture and fallback identities in shipped builds must be synthetic.
+- Signed-in research data is reference material only and must not ship as defaults.
 
 ## Acceptance Criteria (v1)
 - Release pipeline cannot publish unsigned artifacts.

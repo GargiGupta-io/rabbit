@@ -18,6 +18,9 @@
 - [ ] Update channel points only to official feed.
 - [ ] Entitlement check path tested against valid + invalid tokens.
 - [ ] No hardcoded production secrets in repo.
+- [ ] Desktop shell bridge rejects unsupported channels.
+- [ ] No blanket host permission auto-grants remain in release behavior.
+- [ ] Shipped defaults use synthetic identity data only.
 
 ### Reliability
 - [ ] Core boot path tested cleanly from fresh install.
