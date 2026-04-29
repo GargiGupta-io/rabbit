@@ -64,7 +64,8 @@ import {
   createQuickMeetingPayload,
   createShellBridgeSnapshot,
   RECEIVABLE_CHANNELS,
-  SENDABLE_CHANNELS
+  SENDABLE_CHANNELS,
+  SYNC_SNAPSHOT_CHANNELS
 } from '../apps/desktop/src/desktopShellBridge.js';
 import {
   createDesktopPlatformProfile,
@@ -73,6 +74,10 @@ import {
   normalizeDesktopDistribution,
   normalizeDesktopPlatform
 } from '../apps/desktop/src/desktopPlatform.js';
+import {
+  DEFAULT_CURRENT_USER_EMAIL,
+  DEFAULT_CURRENT_USER_NAME
+} from '../apps/desktop/src/identityDefaults.js';
 import {
   FIXTURE_CALENDAR_EVENTS_RAW,
   FIXTURE_CALENDARS_RAW,
@@ -508,7 +513,7 @@ runTest('client cache summary mirrors extracted settings, views, calendar-list, 
   assert.equal(summary.settingsGroupCount >= 8, true);
   assert.equal(summary.calendarPermissionStatus, 'granted');
   assert.equal(summary.calendarFetchStatus, 'idle');
-  assert.equal(summary.userEmail, 'gargig469@gmail.com');
+  assert.equal(summary.userEmail, DEFAULT_CURRENT_USER_EMAIL);
   assert.equal(summary.activeViewId, 'view_my_tasks');
   assert.equal(summary.activeWorkspaceId, 'ws_private_my_tasks');
   assert.equal(summary.onboardingComplete, true);
@@ -709,6 +714,8 @@ runTest('desktop shell bridge snapshot and provider sync follow Motion-like shel
   assert.equal(sent.some((entry) => entry.channel === 'appBar:setConferenceSettings'), true);
   assert.equal(sent.some((entry) => entry.channel === 'appBar:setMeetingInsights'), true);
   assert.equal(sent.some((entry) => entry.channel === 'updateTheme' && entry.args[0] === 'dark'), true);
+  assert.equal(sent.every((entry) => SYNC_SNAPSHOT_CHANNELS.includes(entry.channel)), true);
+  assert.deepEqual(bridge.channelCatalog.syncSendable, SYNC_SNAPSHOT_CHANNELS);
   assert.equal(selectedTabId, 'tab_my_tasks');
 });
 
@@ -730,6 +737,29 @@ runTest('desktop shell bridge normalizes conference and quick meeting payloads',
   assert.equal(conferenceSettings.hasAIWorkflows, true);
   assert.equal(quickMeeting.conferenceProvider, 'MICROSOFT_TEAMS');
   assert.equal(quickMeeting.addNotetaker, true);
+});
+
+runTest('desktop shell bridge blocks unsupported channels in restricted mode', () => {
+  const bridge = createDesktopShellBridge({
+    send() {}
+  });
+
+  assert.throws(() => bridge.send('unsafe:eval', { payload: 'x' }), /unsupported channel/i);
+  assert.throws(() => bridge.on('unsafe:listen', () => {}), /unsupported channel/i);
+  assert.throws(() => bridge.emit('unsafe:emit', {}), /unsupported channel/i);
+
+  const securityState = bridge.getSecurityState();
+  assert.equal(securityState.mode, 'restricted');
+  assert.equal(securityState.violationCount, 3);
+  assert.equal(securityState.events.every((event) => event.reason === 'unsupported-channel'), true);
+});
+
+runTest('desktop shell bridge fallback conference settings use scrubbed placeholder identity defaults', () => {
+  const conferenceSettings = createConferenceSettingsPayload({});
+
+  assert.equal(conferenceSettings.hostEmailAccount.email, DEFAULT_CURRENT_USER_EMAIL);
+  assert.equal(conferenceSettings.hostEmailAccount.name, DEFAULT_CURRENT_USER_NAME);
+  assert.equal(conferenceSettings.hostEmailAccount.userId.startsWith('user_'), true);
 });
 
 runTest('fixture inbox state seeds a structured personal inbox baseline', () => {
@@ -1151,7 +1181,7 @@ runTest('calendar overlay normalization keeps deterministic busy blocks and deri
   assert.equal(overlay.permissionStatus, 'granted');
   assert.equal(overlay.source.provider, 'google');
   assert.equal(overlay.source.providerType, 'GOOGLE');
-  assert.equal(overlay.source.accountEmail, 'gargig469@gmail.com');
+  assert.equal(overlay.source.accountEmail, DEFAULT_CURRENT_USER_EMAIL);
   assert.equal(overlay.calendars[0]?.accessRole, 'OWNER');
   assert.equal(overlay.calendars[1]?.type, 'FREQUENTLY_MET');
   assert.equal(overlay.importedEvents[0]?.type, 'NORMAL');
@@ -1193,17 +1223,17 @@ runTest('calendar event normalization keeps Motion-like event metadata while pre
     provider: 'google',
     providerType: 'GOOGLE',
     calendarId: 'team-primary',
-    accountEmail: 'gargig469@gmail.com'
+    accountEmail: DEFAULT_CURRENT_USER_EMAIL
   });
 
   assert.equal(event.providerId, 'google_evt_1');
   assert.equal(event.providerType, 'GOOGLE');
   assert.equal(event.calendarUniqueId, 'team-primary');
-  assert.equal(event.email, 'gargig469@gmail.com');
+  assert.equal(event.email, DEFAULT_CURRENT_USER_EMAIL);
   assert.equal(event.start, '2026-04-17T13:00:00.000Z');
   assert.equal(event.end, '2026-04-17T14:00:00.000Z');
   assert.equal(event.availability, 'BUSY');
-  assert.equal(event.organizer?.email, 'gargig469@gmail.com');
+  assert.equal(event.organizer?.email, DEFAULT_CURRENT_USER_EMAIL);
   assert.equal(event.attendees[1]?.email, 'customer@example.com');
   assert.equal(event.conferenceLink, 'https://meet.google.com/abc-defg-hij');
   assert.equal(event.lastModifiedAt, '2026-04-17T12:04:00.000Z');
@@ -1716,7 +1746,7 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.calendarOverlay.calendars.length, 2);
     assert.equal(saved.calendarOverlay.importedEvents.length, 3);
     assert.equal(saved.calendarOverlay.source.providerType, 'GOOGLE');
-    assert.equal(saved.calendarOverlay.source.accountEmail, 'gargig469@gmail.com');
+    assert.equal(saved.calendarOverlay.source.accountEmail, DEFAULT_CURRENT_USER_EMAIL);
     assert.equal(saved.tasks[0].workspaceId, 'ws_motion_team');
     assert.equal(saved.tasks[0].priorityLevel, 'HIGH');
     assert.equal(saved.tasks[0].blockingTaskIds.includes('f4'), true);

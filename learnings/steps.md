@@ -1005,3 +1005,46 @@ The app now has a real macOS personality instead of only a generic desktop shell
 
 ---
 *Next: Step 44 implements the hardening pass over the desktop bridge and release assumptions.*
+
+---
+## Step 44 - Phase 8 Shell Hardening and Release Assumptions
+*Completed: 2026-04-26*
+
+**What was built**
+- `apps/desktop/src/desktopShellBridge.js` - hardens the shell bridge with explicit send/receive allowlists, a reduced sync channel catalog, security-event tracking, and blocked unsupported channel usage.
+- `apps/desktop/src/identityDefaults.js` - centralizes synthetic default identity values so shipped defaults no longer embed signed-in research account data.
+- `apps/desktop/src/fixtures.js`, `apps/desktop/src/main.tsx`, `apps/desktop/src/projectService.js`, `apps/desktop/src/shellService.js`, `apps/desktop/src/state.js`, and `apps/desktop/src/storage.js` - replace real-user fallback values with synthetic placeholders and route shell/default identity behavior through the shared defaults.
+- `apps/desktop/src-tauri/src/main.rs` - keeps the native command surface typed and minimal by validating the placeholder `ping` payload instead of accepting arbitrary strings.
+- `docs/contracts/desktop-shell-hardening-contract.md`, `docs/contracts/release-security-contract.md`, and `docs/release-checklist.md` - document the shell bridge, permissions, entitlement, signing, update-chain, and release-data hygiene assumptions.
+- `scripts/test.mjs` - adds regression coverage for blocked unsupported bridge channels, the reduced sync channel surface, and scrubbed fallback conference identity defaults.
+
+**In plain English**
+This step turns the desktop shell into a stricter release-shaped surface instead of a friendly dev-only bridge. Unsupported IPC-style channels are now rejected, shell snapshot sync is limited to a smaller approved set, and the repo no longer ships your real signed-in identity as default fixture data. The release docs also now say explicitly how permissions, entitlements, signing, and updates are supposed to work.
+
+**Files changed**
++ created: `apps/desktop/src/identityDefaults.js`
++ created: `docs/contracts/desktop-shell-hardening-contract.md`
+~ modified: `apps/desktop/src/desktopShellBridge.js`
+~ modified: `apps/desktop/src/fixtures.js`
+~ modified: `apps/desktop/src/main.tsx`
+~ modified: `apps/desktop/src/projectService.js`
+~ modified: `apps/desktop/src/shellService.js`
+~ modified: `apps/desktop/src/state.js`
+~ modified: `apps/desktop/src/storage.js`
+~ modified: `apps/desktop/src-tauri/src/main.rs`
+~ modified: `docs/contracts/release-security-contract.md`
+~ modified: `docs/release-checklist.md`
+~ modified: `scripts/test.mjs`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/src/desktopShellBridge.js`
+- `node --check apps/desktop/src/identityDefaults.js`
+- `node --check apps/desktop/src/fixtures.js`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `cargo check` could not be run because the Rust toolchain is not installed on this machine.
+
+---
+*Next: Step 45 closes Phase 8 with the verification gate and final deep-learn write-up.*
