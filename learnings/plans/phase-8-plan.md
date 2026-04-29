@@ -94,3 +94,17 @@ Modify:
 - macOS-specific polish work is captured and applied without changing product behavior.
 - Hardening work improves on the original Motion shell's known risks.
 - `npm run test`, `npm run typecheck`, and `npm run build` pass.
+
+## Closure status (2026-04-27)
+
+- Completed through Steps 41 to 45.
+- Delivered:
+  - a defined desktop shell bridge for tabs, agenda, quick actions, and app-bar traffic,
+  - Motion-like desktop tab behavior, quick-meeting routing, and keyboard-driven shell actions,
+  - a macOS-first platform profile for shortcuts, menu labeling, traffic-light chrome, and option-space behavior,
+  - a hardened bridge surface with explicit channel allowlists and a reduced sync message subset,
+  - release docs covering bridge scope, permissions, entitlement authority, signing, update-chain integrity, and release-data hygiene.
+- Verified that `npm run test`, `npm run typecheck`, and `npm run build` pass after the native-shell, macOS, and hardening work.
+- Remaining native limitation:
+  - `cargo check` could not run on this Windows machine because the Rust toolchain is not installed yet, so a real Mac or Rust-enabled desktop lane is still required before claiming full native build verification.
+- Deep-learn write-up: `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md`.

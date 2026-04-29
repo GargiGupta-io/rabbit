@@ -1048,3 +1048,31 @@ This step turns the desktop shell into a stricter release-shaped surface instead
 
 ---
 *Next: Step 45 closes Phase 8 with the verification gate and final deep-learn write-up.*
+
+---
+## Step 45 - Phase 8 Verification and Deep Learn Closeout
+*Completed: 2026-04-27*
+
+**What was built**
+- `learnings/planning.md` - marks Phase 8 complete, closes the current parity roadmap, and records that the next stage should start from a fresh plan.
+- `learnings/plans/phase-8-plan.md` - records the Phase 8 closure state, verification status, and the remaining native limitation around missing Rust toolchain verification on this machine.
+- `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md` - captures the Phase 8 learning write-up covering the desktop shell bridge, macOS platform profile, hardening pass, and release assumptions.
+- `learnings/steps.md` - logs Step 45 and closes the current phase handoff.
+
+**In plain English**
+Phase 8 is properly closed now instead of just being the last native-shell work we touched. The full verification gate passed again, the roadmap now treats native desktop, Mac fit, and hardening as completed work, and the repo has a final learning doc explaining how the desktop shell, platform behavior, and release safety pieces fit together. The only remaining gap is outside the current JavaScript lane: a real Rust-enabled native build check still needs a machine with the Rust toolchain.
+
+**Files changed**
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-8-plan.md`
++ created: `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run build`
+- `cargo check` still could not run because the Rust toolchain is not installed on this machine.
+
+---
+*Next: the current reverse-engineered parity roadmap is complete. Start a fresh `/plan` for shipping work, backend integration, or a new recon-driven parity pass.*

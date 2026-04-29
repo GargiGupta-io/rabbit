@@ -143,7 +143,7 @@ New priority order:
   - `learnings/phase-7-api-sync-cache-deeplearn.md`
 
 ### Phase 8 - Native Desktop, Mac Parity, and Hardening
-- Current detailed working phase.
+- Completed on 2026-04-27.
 - Goal: move from product-behavior parity to real desktop fidelity:
   - native shell contracts,
   - macOS shortcut/window/menu fit,
@@ -170,7 +170,8 @@ New priority order:
 - `learnings/phase-6-calendar-scheduling-form-deeplearn.md` - Phase 6 calendar, scheduling, and form parity learning write-up
 - `learnings/plans/phase-7-plan.md` - completed Phase 7 API/sync/cache parity plan
 - `learnings/phase-7-api-sync-cache-deeplearn.md` - Phase 7 API, sync, and cache parity learning write-up
-- `learnings/plans/phase-8-plan.md` - current Phase 8 native/mac parity and hardening plan
+- `learnings/plans/phase-8-plan.md` - completed Phase 8 native/mac parity and hardening plan
+- `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md` - Phase 8 native shell, macOS, and hardening learning write-up
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
 Supporting research inside the repo:
@@ -207,6 +208,11 @@ Supporting research inside the repo:
 - Deep-learn write-up: `learnings/phase-7-api-sync-cache-deeplearn.md`.
 
 ### Phase 8
-- Current active phase.
-- Starts at Step 41 in `learnings/plans/phase-8-plan.md`.
-- Final desktop and macOS pass after product parity is strong.
+- Completed.
+- Steps 41 to 45 delivered the desktop shell bridge, desktop action routing, macOS shell fit, release hardening, and the Phase 8 verification gate.
+- Deep-learn write-up: `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md`.
+
+### Current roadmap state
+- Phases 4 to 8 are complete.
+- The reverse-engineered parity roadmap is closed through the current desktop/macOS hardening target.
+- Any next stage should start from a fresh `/plan`, either for final shipping work, live backend integration, or a new parity pass based on additional Motion recon.
