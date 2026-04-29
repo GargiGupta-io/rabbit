@@ -26,6 +26,7 @@ import {
   normalizePushEventBatchResponse
 } from './syncClient.js';
 import { deriveShellStateSnapshot, getShellViewMeta, selectTasksForShellView } from './shellService.js';
+import { DEFAULT_CURRENT_USER_ID } from './identityDefaults.js';
 import { normalizeQueryCacheState } from './storage.js';
 
 export * from './taskService.js';
@@ -345,7 +346,7 @@ function formatUserLabel(userId) {
   if (!id) {
     return 'Unassigned';
   }
-  if (id === 'user_gargi') {
+  if (id === DEFAULT_CURRENT_USER_ID) {
     return 'Me';
   }
   const base = id.replace(/^user_/, '').replaceAll('_', ' ');
@@ -389,7 +390,7 @@ function buildTaskFormScheduleOptions(tasks = [], project = null) {
 }
 
 function buildTaskFormAssigneeOptions(appData = {}, project = null) {
-  const ids = new Set(['user_gargi']);
+  const ids = new Set([DEFAULT_CURRENT_USER_ID]);
   if (project?.managerId) {
     ids.add(project.managerId);
   }
@@ -432,7 +433,7 @@ export function createTaskFormState(appData = {}, input = {}) {
   const startAtInput = scheduleMode === 'fixed' && !startAtInputBase ? dueAtInput : startAtInputBase;
   const defaultScheduleId = scheduleOptions[0]?.id || '';
   const scheduleId = sanitizeText(input.scheduleId, defaultScheduleId);
-  const assigneeUserId = sanitizeText(input.assigneeUserId, sanitizeText(project?.managerId, 'user_gargi'));
+  const assigneeUserId = sanitizeText(input.assigneeUserId, sanitizeText(project?.managerId, DEFAULT_CURRENT_USER_ID));
   const recurrencePattern = sanitizeText(input.recurrencePattern || input.recurrence?.pattern, 'none');
 
   return {

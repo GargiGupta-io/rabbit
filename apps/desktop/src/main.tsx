@@ -35,6 +35,10 @@ import {
   requireEntitlement
 } from './entitlement.js';
 import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
+import {
+  DEFAULT_CURRENT_USER_EMAIL,
+  DEFAULT_CURRENT_USER_NAME
+} from './identityDefaults.js';
 import { getTaskScheduleSummary } from './taskService.js';
 import { createDesktopPlatformProfile, getShellCommandForKeyboardEvent } from './desktopPlatform.js';
 
@@ -2131,7 +2135,7 @@ function syncDesktopShell(shellState) {
     appBarSettings: {
       showTrayText,
       defaultConferenceType: 'GOOGLE_MEET',
-      email: 'gargig469@gmail.com',
+      email: DEFAULT_CURRENT_USER_EMAIL,
       hasAIWorkflows: getEntitlementStateSummary(entitlement).aiEnabled,
       meetingInsights: {}
     }
@@ -2799,7 +2803,7 @@ function createQuickMeetingEvent(payload = { conferenceProvider: 'GOOGLE_MEET', 
     provider: 'google',
     providerType: 'GOOGLE',
     calendarId: 'team-primary',
-    email: 'gargig469@gmail.com',
+    email: DEFAULT_CURRENT_USER_EMAIL,
     status: 'busy',
     start: start.toISOString(),
     end: end.toISOString(),
@@ -2810,13 +2814,13 @@ function createQuickMeetingEvent(payload = { conferenceProvider: 'GOOGLE_MEET', 
     conferenceLink: `${conferenceHost}${eventId}`,
     conferenceType: provider.toLowerCase(),
     organizer: {
-      displayName: 'Gargi Gupta',
-      email: 'gargig469@gmail.com'
+      displayName: DEFAULT_CURRENT_USER_NAME,
+      email: DEFAULT_CURRENT_USER_EMAIL
     },
     attendees: [
       {
-        displayName: 'Gargi Gupta',
-        email: 'gargig469@gmail.com',
+        displayName: DEFAULT_CURRENT_USER_NAME,
+        email: DEFAULT_CURRENT_USER_EMAIL,
         isOptional: false,
         isOrganizer: true,
         status: 'accepted'

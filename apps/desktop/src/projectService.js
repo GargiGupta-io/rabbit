@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENT_USER_ID } from './identityDefaults.js';
+
 const COLOR_TOKENS = {
   gray: '#889096',
   blue: '#3b82f6',
@@ -7,7 +9,7 @@ const COLOR_TOKENS = {
   purple: '#8b5cf6'
 };
 
-const DEFAULT_USER_ID = 'user_gargi';
+const DEFAULT_USER_ID = DEFAULT_CURRENT_USER_ID;
 const DEFAULT_WORKSPACE_ID = 'ws_private_my_tasks';
 const DEFAULT_PROJECT_STATUS_ID = 'project_status_active';
 const DEFAULT_TASK_STATUS_ID = 'status_todo';

@@ -1,4 +1,10 @@
 import { CURRENT_SCHEMA_VERSION } from './contracts.js';
+import {
+  DEFAULT_CURRENT_USER_EMAIL,
+  DEFAULT_CURRENT_USER_ID,
+  DEFAULT_CURRENT_USER_NAME,
+  DEFAULT_PRIMARY_CALENDAR_PROVIDER_ID
+} from './identityDefaults.js';
 import { buildProjectDomainSeedData } from './projectService.js';
 import { buildAgendaSnapshot, buildSidebarSections, createDefaultShellState } from './shellService.js';
 
@@ -42,8 +48,8 @@ export const FIXTURE_TASKS_RAW = [
     blockedByTaskIds: [],
     stageDefinitionId: 'stage_work_active',
     taskDefinitionId: 'taskdef_weekly_plan',
-    assigneeUserId: 'user_gargi',
-    createdByUserId: 'user_gargi',
+    assigneeUserId: DEFAULT_CURRENT_USER_ID,
+    createdByUserId: DEFAULT_CURRENT_USER_ID,
     labelIds: ['planning', 'team'],
     isSyncingWithDefinition: true,
     recurrence: { pattern: 'none', interval: 1 }
@@ -80,8 +86,8 @@ export const FIXTURE_TASKS_RAW = [
     blockedByTaskIds: [],
     stageDefinitionId: 'stage_inbox_done',
     taskDefinitionId: 'taskdef_reply_team',
-    assigneeUserId: 'user_gargi',
-    createdByUserId: 'user_gargi',
+    assigneeUserId: DEFAULT_CURRENT_USER_ID,
+    createdByUserId: DEFAULT_CURRENT_USER_ID,
     labelIds: ['inbox', 'follow-up'],
     isSyncingWithDefinition: false,
     recurrence: { pattern: 'none', interval: 1 }
@@ -114,8 +120,8 @@ export const FIXTURE_TASKS_RAW = [
     blockedByTaskIds: ['f4'],
     stageDefinitionId: 'stage_personal_review',
     taskDefinitionId: 'taskdef_design_review',
-    assigneeUserId: 'user_gargi',
-    createdByUserId: 'user_gargi',
+    assigneeUserId: DEFAULT_CURRENT_USER_ID,
+    createdByUserId: DEFAULT_CURRENT_USER_ID,
     labelIds: ['design'],
     isSyncingWithDefinition: true,
     recurrence: { pattern: 'weekly', interval: 1 }
@@ -151,8 +157,8 @@ export const FIXTURE_TASKS_RAW = [
     blockedByTaskIds: ['f1'],
     stageDefinitionId: 'stage_work_meetings',
     taskDefinitionId: 'taskdef_overlap_call',
-    assigneeUserId: 'user_gargi',
-    createdByUserId: 'user_gargi',
+    assigneeUserId: DEFAULT_CURRENT_USER_ID,
+    createdByUserId: DEFAULT_CURRENT_USER_ID,
     labelIds: ['meetings'],
     isSyncingWithDefinition: false,
     recurrence: { pattern: 'none', interval: 1 }
@@ -182,8 +188,8 @@ export const FIXTURE_TASKS_RAW = [
     blockedByTaskIds: [],
     stageDefinitionId: null,
     taskDefinitionId: null,
-    assigneeUserId: 'user_gargi',
-    createdByUserId: 'user_gargi',
+    assigneeUserId: DEFAULT_CURRENT_USER_ID,
+    createdByUserId: DEFAULT_CURRENT_USER_ID,
     labelIds: ['notes'],
     isSyncingWithDefinition: false,
     recurrence: { pattern: 'none', interval: 1 }
@@ -205,7 +211,7 @@ export const FIXTURE_INBOX_STATE = {
       id: 'notif_1',
       inboxId: 'inbox_personal',
       type: 'task-assigned',
-      recipientId: 'user_gargi',
+      recipientId: DEFAULT_CURRENT_USER_ID,
       read: false,
       createdTime: '2026-04-17T11:40:00.000Z',
       payload: {
@@ -223,7 +229,7 @@ export const FIXTURE_INBOX_STATE = {
       id: 'notif_2',
       inboxId: 'inbox_personal',
       type: 'mentioned-in-task-comment',
-      recipientId: 'user_gargi',
+      recipientId: DEFAULT_CURRENT_USER_ID,
       read: false,
       createdTime: '2026-04-17T10:50:00.000Z',
       payload: {
@@ -243,7 +249,7 @@ export const FIXTURE_INBOX_STATE = {
       id: 'notif_3',
       inboxId: 'inbox_personal',
       type: 'project-stage-entered',
-      recipientId: 'user_gargi',
+      recipientId: DEFAULT_CURRENT_USER_ID,
       read: true,
       createdTime: '2026-04-17T09:30:00.000Z',
       payload: {
@@ -261,7 +267,7 @@ export const FIXTURE_INBOX_STATE = {
       id: 'notif_4',
       inboxId: 'inbox_personal',
       type: 'meeting-insights',
-      recipientId: 'user_gargi',
+      recipientId: DEFAULT_CURRENT_USER_ID,
       read: false,
       createdTime: '2026-04-17T08:20:00.000Z',
       payload: {
@@ -278,7 +284,7 @@ export const FIXTURE_INBOX_STATE = {
       id: 'notif_5',
       inboxId: 'inbox_personal',
       type: 'post-onboarding',
-      recipientId: 'user_gargi',
+      recipientId: DEFAULT_CURRENT_USER_ID,
       read: true,
       createdTime: '2026-04-16T18:00:00.000Z',
       payload: {
@@ -297,10 +303,10 @@ export const FIXTURE_INBOX_STATE = {
 export const FIXTURE_CALENDARS_RAW = [
   {
     id: 'team-primary',
-    userId: 'user_gargi',
+    userId: DEFAULT_CURRENT_USER_ID,
     emailAccountId: 'acct_team',
     type: 'DEFAULT',
-    providerId: 'gcal_primary_gargi',
+    providerId: DEFAULT_PRIMARY_CALENDAR_PROVIDER_ID,
     accessRole: 'OWNER',
     allowedConferenceTypes: ['meet', 'zoom', 'customLocation'],
     colorId: '11',
@@ -309,12 +315,12 @@ export const FIXTURE_CALENDARS_RAW = [
     isInFrequentlyMet: false,
     isPrimary: true,
     providerType: 'GOOGLE',
-    title: 'Gargi Gupta',
+    title: DEFAULT_CURRENT_USER_NAME,
     status: 'OK'
   },
   {
     id: 'company-shared',
-    userId: 'user_gargi',
+    userId: DEFAULT_CURRENT_USER_ID,
     emailAccountId: 'acct_team',
     type: 'FREQUENTLY_MET',
     providerId: 'gcal_company_shared',
@@ -340,7 +346,7 @@ export const FIXTURE_CALENDAR_EVENTS_RAW = [
     provider: 'google',
     providerType: 'GOOGLE',
     calendarId: 'team-primary',
-    email: 'gargig469@gmail.com',
+    email: DEFAULT_CURRENT_USER_EMAIL,
     status: 'busy',
     start: '2026-04-17T13:00:00.000Z',
     end: '2026-04-17T14:00:00.000Z',
@@ -351,13 +357,13 @@ export const FIXTURE_CALENDAR_EVENTS_RAW = [
     conferenceLink: 'https://meet.google.com/abc-defg-hij',
     conferenceType: 'meet',
     organizer: {
-      displayName: 'Gargi Gupta',
-      email: 'gargig469@gmail.com'
+      displayName: DEFAULT_CURRENT_USER_NAME,
+      email: DEFAULT_CURRENT_USER_EMAIL
     },
     attendees: [
       {
-        displayName: 'Gargi Gupta',
-        email: 'gargig469@gmail.com',
+        displayName: DEFAULT_CURRENT_USER_NAME,
+        email: DEFAULT_CURRENT_USER_EMAIL,
         isOptional: false,
         isOrganizer: true,
         status: 'accepted'
@@ -382,7 +388,7 @@ export const FIXTURE_CALENDAR_EVENTS_RAW = [
     provider: 'google',
     providerType: 'GOOGLE',
     calendarId: 'team-primary',
-    email: 'gargig469@gmail.com',
+    email: DEFAULT_CURRENT_USER_EMAIL,
     status: 'busy',
     start: '2026-04-17T15:00:00.000Z',
     end: '2026-04-17T16:30:00.000Z',
@@ -392,8 +398,8 @@ export const FIXTURE_CALENDAR_EVENTS_RAW = [
     visibility: 'PRIVATE',
     attendees: [],
     organizer: {
-      displayName: 'Gargi Gupta',
-      email: 'gargig469@gmail.com'
+      displayName: DEFAULT_CURRENT_USER_NAME,
+      email: DEFAULT_CURRENT_USER_EMAIL
     },
     travelTimeBefore: 15,
     travelTimeAfter: 10
@@ -406,7 +412,7 @@ export const FIXTURE_CALENDAR_EVENTS_RAW = [
     provider: 'google',
     providerType: 'GOOGLE',
     calendarId: 'company-shared',
-    email: 'gargig469@gmail.com',
+    email: DEFAULT_CURRENT_USER_EMAIL,
     status: 'busy',
     start: '2026-04-18T00:00:00.000Z',
     allDay: true,
@@ -430,8 +436,8 @@ export const FIXTURE_CALENDAR_OVERLAY = {
     provider: 'google',
     providerType: 'GOOGLE',
     accountId: 'acct_team',
-    accountEmail: 'gargig469@gmail.com',
-    userId: 'user_gargi',
+    accountEmail: DEFAULT_CURRENT_USER_EMAIL,
+    userId: DEFAULT_CURRENT_USER_ID,
     calendarIds: ['team-primary', 'company-shared'],
     syncToken: 'sync_fixture_google'
   },

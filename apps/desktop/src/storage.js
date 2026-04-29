@@ -8,6 +8,11 @@ import {
   getPageViewSettings
 } from './bootstrapClient.js';
 import { fetchUncachedCalendarList } from './calendarClient.js';
+import {
+  DEFAULT_CURRENT_USER_EMAIL,
+  DEFAULT_CURRENT_USER_ID,
+  DEFAULT_CURRENT_USER_NAME
+} from './identityDefaults.js';
 import { buildProjectDomainSeedData, getWorkspaceById } from './projectService.js';
 import { createStableDeviceId, getCurrentSyncSessionId, normalizeSyncState } from './syncContract.js';
 import { getViews } from './viewsClient.js';
@@ -16,9 +21,9 @@ const STORAGE_KEY = 'motion_clone_phase1_app_data';
 const DEVICE_ID_KEY = `${STORAGE_KEY}:device_id`;
 const DEFAULT_APP_VERSION = '1.0.0';
 const DEFAULT_SYNC_STATUS = 'local';
-const DEFAULT_USER_ID = 'user_gargi';
-const DEFAULT_USER_NAME = 'Gargi Gupta';
-const DEFAULT_ACCOUNT_EMAIL = 'gargig469@gmail.com';
+const DEFAULT_USER_ID = DEFAULT_CURRENT_USER_ID;
+const DEFAULT_USER_NAME = DEFAULT_CURRENT_USER_NAME;
+const DEFAULT_ACCOUNT_EMAIL = DEFAULT_CURRENT_USER_EMAIL;
 
 function nowIso() {
   return new Date().toISOString();

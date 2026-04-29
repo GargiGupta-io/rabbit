@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENT_USER_ID } from './identityDefaults.js';
+
 const DEFAULT_THEME_MODE = 'dark';
 const ALLOWED_THEME_MODES = new Set(['light', 'dark']);
 const DEFAULT_ACCENT = 'motion';
@@ -969,7 +971,7 @@ function isRelativeDateMatch(rawValue, rule, now = new Date()) {
   return true;
 }
 
-function matchesTaskAssignee(task = {}, assignee = null, currentUserId = 'user_gargi') {
+function matchesTaskAssignee(task = {}, assignee = null, currentUserId = DEFAULT_CURRENT_USER_ID) {
   if (!assignee) {
     return true;
   }
@@ -981,7 +983,7 @@ function matchesTaskAssignee(task = {}, assignee = null, currentUserId = 'user_g
   return sanitizeText(task.assigneeUserId) === sanitizeText(assignee);
 }
 
-function matchesTaskFilters(task = {}, filters = {}, now = new Date(), currentUserId = 'user_gargi') {
+function matchesTaskFilters(task = {}, filters = {}, now = new Date(), currentUserId = DEFAULT_CURRENT_USER_ID) {
   if (!isPlainObject(task)) {
     return false;
   }
@@ -1220,7 +1222,7 @@ export function getShellViewMeta(shellState = {}) {
 export function selectTasksForShellView(tasks = [], shellState = {}, options = {}) {
   const meta = getShellViewMeta(shellState);
   const referenceNow = parseDate(options.now || shellState.referenceNow || shellState.agenda?.generatedAt) || new Date();
-  const currentUserId = sanitizeText(options.currentUserId, 'user_gargi');
+  const currentUserId = sanitizeText(options.currentUserId, DEFAULT_CURRENT_USER_ID);
   const candidates = Array.isArray(tasks)
     ? tasks.filter((task) => isPlainObject(task) && sanitizeText(task.status) !== 'deleted')
     : [];
