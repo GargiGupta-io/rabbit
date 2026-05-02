@@ -1,0 +1,78 @@
+name: mac-packaging-lane
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_mode:
+        description: "Choose whether to stop at verification or continue into the placeholder package lane."
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - package
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/mac-packaging-lane.yml"
+      - "apps/desktop/**"
+      - "docs/**"
+      - "README.md"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  verify-mac-lane:
+    name: verify-mac-lane
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install cargo-tauri
+        run: cargo install tauri-cli --locked
+
+      - name: Build desktop frontend bundle
+        run: npm run desktop:build
+
+      - name: Native preflight
+        run: npm run desktop:native:preflight -- --strict --target=macos
+
+      - name: Native build dry run
+        run: npm run desktop:native:build -- --dry-run --target=macos
+
+  package-macos-placeholder:
+    name: package-macos-placeholder
+    if: github.event_name == 'workflow_dispatch' && inputs.package_mode == 'package'
+    needs: verify-mac-lane
+    runs-on: macos-latest
+    steps:
+      - name: Explain placeholder scope
+        run: |
+          echo "The mac packaging lane is scaffolded but not armed yet."
+          echo "Before enabling real package output, add certificate import, signing, notarization, and artifact upload steps."
+          echo "Required secret placeholders:"
+          echo "  APPLE_SIGNING_CERT_BASE64"
+          echo "  APPLE_SIGNING_CERT_PASSWORD"
+          echo "  APPLE_ID"
+          echo "  APPLE_APP_SPECIFIC_PASSWORD"
+          echo "  APPLE_TEAM_ID"
+          exit 1
