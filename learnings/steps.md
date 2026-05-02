@@ -1107,3 +1107,42 @@ The desktop app finally has a real frontend build output instead of a fake place
 
 ---
 *Next: Step 47 adds the native build entrypoints and preflight checks so this frontend bundle can plug into a real Tauri packaging flow.*
+
+---
+## Step 47 - Phase 9 Native Build Entry Points and Preflight Checks
+*Completed: 2026-04-27*
+
+**What was built**
+- `apps/desktop/src-tauri/build.rs` and `apps/desktop/src-tauri/Cargo.toml` - add the missing Tauri Rust build bootstrap so the native desktop package has a real build entrypoint instead of only a config file.
+- `apps/desktop/scripts/native-preflight.mjs` - adds a readable preflight command that checks desktop bundle files, Tauri bootstrap files, and native tool availability before packaging.
+- `apps/desktop/scripts/native-build.mjs` - adds the native packaging entrypoint that rebuilds the frontend bundle, runs preflight, and then calls `cargo-tauri build`, with a `--dry-run` path for planning and CI wiring.
+- `apps/desktop/package.json` and root `package.json` - expose native preflight and native build commands from both the desktop package and the repo root.
+- `README.md` - documents the new build, preflight, and dry-run commands and explains that real Mac packaging still needs Rust and a macOS machine or CI lane.
+
+**In plain English**
+The repo now has a real native packaging path instead of only a frontend bundle and a Tauri folder sitting beside it. You can ask the project what is missing before packaging, and it will tell you clearly that Rust and Tauri tooling are not installed yet. You can also run a dry-run native build command that proves the packaging flow is wired correctly without pretending this Windows machine can already produce the final Mac app.
+
+**Files changed**
++ created: `apps/desktop/src-tauri/build.rs`
+~ modified: `apps/desktop/src-tauri/Cargo.toml`
++ created: `apps/desktop/scripts/native-preflight.mjs`
++ created: `apps/desktop/scripts/native-build.mjs`
+~ modified: `apps/desktop/package.json`
+~ modified: `package.json`
+~ modified: `README.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `node --check apps/desktop/scripts/native-preflight.mjs`
+- `node --check apps/desktop/scripts/native-build.mjs`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:build -- --dry-run`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
+- Verified the preflight now reports:
+  - desktop bundle files are present,
+  - Tauri bootstrap files are present,
+  - `rustc`, `cargo`, and `cargo-tauri` are not yet installed on this machine,
+  - final `.app` / `.dmg` packaging still requires a macOS host or CI runner.
+
+---
+*Next: Step 48 adds the Mac packaging lane scaffolding in CI and release docs.*
