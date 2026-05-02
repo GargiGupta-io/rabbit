@@ -23,6 +23,7 @@ Keep development efficient on Windows while reserving macOS-specific tasks for C
 - macOS permission checks for calendar/reminders/keychain behavior.
 - macOS build smoke checks and final artifact verification.
 - App Store or mac release packaging process.
+- `.github/workflows/mac-packaging-lane.yml` verification and packaging lane maintenance.
 
 ### Shared
 - Security policy decisions.
@@ -36,6 +37,7 @@ Keep development efficient on Windows while reserving macOS-specific tasks for C
 2. Do not block daily coding on missing local mac hardware.
 3. If mac-only behavior is required for a feature, build a simulation path first.
 4. All release artifacts must be validated on the Mac lane before public sharing.
+5. Placeholder package workflows must fail clearly until signing and notarization are genuinely configured.
 
 ## Team Rule
 - Every item in the roadmap should have a line marking whether execution is Windows-first or Mac-only.

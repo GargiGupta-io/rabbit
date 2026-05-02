@@ -8,10 +8,12 @@
 - [ ] CI pipeline runs on every push and PR.
 
 ### Mac Distribution
+- [ ] `.github/workflows/mac-packaging-lane.yml` verification lane passes on a Mac runner.
 - [ ] mac artifact build succeeds in mac lane.
 - [ ] Code signing applied.
 - [ ] Notarization status is valid.
 - [ ] App launch and main lifecycle smoke test passes.
+- [ ] Placeholder signing secrets are replaced with real release credentials before public packaging.
 
 ### Security Controls
 - [ ] Release artifact hash recorded.
