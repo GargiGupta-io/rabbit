@@ -155,7 +155,7 @@ New priority order:
   - `developer/motion-research/CODE_ASSETS/SHELL_LOGIC/`
 
 ### Phase 9 - Packaging, Native Build Lane, and Release Setup
-- Current detailed working phase.
+- Completed on 2026-04-28.
 - Goal: turn the completed clone codebase into a real packageable desktop artifact path:
   - real frontend `dist/` output,
   - Tauri-aligned build entrypoints,
@@ -185,7 +185,8 @@ New priority order:
 - `learnings/phase-7-api-sync-cache-deeplearn.md` - Phase 7 API, sync, and cache parity learning write-up
 - `learnings/plans/phase-8-plan.md` - completed Phase 8 native/mac parity and hardening plan
 - `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md` - Phase 8 native shell, macOS, and hardening learning write-up
-- `learnings/plans/phase-9-plan.md` - current Phase 9 packaging and release-setup plan
+- `learnings/plans/phase-9-plan.md` - completed Phase 9 packaging and release-setup plan
+- `learnings/phase-9-packaging-native-build-release-deeplearn.md` - Phase 9 packaging, native build lane, and release-setup learning write-up
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
 Supporting research inside the repo:
@@ -226,7 +227,15 @@ Supporting research inside the repo:
 - Steps 41 to 45 delivered the desktop shell bridge, desktop action routing, macOS shell fit, release hardening, and the Phase 8 verification gate.
 - Deep-learn write-up: `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md`.
 
+### Phase 9
+- Completed.
+- Steps 46 to 50 delivered a real desktop `dist/` build, Tauri-native entrypoints and preflight checks, a Mac CI packaging lane scaffold, a shared packaging smoke-check contract, and the Phase 9 verification gate.
+- Deep-learn write-up: `learnings/phase-9-packaging-native-build-release-deeplearn.md`.
+
 ### Current roadmap state
-- Phases 4 to 8 are complete.
-- Phase 9 is the current shipping-oriented build and packaging pass.
-- After Phase 9, the next stage should be either live backend integration, real Mac packaging/signing execution, or a new recon-driven parity pass if Motion behavior changes.
+- Phases 4 to 9 are complete.
+- There is no active implementation phase right now.
+- The next stage should be either:
+  - live backend integration,
+  - real Mac packaging/signing execution on a Rust-enabled Mac host or CI runner,
+  - or a new recon-driven parity pass if Motion behavior changes.

@@ -101,3 +101,22 @@ Create:
 - The Mac packaging/signing lane has explicit scaffolding and docs.
 - `npm run desktop:build`, `npm run test`, `npm run typecheck`, and `npm run build` pass.
 - The repo clearly states what still requires Rust or Mac hardware before claiming a final packaged app.
+
+## Closure status (2026-04-28)
+
+- Completed through Steps 46 to 50.
+- Delivered:
+  - a real desktop frontend build output at `apps/desktop/dist/`,
+  - a Tauri-aligned native build bootstrap with `build.rs`, production `frontendDist`, and dry-run native packaging entrypoints,
+  - a Mac CI verification lane scaffold plus an intentionally failing placeholder packaging job,
+  - a shared packaging smoke-check manifest and runbook that define what local Windows and Mac CI verification do and do not prove.
+- Verified that these commands pass:
+  - `npm run desktop:build`
+  - `npm run test`
+  - `npm run typecheck`
+  - `npm run build`
+  - `npm run desktop:native:preflight -- --target=macos`
+- Remaining native limitation:
+  - this machine still does not have `rustc`, `cargo`, or `cargo-tauri`, so it cannot produce a real native artifact locally.
+  - the Mac workflow still stops at verification plus a placeholder packaging lane until real Apple signing, notarization, and artifact-retention steps are wired.
+- Deep-learn write-up: `learnings/phase-9-packaging-native-build-release-deeplearn.md`.

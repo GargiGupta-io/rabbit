@@ -1220,3 +1220,35 @@ The repo now has one clear answer to "what do we have to prove before calling th
 
 ---
 *Next: Step 50 runs the Phase 9 verification gate and closes the packaging-and-release phase.*
+
+---
+## Step 50 - Phase 9 Verification and Deep Learn Closeout
+*Completed: 2026-04-28*
+
+**What was built**
+- `learnings/planning.md` - marks Phase 9 complete, adds the new Phase 9 learning reference, and closes the current packaging-oriented roadmap pass.
+- `learnings/plans/phase-9-plan.md` - records the Phase 9 closure state, verification outcome, and the remaining native packaging limitation.
+- `learnings/phase-9-packaging-native-build-release-deeplearn.md` - captures the Phase 9 learning write-up covering the desktop bundle path, native preflight, Mac CI lane, smoke-check contract, and release-boundary truthfulness.
+- `learnings/steps.md` - logs Step 50 and closes the Phase 9 handoff.
+
+**In plain English**
+Phase 9 is closed properly now instead of just ending with a few build scripts and release notes. The repo has a verified packaging path, a clear explanation of what that path proves, and a learning document that explains the difference between "the package lane is real" and "the final Mac app is already shipping." Just as important, the docs now say clearly that final native packaging still needs Rust tooling and a real Mac release environment.
+
+**Files changed**
+~ modified: `learnings/planning.md`
+~ modified: `learnings/plans/phase-9-plan.md`
++ created: `learnings/phase-9-packaging-native-build-release-deeplearn.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight -- --target=macos`
+- Verified the remaining limitation is still documented truthfully:
+  - `rustc`, `cargo`, and `cargo-tauri` are not installed on this machine,
+  - final signed and notarized `.app` / `.dmg` output still requires a Rust-enabled Mac host or CI runner plus real Apple credentials.
+
+---
+*Next: No active implementation step. Start a new `/plan` for live backend integration, real Mac packaging/signing execution, or a new parity/recon pass.*
