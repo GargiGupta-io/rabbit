@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:web": "node ./scripts/build.mjs",
     "build": "node ./scripts/build.mjs",
-    "lint": "node ./scripts/lint.mjs"
+    "lint": "node ./scripts/lint.mjs",
+    "native:preflight": "node ./scripts/native-preflight.mjs",
+    "native:build": "node ./scripts/native-build.mjs"
   }
 }
