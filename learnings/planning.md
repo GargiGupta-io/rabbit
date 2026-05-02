@@ -187,6 +187,7 @@ New priority order:
 - `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md` - Phase 8 native shell, macOS, and hardening learning write-up
 - `learnings/plans/phase-9-plan.md` - completed Phase 9 packaging and release-setup plan
 - `learnings/phase-9-packaging-native-build-release-deeplearn.md` - Phase 9 packaging, native build lane, and release-setup learning write-up
+- `learnings/how-i-built-the-motion-clone.md` - single narrative doc for explaining the full build process, reverse-engineering pivot, architecture, and release state
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
 Supporting research inside the repo:
