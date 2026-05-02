@@ -23,6 +23,8 @@ This repo is the planning-and-build workspace for a macOS-first productivity app
 
 - The desktop frontend now emits a real bundle at `apps/desktop/dist/`.
 - Tauri production config targets that built bundle instead of the raw source tree.
+- The Mac CI lane scaffold now lives at `.github/workflows/mac-packaging-lane.yml`.
 - Final native `.app` / `.dmg` packaging still requires:
   - Rust toolchain (`rustc`, `cargo`, and `cargo tauri`)
   - a macOS machine or CI runner for the real Mac artifact
+  - real Apple signing/notarization credentials and workflow steps

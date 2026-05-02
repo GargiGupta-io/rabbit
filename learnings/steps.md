@@ -1146,3 +1146,42 @@ The repo now has a real native packaging path instead of only a frontend bundle 
 
 ---
 *Next: Step 48 adds the Mac packaging lane scaffolding in CI and release docs.*
+
+---
+## Step 48 - Phase 9 Mac Packaging Lane Scaffolding
+*Completed: 2026-04-27*
+
+**What was built**
+- `.github/workflows/mac-packaging-lane.yml` - adds a dedicated Mac CI lane with a real verification job and a placeholder packaging job that fails intentionally instead of pretending signing is finished.
+- `docs/mac-packaging-lane.md` - documents what the Mac lane does today, what it still does not do, and which signing/notarization secrets and steps are still placeholders.
+- `docs/release-checklist.md` - adds explicit checklist items for the Mac lane workflow and placeholder signing credentials.
+- `docs/contracts/platform-segmentation.md` - records the new Mac workflow as part of the Mac-only build lane and makes placeholder package failures an explicit rule instead of an accident.
+- `README.md` - points the packaging status section at the new Mac lane scaffold.
+
+**In plain English**
+The repo now has a real Mac CI lane shape, even though it still does not produce the final signed Mac app yet. There is a workflow that shows how a Mac runner should verify the packaging path, and there is a separate placeholder package job that fails on purpose so nobody mistakes scaffolding for a finished release process. The docs now all say the same thing about what the Mac lane does and what still needs to be wired later.
+
+**Files changed**
++ created: `.github/workflows/mac-packaging-lane.yml`
++ created: `docs/mac-packaging-lane.md`
+~ modified: `docs/release-checklist.md`
+~ modified: `docs/contracts/platform-segmentation.md`
+~ modified: `README.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `Select-String` confirmed the workflow contains:
+  - `verify-mac-lane`
+  - `package-macos-placeholder`
+  - `cargo install tauri-cli --locked`
+  - `npm run desktop:native:preflight -- --strict --target=macos`
+  - `npm run desktop:native:build -- --dry-run --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight -- --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:build -- --dry-run --target=macos`
+- Verified the docs now state clearly that:
+  - Mac verification is real,
+  - final signing/notarization is still placeholder-only,
+  - `.app` / `.dmg` packaging still needs a Mac host or CI runner plus real Apple credentials.
+
+---
+*Next: Step 49 adds the packaging smoke-check docs and manifests so local and CI verification use the same release gate.*
