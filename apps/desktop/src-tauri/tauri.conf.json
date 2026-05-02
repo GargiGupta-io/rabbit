@@ -5,9 +5,9 @@
   "identifier": "com.motionclone.desktop",
   "build": {
     "beforeDevCommand": "",
-    "beforeBuildCommand": "",
+    "beforeBuildCommand": "npm --prefix .. run build",
     "devUrl": "../",
-    "frontendDist": "../"
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [
