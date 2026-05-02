@@ -1185,3 +1185,38 @@ The repo now has a real Mac CI lane shape, even though it still does not produce
 
 ---
 *Next: Step 49 adds the packaging smoke-check docs and manifests so local and CI verification use the same release gate.*
+
+---
+## Step 49 - Phase 9 Packaging Smoke-Check Docs and Manifests
+*Completed: 2026-04-27*
+
+**What was built**
+- `ops/phase-9-packaging-smoke-check.json` - records the actual local Windows smoke check, the Mac CI verification lane, the shippable-artifact proof requirements, and the known current limitations.
+- `ops/packaging-smoke-check.md` - turns the packaging proof into a readable runbook so local and CI verification talk about the same evidence.
+- `ops/commands.md` - now points directly at the packaging smoke-check commands and proof files.
+- `docs/release-checklist.md` - adds explicit release-gate checks that the packaging smoke-check manifest and runbook still match reality.
+- `README.md` - points the packaging status section at the new smoke-check contract files.
+
+**In plain English**
+The repo now has one clear answer to "what do we have to prove before calling this desktop artifact believable?" The answer is no longer spread across the README, workflow file, and release checklist. There is now a packaging smoke-check manifest plus a readable runbook that say exactly what the local Windows dry-run proves, what the Mac CI lane proves, and what still must not be claimed until real signing and notarization exist.
+
+**Files changed**
++ modified: `.gitignore`
++ created: `ops/phase-9-packaging-smoke-check.json`
++ created: `ops/packaging-smoke-check.md`
+~ modified: `ops/commands.md`
+~ modified: `docs/release-checklist.md`
+~ modified: `README.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `Get-Content ops/phase-9-packaging-smoke-check.json | ConvertFrom-Json | Out-Null`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight -- --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:build -- --dry-run --target=macos`
+- Verified the smoke-check files and release checklist now agree that:
+  - local Windows only proves bundle + dry-run path correctness,
+  - Mac CI proves toolchain + verification-lane readiness,
+  - shippable `.app` / `.dmg` output still depends on real signing and notarization wiring.
+
+---
+*Next: Step 50 runs the Phase 9 verification gate and closes the packaging-and-release phase.*

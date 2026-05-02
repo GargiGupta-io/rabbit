@@ -5,6 +5,8 @@
 ### Build and CI
 - [ ] `npm run lint` succeeds.
 - [ ] `npm run build` succeeds.
+- [ ] `ops/phase-9-packaging-smoke-check.json` matches the current packaging lane and artifact path.
+- [ ] `ops/packaging-smoke-check.md` still describes the real local and CI smoke-check evidence.
 - [ ] CI pipeline runs on every push and PR.
 
 ### Mac Distribution
