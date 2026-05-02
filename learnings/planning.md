@@ -154,6 +154,19 @@ New priority order:
   - `developer/motion-research/ENGINEERING_LEARNINGS.md`
   - `developer/motion-research/CODE_ASSETS/SHELL_LOGIC/`
 
+### Phase 9 - Packaging, Native Build Lane, and Release Setup
+- Current detailed working phase.
+- Goal: turn the completed clone codebase into a real packageable desktop artifact path:
+  - real frontend `dist/` output,
+  - Tauri-aligned build entrypoints,
+  - Mac packaging/signing lane scaffolding,
+  - truthful packaging verification.
+- Source references:
+  - `apps/desktop/scripts/build.mjs`
+  - `apps/desktop/src-tauri/tauri.conf.json`
+  - `apps/desktop/src-tauri/Cargo.toml`
+  - `learnings/plans/phase-9-plan.md`
+
 ---
 
 ## Document map
@@ -172,6 +185,7 @@ New priority order:
 - `learnings/phase-7-api-sync-cache-deeplearn.md` - Phase 7 API, sync, and cache parity learning write-up
 - `learnings/plans/phase-8-plan.md` - completed Phase 8 native/mac parity and hardening plan
 - `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md` - Phase 8 native shell, macOS, and hardening learning write-up
+- `learnings/plans/phase-9-plan.md` - current Phase 9 packaging and release-setup plan
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
 Supporting research inside the repo:
@@ -214,5 +228,5 @@ Supporting research inside the repo:
 
 ### Current roadmap state
 - Phases 4 to 8 are complete.
-- The reverse-engineered parity roadmap is closed through the current desktop/macOS hardening target.
-- Any next stage should start from a fresh `/plan`, either for final shipping work, live backend integration, or a new parity pass based on additional Motion recon.
+- Phase 9 is the current shipping-oriented build and packaging pass.
+- After Phase 9, the next stage should be either live backend integration, real Mac packaging/signing execution, or a new recon-driven parity pass if Motion behavior changes.

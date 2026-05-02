@@ -1076,3 +1076,34 @@ Phase 8 is properly closed now instead of just being the last native-shell work 
 
 ---
 *Next: the current reverse-engineered parity roadmap is complete. Start a fresh `/plan` for shipping work, backend integration, or a new recon-driven parity pass.*
+
+---
+## Step 46 - Phase 9 Real Desktop Build Baseline
+*Completed: 2026-04-27*
+
+**What was built**
+- `apps/desktop/scripts/build.mjs` - replaces the placeholder desktop build with a real TypeScript emit step that writes a runnable `apps/desktop/dist/` bundle and build manifest.
+- `apps/desktop/tsconfig.build.json` - adds a dedicated desktop build config so the existing source tree can emit browser-runnable files without changing the root typecheck setup.
+- `apps/desktop/src-tauri/tauri.conf.json` - points Tauri production builds at `../dist` and wires `beforeBuildCommand` to the real desktop frontend build.
+- `learnings/plans/phase-9-plan.md` - defines the new packaging and release phase after the parity roadmap.
+- `learnings/planning.md` - marks Phase 9 as the current active shipping-oriented phase.
+
+**In plain English**
+The desktop app finally has a real frontend build output instead of a fake placeholder script. There is now an actual `apps/desktop/dist/` folder with emitted app files and a rewritten `index.html`, which means Tauri can target built frontend artifacts instead of raw source files. This does not produce the final Mac app yet, but it creates the first real step from source code toward a packageable desktop build.
+
+**Files changed**
+~ modified: `apps/desktop/scripts/build.mjs`
++ created: `apps/desktop/tsconfig.build.json`
+~ modified: `apps/desktop/src-tauri/tauri.conf.json`
++ created: `learnings/plans/phase-9-plan.md`
+~ modified: `learnings/planning.md`
+~ modified: `learnings/steps.md`
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
+- `Get-Content C:\Users\Pumba\Documents\codex\Motion\apps\desktop\src-tauri\tauri.conf.json | ConvertFrom-Json | Out-Null`
+- Verified `apps/desktop/dist/index.html`, `apps/desktop/dist/main.js`, and `apps/desktop/dist/desktop-build-manifest.json` were emitted.
+
+---
+*Next: Step 47 adds the native build entrypoints and preflight checks so this frontend bundle can plug into a real Tauri packaging flow.*
