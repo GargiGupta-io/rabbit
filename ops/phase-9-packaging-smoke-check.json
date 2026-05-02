@@ -1,0 +1,59 @@
+{
+  "phase": "phase-9",
+  "step": "packaging smoke-check docs and manifests",
+  "artifactPath": {
+    "frontendBundleRoot": "apps/desktop/dist",
+    "frontendManifest": "apps/desktop/dist/desktop-build-manifest.json",
+    "macWorkflow": ".github/workflows/mac-packaging-lane.yml"
+  },
+  "localWindowsVerification": {
+    "commands": [
+      "npm run desktop:build",
+      "npm run desktop:native:preflight -- --target=macos",
+      "npm run desktop:native:build -- --dry-run --target=macos"
+    ],
+    "mustProve": [
+      "The desktop frontend bundle can be emitted into apps/desktop/dist.",
+      "The native preflight explains missing Rust or macOS prerequisites truthfully.",
+      "The native build command resolves into a macOS-targeted dry-run packaging command without pretending to produce an artifact."
+    ],
+    "mustNotClaim": [
+      "A signed .app exists.",
+      "A notarized .dmg exists.",
+      "Local Windows dry-run output is a shippable desktop artifact."
+    ]
+  },
+  "macCiVerification": {
+    "workflow": "verify-mac-lane",
+    "commands": [
+      "npm ci",
+      "cargo install tauri-cli --locked",
+      "npm run desktop:build",
+      "npm run desktop:native:preflight -- --strict --target=macos",
+      "npm run desktop:native:build -- --dry-run --target=macos"
+    ],
+    "mustProve": [
+      "A macOS runner can install the required Node and Rust toolchains.",
+      "The desktop bundle and native preflight both pass on macOS.",
+      "The repo can reach a valid package command shape before signing and notarization are wired."
+    ]
+  },
+  "shippableArtifactProof": [
+    "A macOS package lane performs real bundle generation instead of placeholder failure.",
+    "Apple signing credentials are configured through CI secrets, not local placeholders.",
+    "Notarization completes successfully and the final trust step is recorded.",
+    "Artifact hash, version, and distribution metadata are captured in release records.",
+    "Release docs still state any remaining platform limits truthfully."
+  ],
+  "evidenceFiles": [
+    "apps/desktop/dist/desktop-build-manifest.json",
+    "docs/mac-packaging-lane.md",
+    "docs/release-checklist.md",
+    "ops/packaging-smoke-check.md"
+  ],
+  "knownCurrentLimitations": [
+    "This Windows machine does not produce a real Mac artifact.",
+    "The workflow package job is still placeholder-only until signing and notarization are implemented.",
+    "Rust and cargo-tauri availability must be validated on the target build host."
+  ]
+}
