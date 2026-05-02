@@ -24,6 +24,7 @@ This repo is the planning-and-build workspace for a macOS-first productivity app
 - The desktop frontend now emits a real bundle at `apps/desktop/dist/`.
 - Tauri production config targets that built bundle instead of the raw source tree.
 - The Mac CI lane scaffold now lives at `.github/workflows/mac-packaging-lane.yml`.
+- Packaging smoke-check proof lives in `ops/phase-9-packaging-smoke-check.json` and `ops/packaging-smoke-check.md`.
 - Final native `.app` / `.dmg` packaging still requires:
   - Rust toolchain (`rustc`, `cargo`, and `cargo tauri`)
   - a macOS machine or CI runner for the real Mac artifact

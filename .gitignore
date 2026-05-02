@@ -7,3 +7,4 @@ target/
 .vscode/
 .serde/
 ops/*.json
+!ops/phase-9-packaging-smoke-check.json
