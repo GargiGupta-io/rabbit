@@ -1,0 +1,1 @@
+export const SHOW_TIME_ABOVE_DURATION_MINUTES = 30

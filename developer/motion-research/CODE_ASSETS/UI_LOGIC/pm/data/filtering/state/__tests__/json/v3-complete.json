@@ -1,0 +1,49 @@
+{
+  "$version": 3,
+  "target": "tasks",
+  "tasks": {
+    "ordered": ["createdTime", "updatedTime", "dueDate", "labels"],
+    "filters": {
+      "statuses": null,
+      "users": null,
+      "priorities": null,
+      "labels": ["u7_D-Iy8jdmn3IAvEkdfR|<none>"],
+      "dueDate": {
+        "from": "2024-04-02T00:00:00.000-04:00"
+      },
+      "createdTime": {
+        "from": "2024-03-31T00:00:00.000-04:00",
+        "to": "2024-04-07T00:00:00.000-04:00"
+      },
+      "updatedTime": {
+        "from": "2024-04-02T00:00:00.000-04:00",
+        "to": "2024-04-02T23:59:59.999-04:00"
+      },
+      "startDate": null,
+      "lastInteractedTime": null,
+      "completedTime": null,
+      "scheduledDate": null,
+      "recurring": null,
+      "autoScheduled": null
+    }
+  },
+  "projects": {
+    "ordered": ["ids", "priorities"],
+    "filters": {
+      "ids": ["Bydd0qPA6nTRKSM-QOkZe"],
+      "statuses": null,
+      "users": null,
+      "priorities": ["MEDIUM"],
+      "labels": null,
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null
+    }
+  },
+  "workspaces": {
+    "ordered": ["ids"],
+    "filters": {
+      "ids": ["u7_D-Iy8jdmn3IAvEkdfR"]
+    }
+  }
+}

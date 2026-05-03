@@ -1,0 +1,47 @@
+{
+  "$version": 2,
+  "target": "tasks",
+  "tasks": {
+    "filters": {
+      "projects": ["0Zv8Q5LuAmyHxdP5NQ7DQ"],
+      "statuses": [
+        "VSOlJd2LltMisKQ10lH7R",
+        "F0ZMmBQ-DK4jPBUJQMtfr",
+        "xdlHf2DnqmsSem22ZJnYs",
+        "IOveblcWMJFcboR4-d6rG",
+        "XS6ZVlEvOzqfJ9o6u0xP1"
+      ],
+      "users": null,
+      "priorities": null,
+      "labels": null,
+      "recurring": null,
+      "autoScheduled": null,
+      "startDate": null,
+      "scheduledDate": null,
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null,
+      "completedTime": null,
+      "lastInteractedTime": null
+    },
+    "ordered": ["statuses", "projects"]
+  },
+  "projects": {
+    "filters": {
+      "statuses": null,
+      "users": null,
+      "priorities": null,
+      "labels": ["QRHsyKkI5QGZzaD1nuoTQ"],
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null
+    },
+    "ordered": ["labels"]
+  },
+  "workspaces": {
+    "filters": {
+      "ids": null
+    },
+    "ordered": []
+  }
+}

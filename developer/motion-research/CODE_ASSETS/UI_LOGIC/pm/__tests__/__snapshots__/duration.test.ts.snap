@@ -1,0 +1,252 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getChunkDurations > returns only chunks under 16 hours 1`] = `
+[
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+  {
+    "label": "1h 30m",
+    "value": 90,
+  },
+  {
+    "label": "2 hours",
+    "value": 120,
+  },
+  {
+    "label": "4 hours",
+    "value": 240,
+  },
+  {
+    "label": "6 hours",
+    "value": 360,
+  },
+]
+`;
+
+exports[`getChunkDurations > returns only chunks under 32 hours 1`] = `
+[
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+  {
+    "label": "1h 30m",
+    "value": 90,
+  },
+  {
+    "label": "2 hours",
+    "value": 120,
+  },
+  {
+    "label": "4 hours",
+    "value": 240,
+  },
+  {
+    "label": "6 hours",
+    "value": 360,
+  },
+]
+`;
+
+exports[`getChunkDurations > returns only chunks under 90 min 1`] = `
+[
+  {
+    "label": "No Chunks",
+    "value": null,
+  },
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+]
+`;
+
+exports[`getChunkDurations > returns only chunks under 120 min 1`] = `
+[
+  {
+    "label": "No Chunks",
+    "value": null,
+  },
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+  {
+    "label": "1h 30m",
+    "value": 90,
+  },
+]
+`;
+
+exports[`getDurations > returns all the durations 1`] = `
+[
+  {
+    "label": "Reminder",
+    "value": 0,
+  },
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+  {
+    "label": "2 hours",
+    "value": 120,
+  },
+  {
+    "label": "4 hours",
+    "value": 240,
+  },
+  {
+    "label": "8 hours",
+    "value": 480,
+  },
+  {
+    "label": "16 hours",
+    "value": 960,
+  },
+]
+`;
+
+exports[`getDurations > returns all the durations without "None" 1`] = `
+[
+  {
+    "label": "Reminder",
+    "value": 0,
+  },
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+  {
+    "label": "2 hours",
+    "value": 120,
+  },
+  {
+    "label": "4 hours",
+    "value": 240,
+  },
+  {
+    "label": "8 hours",
+    "value": 480,
+  },
+  {
+    "label": "16 hours",
+    "value": 960,
+  },
+]
+`;
+
+exports[`getDurations > returns all the durations without "None" by default 1`] = `
+[
+  {
+    "label": "Reminder",
+    "value": 0,
+  },
+  {
+    "label": "15 min",
+    "value": 15,
+  },
+  {
+    "label": "30 min",
+    "value": 30,
+  },
+  {
+    "label": "45 min",
+    "value": 45,
+  },
+  {
+    "label": "1 hour",
+    "value": 60,
+  },
+  {
+    "label": "2 hours",
+    "value": 120,
+  },
+  {
+    "label": "4 hours",
+    "value": 240,
+  },
+  {
+    "label": "8 hours",
+    "value": 480,
+  },
+  {
+    "label": "16 hours",
+    "value": 960,
+  },
+]
+`;

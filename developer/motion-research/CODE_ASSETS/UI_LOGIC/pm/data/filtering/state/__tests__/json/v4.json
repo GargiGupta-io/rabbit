@@ -1,0 +1,56 @@
+{
+  "$version": 4,
+  "target": "tasks",
+  "tasks": {
+    "ordered": ["statuses", "labels", "users"],
+    "filters": {
+      "statuses": {
+        "operator": "in",
+        "value": [
+          "dQQug3pfVk4GlNxJ9F9Kk",
+          "JEIMPb6OLqAWdPr35LDOY",
+          "0N1u81UQkoSk465Uho1rf",
+          "beHvq9SlzHCRfkZA4UP3I",
+          "IuLS2c9ZcwVfU2xOO55Or"
+        ]
+      },
+      "users": { "operator": "in", "value": ["KhodfuH5S9OLnlk6xF4iodoZX4I2"] },
+      "priorities": null,
+      "labels": { "operator": "in", "value": ["QRHsyKkI5QGZzaD1nuoTQ"] },
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null,
+      "startDate": null,
+      "lastInteractedTime": null,
+      "completedTime": null,
+      "scheduledDate": null,
+      "recurring": null,
+      "autoScheduled": null,
+      "completed": "exclude"
+    }
+  },
+  "projects": {
+    "ordered": ["statuses", "users"],
+    "filters": {
+      "ids": null,
+      "statuses": {
+        "operator": "in",
+        "value": [
+          "dQQug3pfVk4GlNxJ9F9Kk",
+          "JEIMPb6OLqAWdPr35LDOY",
+          "0N1u81UQkoSk465Uho1rf",
+          "beHvq9SlzHCRfkZA4UP3I",
+          "IuLS2c9ZcwVfU2xOO55Or"
+        ]
+      },
+      "users": { "operator": "in", "value": ["RSzUgdAHJ6MJuOYdUc1q4taLB9A2"] },
+      "priorities": null,
+      "labels": null,
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null,
+      "completed": "exclude"
+    }
+  },
+  "workspaces": { "ordered": ["ids"], "filters": { "ids": null } }
+}

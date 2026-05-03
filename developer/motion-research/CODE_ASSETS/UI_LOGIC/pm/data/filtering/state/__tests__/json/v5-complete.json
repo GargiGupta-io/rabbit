@@ -1,0 +1,54 @@
+{
+  "$version": 5,
+  "target": "tasks",
+  "tasks": {
+    "ordered": ["statusIds", "labelIds", "assigneeUserIds"],
+    "filters": {
+      "statusIds": {
+        "operator": "in",
+        "value": [
+          "dQQug3pfVk4GlNxJ9F9Kk",
+          "JEIMPb6OLqAWdPr35LDOY",
+          "0N1u81UQkoSk465Uho1rf",
+          "beHvq9SlzHCRfkZA4UP3I",
+          "IuLS2c9ZcwVfU2xOO55Or"
+        ]
+      },
+      "assigneeUserIds": {
+        "operator": "in",
+        "value": ["KhodfuH5S9OLnlk6xF4iodoZX4I2"]
+      },
+      "labelIds": {
+        "operator": "in",
+        "value": ["QRHsyKkI5QGZzaD1nuoTQ"]
+      },
+      "completed": "exclude"
+    }
+  },
+  "projects": {
+    "ordered": ["statusIds", "managerIds"],
+    "filters": {
+      "statusIds": {
+        "operator": "in",
+        "value": [
+          "dQQug3pfVk4GlNxJ9F9Kk",
+          "JEIMPb6OLqAWdPr35LDOY",
+          "0N1u81UQkoSk465Uho1rf",
+          "beHvq9SlzHCRfkZA4UP3I",
+          "IuLS2c9ZcwVfU2xOO55Or"
+        ]
+      },
+      "managerIds": {
+        "operator": "in",
+        "value": ["RSzUgdAHJ6MJuOYdUc1q4taLB9A2"]
+      },
+      "completed": "exclude"
+    }
+  },
+  "workspaces": {
+    "ordered": ["ids"],
+    "filters": {
+      "ids": null
+    }
+  }
+}

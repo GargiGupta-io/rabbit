@@ -1,0 +1,35 @@
+{
+  "target": "tasks",
+  "tasks": {
+    "ordered": ["users", "statuses", "workspaces"],
+    "filters": {
+      "workspaces": ["QiPEi78DS-GvQERryWsv-"],
+      "statuses": ["xdlHf2DnqmsSem22ZJnYs"],
+      "users": ["KhodfuH5S9OLnlk6xF4iodoZX4I2", "RSzUgdAHJ6MJuOYdUc1q4taLB9A2"],
+      "priorities": null,
+      "labels": null,
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null,
+      "projects": null,
+      "startDate": null,
+      "lastInteractedTime": null,
+      "completedTime": null,
+      "scheduledDate": null,
+      "recurring": null,
+      "autoScheduled": null
+    }
+  },
+  "projects": {
+    "ordered": ["labels"],
+    "filters": {
+      "statuses": null,
+      "users": null,
+      "priorities": null,
+      "labels": ["QRHsyKkI5QGZzaD1nuoTQ", "itE_JAegun_hD4URGode-"],
+      "dueDate": null,
+      "createdTime": null,
+      "updatedTime": null
+    }
+  }
+}

@@ -1,0 +1,40 @@
+/* c8 ignore start */
+
+import { type ProjectSchema } from '@motion/rpc-types'
+
+export const projectSchemaMock = {
+  id: 'project-id-1',
+  createdTime: '2024-05-31T14:58:40.242Z',
+  updatedTime: '2024-05-31T15:06:28.369Z',
+  managerId: 'manager-id-1',
+  createdByUserId: 'user-id-1',
+  description: '',
+  name: 'Project Mock',
+  priorityLevel: 'MEDIUM',
+  statusId: 'status-id-1',
+  workspaceId: 'workspace-id-1',
+  startDate: '2024-06-03',
+  dueDate: '2024-06-04T06:59:00.000Z',
+  type: 'NORMAL',
+  labelIds: [],
+  customFieldValues: {},
+  projectDefinitionId: null,
+  activeStageDefinitionId: null,
+  stages: [],
+  variableInstances: [],
+  completedDuration: 0,
+  completedTaskCount: 0,
+  canceledDuration: 0,
+  canceledTaskCount: 0,
+  duration: 0,
+  taskCount: 0,
+  completion: 0,
+  // deprecated
+  flowTemplateId: null,
+  color: 'gray',
+  uploadedFileIds: [],
+  folderId: null,
+  deadlineStatus: 'none',
+  scheduledStatus: null,
+  estimatedCompletionTime: null,
+} satisfies ProjectSchema
