@@ -1,9 +1,9 @@
-# Motion Clone App - Reverse-Engineered Roadmap
+# Rabbit - Reverse-Engineered Roadmap
 
 ## What this project is now
 
 - This is no longer a "Motion-like app" plan.
-- This is now a reverse-engineering-led Motion clone project.
+- This is now a reverse-engineering-led Rabbit project.
 - Windows Motion is the current behavior oracle.
 - macOS is still the final product target.
 
@@ -187,7 +187,9 @@ New priority order:
 - `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md` - Phase 8 native shell, macOS, and hardening learning write-up
 - `learnings/plans/phase-9-plan.md` - completed Phase 9 packaging and release-setup plan
 - `learnings/phase-9-packaging-native-build-release-deeplearn.md` - Phase 9 packaging, native build lane, and release-setup learning write-up
-- `learnings/how-i-built-the-motion-clone.md` - single narrative doc for explaining the full build process, reverse-engineering pivot, architecture, and release state
+- `learnings/live-backend-integration-deeplearn.md` - live backend runtime notes covering transport execution, remote hydration, PowerSync upload wiring, and backend-driven entitlement refresh
+- `learnings/rabbit-rebrand-deeplearn.md` - Rabbit product-identity rebrand notes covering metadata, persistence compatibility, seeded content, and documentation scope
+- `learnings/how-i-built-rabbit.md` - single narrative doc for explaining the full build process, reverse-engineering pivot, architecture, and release state
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
 Supporting research inside the repo:
@@ -235,8 +237,12 @@ Supporting research inside the repo:
 
 ### Current roadmap state
 - Phases 4 to 9 are complete.
-- There is no active implementation phase right now.
+- Rabbit now also has a live backend runtime path for:
+  - backend configuration persistence,
+  - live bootstrap and remote data refresh,
+  - PowerSync-style outbox push,
+  - and backend-driven entitlement refresh.
 - The next stage should be either:
-  - live backend integration,
+  - real backend-host validation and endpoint-shape reconciliation,
   - real Mac packaging/signing execution on a Rust-enabled Mac host or CI runner,
   - or a new recon-driven parity pass if Motion behavior changes.

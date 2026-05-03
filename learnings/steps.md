@@ -397,7 +397,7 @@ The app now has a brain for the shell before the shell itself gets redrawn. Inst
 **Verification**
 - `node --check apps/desktop/src/shellService.js`
 - `node --check apps/desktop/src/state.js`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
 
 ---
 ## ? Step 22 — Phase 4 Seeded Shell Persistence
@@ -424,7 +424,7 @@ The app now saves the shell the same way it saves tasks. That means the Motion-l
 - `node --check apps/desktop/src/contracts.js`
 - `node --check apps/desktop/src/storage.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
 
 ---
 ## ? Step 23 — Phase 4 Motion-Like Shell Layout
@@ -441,9 +441,9 @@ The app no longer opens like a plain form and task list page. It now behaves lik
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 24 — Phase 4 Motion-Like Skin and View Navigation
@@ -466,9 +466,9 @@ The shell now looks less like a dressed-up custom planner and more like a real M
 **Verification**
 - `node --check apps/desktop/src/shellService.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 25 — Phase 4 Verification and Deep Learn Closeout
@@ -489,9 +489,9 @@ Phase 4 is properly closed now instead of just "looking done." The verification 
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 26 — Phase 5 Task Contract Expansion
@@ -518,8 +518,8 @@ The app now thinks about tasks more like Motion does instead of treating them li
 - `node --check apps/desktop/src/contracts.js`
 - `node --check apps/desktop/src/fixtures.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
 
 ---
 ## ? Step 27 — Phase 5 Workspace and Project Graph Baseline
@@ -528,11 +528,11 @@ The app now thinks about tasks more like Motion does instead of treating them li
 **What was built**
 - `apps/desktop/src/projectService.js` — replaces the flat project-only helper layer with Motion-like workspace, project-definition, stage-definition, task-definition, and staged project-instance normalization.
 - `apps/desktop/src/state.js` — upgrades `buildSeedData()` so seeded tasks are reconciled against the workspace and project graph instead of being normalized in isolation.
-- `apps/desktop/src/fixtures.js` — seeds a tutorial-style Motion graph with the `Learn motion` project definition, three stage definitions, staged project instances, and linked workspace data.
+- `apps/desktop/src/fixtures.js` — seeds a tutorial-style Rabbit graph with the `Learn Rabbit` project definition, three stage definitions, staged project instances, and linked workspace data.
 - `scripts/test.mjs` — adds regression coverage for the seeded workspace/tutorial graph and for task reconciliation against project/workspace metadata.
 
 **In plain English**
-The repo can now represent a real Motion-style project hierarchy instead of only a list of colored project names. It knows about workspaces, tutorial project templates, stages inside projects, and task definitions inside stages, which makes the later saved-view and inbox work much less fake. The seeded data now includes the `Learn motion` tutorial structure we observed in the real app, so the clone is building on actual Motion concepts instead of guessed placeholders.
+The repo can now represent a real Motion-style project hierarchy instead of only a list of colored project names. It knows about workspaces, tutorial project templates, stages inside projects, and task definitions inside stages, which makes the later saved-view and inbox work much less fake. The seeded data now includes the `Learn Rabbit` tutorial structure we observed in the real app, so the clone is building on actual Motion concepts instead of guessed placeholders.
 
 **Files changed**
 ~ modified: `apps/desktop/src/projectService.js`
@@ -546,8 +546,8 @@ The repo can now represent a real Motion-style project hierarchy instead of only
 - `node --check apps/desktop/src/state.js`
 - `node --check apps/desktop/src/fixtures.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
 
 ---
 ## ? Step 28 — Phase 5 View Runtime Parity
@@ -573,9 +573,9 @@ Saved views are no longer just named buttons in the sidebar. The app now treats 
 - `node --check apps/desktop/src/shellService.js`
 - `node --check apps/desktop/src/state.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 29 — Phase 5 Inbox Surface Baseline
@@ -601,9 +601,9 @@ The app now has a real inbox surface instead of just evidence that inbox will ex
 - `node --check apps/desktop/src/state.js`
 - `node --check apps/desktop/src/fixtures.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 30 — Phase 5 Verification and Deep Learn Closeout
@@ -625,9 +625,9 @@ Phase 5 is properly closed now instead of just feeling complete. The acceptance 
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 31 — Phase 6 Calendar Entity Alignment
@@ -654,9 +654,9 @@ The app no longer treats the calendar as just a loose list of busy blocks. It no
 - `node --check apps/desktop/src/contracts.js`
 - `node --check apps/desktop/src/fixtures.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 32 — Phase 6 Scheduling Semantics Alignment
@@ -682,9 +682,9 @@ The planner no longer treats every scheduling problem as the same kind of warnin
 - `node --check apps/desktop/src/taskService.js`
 - `node --check apps/desktop/src/scheduler.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 33 — Phase 6 Task Form Baseline
@@ -710,9 +710,9 @@ The app no longer creates tasks through a tiny one-line capture row. It now has 
 - `node --check apps/desktop/src/state.js`
 - `node --check apps/desktop/src/taskService.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 34 — Phase 6 Project-Aware Task Form Defaults
@@ -738,9 +738,9 @@ The task form now reacts to project context instead of treating every project th
 - `node --check apps/desktop/src/projectService.js`
 - `node --check apps/desktop/src/taskService.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 35 — Phase 6 Verification and Deep Learn Closeout
@@ -763,9 +763,9 @@ Phase 6 is closed properly now instead of just being “the last thing we worked
 
 **Verification**
 - `rg -n "quick-add|Task form|composer-panel|task-edit surface|inline add-task" apps/desktop/src/main.tsx`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 36 — Phase 7 API Client Wrapper Baseline
@@ -801,9 +801,9 @@ The repo now has a real API-client baseline instead of only app-state and sync c
 - `node --check apps/desktop/src/inboxClient.js`
 - `node --check apps/desktop/src/bootstrapClient.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 37 — Phase 7 Sync DTO Alignment
@@ -830,9 +830,9 @@ The outbox is no longer just a queue of custom local events. It now carries the 
 - `node --check apps/desktop/src/syncClient.js`
 - `node --check apps/desktop/src/state.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 38 — Phase 7 Cache State Alignment
@@ -858,9 +858,9 @@ The app now behaves more like Motion’s local client cache instead of only savi
 - `node --check apps/desktop/src/storage.js`
 - `node --check apps/desktop/src/state.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 39 — Phase 7 PowerSync Reconciliation Baseline
@@ -884,9 +884,9 @@ The sync layer can now package local changes the way a PowerSync-style uploader 
 - `node --check apps/desktop/src/syncClient.js`
 - `node --check apps/desktop/src/state.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 ## ? Step 40 — Phase 7 Verification and Deep Learn Closeout
@@ -908,9 +908,9 @@ Phase 7 is properly closed now instead of just being the last backend-oriented w
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 *Next: Step 41 starts Phase 8 by abstracting native shell IPC contracts from the extracted desktop shell logic.*
@@ -936,9 +936,9 @@ The app now has a real desktop shell seam instead of letting `main.tsx` own ever
 **Verification**
 - `node --check apps/desktop/src/desktopShellBridge.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 *Next: Step 42 brings tab, app-bar, search, and quick-action behavior closer to the extracted native shell surfaces.*
@@ -967,9 +967,9 @@ The desktop shell now behaves more like a real app shell instead of just display
 - `node --check apps/desktop/src/desktopShellBridge.js`
 - `node --check apps/desktop/src/shellService.js`
 - `node --check scripts/test.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 *Next: Step 43 starts the macOS-specific shell polish pass without changing product behavior.*
@@ -999,9 +999,9 @@ The app now has a real macOS personality instead of only a generic desktop shell
 **Verification**
 - `node --check apps/desktop/src/desktopPlatform.js`
 - `Get-Content apps/desktop/src-tauri/tauri.conf.json | ConvertFrom-Json | Out-Null`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 
 ---
 *Next: Step 44 implements the hardening pass over the desktop bridge and release assumptions.*
@@ -1041,9 +1041,9 @@ This step turns the desktop shell into a stricter release-shaped surface instead
 - `node --check apps/desktop/src/desktopShellBridge.js`
 - `node --check apps/desktop/src/identityDefaults.js`
 - `node --check apps/desktop/src/fixtures.js`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 - `cargo check` could not be run because the Rust toolchain is not installed on this machine.
 
 ---
@@ -1069,9 +1069,9 @@ Phase 8 is properly closed now instead of just being the last native-shell work 
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 - `cargo check` still could not run because the Rust toolchain is not installed on this machine.
 
 ---
@@ -1100,9 +1100,9 @@ The desktop app finally has a real frontend build output instead of a fake place
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:build`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
-- `Get-Content C:\Users\Pumba\Documents\codex\Motion\apps\desktop\src-tauri\tauri.conf.json | ConvertFrom-Json | Out-Null`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `Get-Content C:\Users\Pumba\Documents\codex\rabbit\apps\desktop\src-tauri\tauri.conf.json | ConvertFrom-Json | Out-Null`
 - Verified `apps/desktop/dist/index.html`, `apps/desktop/dist/main.js`, and `apps/desktop/dist/desktop-build-manifest.json` were emitted.
 
 ---
@@ -1135,9 +1135,9 @@ The repo now has a real native packaging path instead of only a frontend bundle 
 **Verification**
 - `node --check apps/desktop/scripts/native-preflight.mjs`
 - `node --check apps/desktop/scripts/native-build.mjs`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:build -- --dry-run`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:preflight`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:build -- --dry-run`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
 - Verified the preflight now reports:
   - desktop bundle files are present,
   - Tauri bootstrap files are present,
@@ -1176,8 +1176,8 @@ The repo now has a real Mac CI lane shape, even though it still does not produce
   - `cargo install tauri-cli --locked`
   - `npm run desktop:native:preflight -- --strict --target=macos`
   - `npm run desktop:native:build -- --dry-run --target=macos`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight -- --target=macos`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:build -- --dry-run --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:preflight -- --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:build -- --dry-run --target=macos`
 - Verified the docs now state clearly that:
   - Mac verification is real,
   - final signing/notarization is still placeholder-only,
@@ -1211,8 +1211,8 @@ The repo now has one clear answer to "what do we have to prove before calling th
 
 **Verification**
 - `Get-Content ops/phase-9-packaging-smoke-check.json | ConvertFrom-Json | Out-Null`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight -- --target=macos`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:build -- --dry-run --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:preflight -- --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:build -- --dry-run --target=macos`
 - Verified the smoke-check files and release checklist now agree that:
   - local Windows only proves bundle + dry-run path correctness,
   - Mac CI proves toolchain + verification-lane readiness,
@@ -1241,14 +1241,53 @@ Phase 9 is closed properly now instead of just ending with a few build scripts a
 ~ modified: `learnings/steps.md`
 
 **Verification**
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:build`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run test`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run typecheck`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run build`
-- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\Motion run desktop:native:preflight -- --target=macos`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run typecheck`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run desktop:native:preflight -- --target=macos`
 - Verified the remaining limitation is still documented truthfully:
   - `rustc`, `cargo`, and `cargo-tauri` are not installed on this machine,
   - final signed and notarized `.app` / `.dmg` output still requires a Rust-enabled Mac host or CI runner plus real Apple credentials.
 
 ---
 *Next: No active implementation step. Start a new `/plan` for live backend integration, real Mac packaging/signing execution, or a new parity/recon pass.*
+
+---
+## Maintenance - Rabbit Rebrand
+*Completed: 2026-04-30*
+
+**What was built**
+- product/package metadata now identifies the app as Rabbit across the root package, desktop package, Tauri config, Cargo package, and desktop HTML title
+- local persistence now writes Rabbit storage keys while still reading the legacy Motion-clone keys for app data, device ids, and entitlement snapshots
+- the seeded tutorial/workspace/inbox copy now presents Rabbit-branded demo content instead of Motion-branded placeholders
+- repo-facing docs now describe the product as Rabbit while still preserving Motion references where they document the reverse-engineering target
+- `learnings/rabbit-rebrand-deeplearn.md` records the reasoning behind the rebrand and the persistence-compatibility approach
+
+**In plain English**
+This was a real rebrand, not just a folder rename. The app now builds, stores data, and presents itself as Rabbit, and it does that without abandoning existing local data that may still live under the earlier Motion-clone storage keys. The docs also stop pretending the product name is still Motion Clone while keeping the research record honest about Motion being the product that Rabbit was derived from.
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run lint`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+
+---
+## Maintenance - Live Backend Runtime
+*Completed: 2026-05-03*
+
+**What was built**
+- `apps/desktop/src/backendClient.js` - adds the live backend runtime for request execution, remote-state hydration, PowerSync upload, and synthesized backend entitlement refresh
+- `apps/desktop/src/contracts.js` - persists backend and inbox state in the desktop snapshot and advances the schema to carry that new runtime data safely
+- `apps/desktop/src/storage.js` - records backend and inbox metadata alongside the persisted app state
+- `apps/desktop/src/main.tsx` - adds backend URL/token controls, connect/refresh/push actions, and live backend authority refresh routing in the desktop shell
+- `scripts/test.mjs` - adds backend transport, upload, hydration, and persistence regression coverage
+- `learnings/live-backend-integration-deeplearn.md` - documents the architecture, merge rules, and remaining real-server validation work
+
+**In plain English**
+Rabbit is no longer only a local desktop shell with backend-shaped code lying underneath it. The app can now be pointed at a real backend, use the existing request contracts to fetch live data into the shell, push queued local task changes through the PowerSync-style upload lane, and refresh entitlements from live permission data instead of only mock scenarios. It still stays local-first, which means partial backend failures do not wipe the user's local work or pending outbox changes.
+
+**Verification**
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run lint`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
+- `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`

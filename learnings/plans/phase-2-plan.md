@@ -448,7 +448,7 @@ const safeState = normalized;
 
 - 2026-04-17: Step 1 started and implemented to introduce persisted payload contracts and migration metadata for schema `1 -> 2`, with test coverage in `scripts/test.mjs`.
 - 2026-04-17: Step 2 added deterministic fixture payloads and rewired the test harness to assert fixture-based summary/conflict behavior.
-*Generated: 2026-04-17 | Project: Motion Clone | Files: `apps/desktop/src/contracts.js`, `apps/desktop/src/storage.js`, `scripts/test.mjs`*
+*Generated: 2026-04-17 | Project: Rabbit | Files: `apps/desktop/src/contracts.js`, `apps/desktop/src/storage.js`, `scripts/test.mjs`*
 
 
 ## What Changed in Step 3

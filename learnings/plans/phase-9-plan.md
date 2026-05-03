@@ -1,7 +1,7 @@
 # Plan: Phase 9 - Packaging, Native Build Lane, and Release Setup
 
 ## Goal
-Turn the completed Motion clone codebase into a real packageable desktop app path by replacing the placeholder frontend build, wiring the Tauri packaging baseline, and defining the Mac release lane.
+Turn the completed Rabbit codebase into a real packageable desktop app path by replacing the placeholder frontend build, wiring the Tauri packaging baseline, and defining the Mac release lane.
 
 ## Current state at Phase 9 start
 - Phases 4 to 8 are complete.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the Mac CI lane that will eventually produce signed and notarized Motion clone desktop artifacts.
+This document defines the Mac CI lane that will eventually produce signed and notarized Rabbit desktop artifacts.
 
 Current workflow file:
 - `.github/workflows/mac-packaging-lane.yml`
