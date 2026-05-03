@@ -1,6 +1,6 @@
-﻿# Motion Clone App
+# Rabbit
 
-This repo is the planning-and-build workspace for a macOS-first productivity app.
+This repo is the planning-and-build workspace for Rabbit, a macOS-first productivity app rebuilt from reverse-engineered Motion behavior.
 
 ## Start here
 
