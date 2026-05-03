@@ -2,6 +2,7 @@ import {
   addShellViewTab,
   activateShellTab,
   activateShellView,
+  applySyncBatchResult,
   applyTaskMutation,
   buildTaskDraftFromFormState,
   getClientCacheSummary,
@@ -22,8 +23,19 @@ import {
   resolveTaskAction,
   upsertTask
 } from './state.js';
+import {
+  createBackendEntitlementTransport,
+  executeBackendDefinition,
+  executeBackendPowerSyncUpload,
+  hasBackendConfiguration,
+  hydrateAppDataFromBackend,
+  normalizeBackendState
+} from './backendClient.js';
+import { fetchBootstrap, getCurrentUser, getFeaturePermissions } from './bootstrapClient.js';
+import { getCalendars, getCalendarEvents } from './calendarClient.js';
 import { normalizeCalendarEvent } from './calendarService.js';
 import { createDesktopShellBridge, createQuickMeetingPayload } from './desktopShellBridge.js';
+import { getInboxItems } from './inboxClient.js';
 import { getProjectTaskFormDefaults } from './projectService.js';
 import { buildPlanWindow } from './scheduler.js';
 import { loadStoredData, saveStoredData } from './storage.js';
@@ -40,6 +52,8 @@ import {
   DEFAULT_CURRENT_USER_NAME
 } from './identityDefaults.js';
 import { getTaskScheduleSummary } from './taskService.js';
+import { queryTasks } from './tasksClient.js';
+import { getViews } from './viewsClient.js';
 import { createDesktopPlatformProfile, getShellCommandForKeyboardEvent } from './desktopPlatform.js';
 
 let entitlement = getEntitlementSnapshot();
@@ -51,6 +65,10 @@ let activePlanWindow = 'all';
 let search = '';
 let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
+let isBackendBusy = false;
+let backendBusyAction = '';
+let backendBaseUrlInput = appData.backend?.baseUrl || '';
+let backendAuthTokenInput = appData.backend?.authToken || '';
 let taskForm = createProjectAwareTaskFormState();
 const DESKTOP_SHELL_APP_VERSION = 'phase-8-step-41';
 const INITIAL_DESKTOP_PLATFORM = createDesktopPlatformProfile({
@@ -100,7 +118,7 @@ shell.innerHTML = `
         </div>
         <div class="workspace-heading">
           <span class="workspace-kicker" id="workspace-kicker">Desktop shell</span>
-          <h1>Motion-style planner shell</h1>
+          <h1>Rabbit planner shell</h1>
         </div>
       </div>
       <div class="workspace-meta">
@@ -752,6 +770,7 @@ style.textContent = `
   .toolbar-search input,
   .form-row input,
   .form-row select,
+  .control-row input,
   .control-row select {
     width: 100%;
     border: 1px solid var(--panel-border);
@@ -795,13 +814,15 @@ style.textContent = `
   }
 
   .toolbar-search input::placeholder,
-  .form-row input::placeholder {
+  .form-row input::placeholder,
+  .control-row input::placeholder {
     color: rgba(148, 163, 184, 0.72);
   }
 
   .toolbar-search input:focus,
   .form-row input:focus,
   .form-row select:focus,
+  .control-row input:focus,
   .control-row select:focus,
   .btn-group button:focus-visible,
   .task-actions button:focus-visible,
@@ -1493,8 +1514,299 @@ function formatSyncDate(value) {
   });
 }
 
+function getBackendState() {
+  return normalizeBackendState(appData.backend);
+}
+
+function getDraftBackendState() {
+  return normalizeBackendState({
+    ...appData.backend,
+    baseUrl: backendBaseUrlInput,
+    authToken: backendAuthTokenInput
+  });
+}
+
+function getBackendPresentation(backend) {
+  if (!hasBackendConfiguration(backend)) {
+    return {
+      badgeClass: 'local-only',
+      title: 'Unconfigured',
+      detail: 'Rabbit is still local-first. Add a backend URL to enable live bootstrap, refresh, sync push, and authority refresh.'
+    };
+  }
+
+  if (backend.status === 'error') {
+    return {
+      badgeClass: 'degraded',
+      title: 'Error',
+      detail: backend.lastError || 'The configured backend returned an error, so Rabbit stayed on local state safely.'
+    };
+  }
+
+  if (backend.status === 'connecting') {
+    return {
+      badgeClass: 'pending',
+      title: 'Working',
+      detail: 'Rabbit is actively talking to the configured backend.'
+    };
+  }
+
+  if (backend.status === 'online') {
+    return {
+      badgeClass: 'healthy',
+      title: 'Online',
+      detail: 'Rabbit has completed at least one successful backend operation in this session.'
+    };
+  }
+
+  return {
+    badgeClass: 'pending',
+    title: 'Configured',
+    detail: 'Rabbit has a saved backend target, but no successful live operation has completed in this session yet.'
+  };
+}
+
+function setBackendState(overrides: Record<string, unknown> = {}) {
+  const current = getBackendState();
+  const hasConfig = hasBackendConfiguration({
+    baseUrl: backendBaseUrlInput,
+    authToken: backendAuthTokenInput
+  });
+  const nextStatus = typeof overrides.status === 'string'
+    ? overrides.status
+    : hasConfig
+      ? current.status === 'unconfigured'
+        ? 'idle'
+        : current.status
+      : 'unconfigured';
+  const next = normalizeBackendState({
+    ...current,
+    ...overrides,
+    status: nextStatus,
+    baseUrl: backendBaseUrlInput,
+    authToken: backendAuthTokenInput,
+    lastError: hasConfig
+      ? (Object.prototype.hasOwnProperty.call(overrides, 'lastError') ? overrides.lastError : current.lastError)
+      : null
+  });
+
+  appData = {
+    ...appData,
+    backend: next
+  };
+
+  return next;
+}
+
+function buildBackendBootstrapArgs() {
+  const cache = getClientCacheSummary(appData);
+  return {
+    workspaceId: cache.activeWorkspaceId || undefined,
+    viewId: cache.activeViewId || undefined
+  };
+}
+
+function summarizeRemoteRefresh(appState) {
+  const sync = getSyncStateSummary(appState);
+  const calendarCount = Array.isArray(appState.calendarOverlay?.calendars)
+    ? appState.calendarOverlay.calendars.length
+    : 0;
+  const eventCount = Array.isArray(appState.calendarOverlay?.importedEvents)
+    ? appState.calendarOverlay.importedEvents.length
+    : 0;
+  const inboxCount = Array.isArray(appState.inbox?.items)
+    ? appState.inbox.items.length
+    : 0;
+
+  return `Refreshed ${appState.tasks.length} tasks, ${calendarCount} calendars, ${eventCount} events, and ${inboxCount} inbox items. ${sync.pendingCount} local change(s) remain queued.`;
+}
+
+async function runBackendAction(action, callback) {
+  const configuredBackend = setBackendState({
+    status: 'connecting',
+    lastError: null,
+    lastAction: action
+  });
+
+  if (!hasBackendConfiguration(configuredBackend)) {
+    setBackendState({
+      status: 'unconfigured',
+      lastAction: action
+    });
+    renderAll();
+    showError('Set a backend URL first. Rabbit will stay local-only until a backend is configured.');
+    return null;
+  }
+
+  isBackendBusy = true;
+  backendBusyAction = action;
+  renderAll();
+
+  try {
+    const result = await callback(configuredBackend);
+    const completedAt = new Date().toISOString();
+    setBackendState({
+      status: 'online',
+      lastError: null,
+      lastConnectedAt: completedAt,
+      lastRequestAt: completedAt,
+      lastAction: action,
+      ...(result?.backendPatch || {})
+    });
+    showEditorMessage(result?.message || `Backend ${action} completed successfully.`, 'success');
+    return result || {};
+  } catch (error) {
+    const completedAt = new Date().toISOString();
+    const message = error instanceof Error ? error.message : `Backend ${action} failed.`;
+    if (action === 'push') {
+      appData = {
+        ...appData,
+        syncStatus: 'failed'
+      };
+    }
+    setBackendState({
+      status: 'error',
+      lastError: message,
+      lastRequestAt: completedAt,
+      lastAction: action
+    });
+    showError(message);
+    return null;
+  } finally {
+    isBackendBusy = false;
+    backendBusyAction = '';
+    renderAll();
+  }
+}
+
+async function handleBackendConnect() {
+  await runBackendAction('connect', async (backend) => {
+    await executeBackendDefinition(fetchBootstrap, buildBackendBootstrapArgs(), {
+      backend
+    });
+    const connectedAt = new Date().toISOString();
+    return {
+      backendPatch: {
+        lastBootstrapAt: connectedAt
+      },
+      message: `Connected to ${backend.baseUrl}. Rabbit can now use the live backend path.`
+    };
+  });
+}
+
+async function handleBackendRefresh() {
+  await runBackendAction('refresh', async (backend) => {
+    const bootstrapArgs = buildBackendBootstrapArgs();
+    const results = await Promise.allSettled([
+      executeBackendDefinition(fetchBootstrap, bootstrapArgs, { backend }),
+      executeBackendDefinition(getCurrentUser, {}, { backend }),
+      executeBackendDefinition(getFeaturePermissions, {}, { backend }),
+      executeBackendDefinition(getViews, {}, { backend }),
+      executeBackendDefinition(getInboxItems, {}, { backend }),
+      executeBackendDefinition(queryTasks, {}, { backend }),
+      executeBackendDefinition(getCalendars, {}, { backend })
+    ]);
+    const values = results.map((result) => result.status === 'fulfilled' ? result.value.data : undefined);
+    const calendarsSnapshot = hydrateAppDataFromBackend(appData, {
+      calendars: values[6]
+    }, {
+      now: Date.now()
+    });
+    const providerIds = (calendarsSnapshot.calendarOverlay?.calendars || [])
+      .map((calendar) => calendar.providerId || calendar.id)
+      .filter(Boolean);
+    let calendarEventsData;
+    let calendarEventsError = null;
+
+    if (providerIds.length) {
+      try {
+        const calendarEventsResult = await executeBackendDefinition(getCalendarEvents, {
+          providerIds
+        }, {
+          backend
+        });
+        calendarEventsData = calendarEventsResult.data;
+      } catch (error) {
+        calendarEventsError = error instanceof Error ? error.message : 'Calendar event refresh failed.';
+      }
+    }
+
+    const successfulSlices = values.filter((value) => value !== undefined).length + (calendarEventsData !== undefined ? 1 : 0);
+    if (!successfulSlices) {
+      const firstRejected = results.find((result) => result.status === 'rejected');
+      throw firstRejected?.reason instanceof Error
+        ? firstRejected.reason
+        : new Error('The backend did not return any usable data.');
+    }
+
+    appData = hydrateAppDataFromBackend(appData, {
+      bootstrap: values[0],
+      currentUser: values[1],
+      featurePermissions: values[2],
+      views: values[3],
+      inbox: values[4],
+      tasks: values[5],
+      calendars: values[6],
+      calendarEvents: calendarEventsData
+    }, {
+      now: Date.now()
+    });
+    tasks = appData.tasks.slice();
+
+    const degradedCalls = results.filter((result) => result.status === 'rejected').length + (calendarEventsError ? 1 : 0);
+    const refreshedAt = new Date().toISOString();
+    const suffix = calendarEventsError
+      ? ` Calendar events stayed on the local snapshot because the live refresh failed: ${calendarEventsError}`
+      : '';
+
+    return {
+      backendPatch: {
+        lastBootstrapAt: values[0] !== undefined ? refreshedAt : getBackendState().lastBootstrapAt,
+        lastDataRefreshAt: refreshedAt
+      },
+      message: degradedCalls
+        ? `${summarizeRemoteRefresh(appData)} ${degradedCalls} backend call(s) degraded during the refresh.${suffix}`
+        : `${summarizeRemoteRefresh(appData)}`
+    };
+  });
+}
+
+async function handleBackendPush() {
+  if (!getSyncStateSummary(appData).pendingCount) {
+    showEditorMessage('No queued local changes need to be pushed right now.', 'info');
+    return;
+  }
+
+  appData = {
+    ...appData,
+    syncStatus: 'syncing'
+  };
+
+  await runBackendAction('push', async (backend) => {
+    const upload = await executeBackendPowerSyncUpload(appData.outbox, backend);
+    appData = applySyncBatchResult(appData, upload.syncResponse, {
+      request: upload.uploadRequest
+    });
+    tasks = appData.tasks.slice();
+
+    const pushedAt = new Date().toISOString();
+    const summary = upload.syncResponse.failureCount > 0
+      ? `Pushed ${upload.syncResponse.successCount} change(s); ${upload.syncResponse.failureCount} stayed queued because the backend rejected them.`
+      : `Pushed ${upload.syncResponse.successCount} queued change(s) to the backend.`;
+
+    return {
+      backendPatch: {
+        lastPushAt: pushedAt
+      },
+      message: summary
+    };
+  });
+}
+
 function getSyncPresentation(sync) {
   const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  const backend = getBackendState();
+  const backendConfigured = hasBackendConfiguration(backend);
 
   if (isOffline && sync.hasPendingChanges) {
     return {
@@ -1524,7 +1836,9 @@ function getSyncPresentation(sync) {
     return {
       badgeClass: 'pending',
       title: 'Pending',
-      detail: 'Changes are stored locally and waiting for the future remote sync path.'
+      detail: backendConfigured
+        ? 'Changes are stored locally and waiting for the next backend push.'
+        : 'Changes are stored locally and waiting for the future remote sync path.'
     };
   }
 
@@ -1538,8 +1852,10 @@ function getSyncPresentation(sync) {
 
   return {
     badgeClass: 'local-only',
-    title: 'Local only',
-    detail: 'This install is ready for sync later, but no remote sync has run in this session yet.'
+    title: backendConfigured ? 'Configured' : 'Local only',
+    detail: backendConfigured
+      ? 'A backend is configured, but Rabbit has not completed a live sync operation in this session yet.'
+      : 'This install is ready for sync later, but no remote sync has run in this session yet.'
   };
 }
 
@@ -1645,7 +1961,7 @@ function renderTaskForm() {
   taskForm = createProjectAwareTaskFormState(taskForm);
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
-    ? 'Motion-style auto-scheduled task'
+    ? 'Rabbit auto-scheduled task'
     : taskForm.scheduleMode === 'manual'
       ? 'Manual task outside auto-scheduling'
       : 'Fixed-time task';
@@ -1704,7 +2020,7 @@ function renderTaskForm() {
     <div class="composer-header">
       <div>
         <strong>Task form</strong>
-        <p>Motion-style defaults with project, schedule, and priority context.</p>
+        <p>Rabbit defaults with project, schedule, and priority context.</p>
       </div>
       <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
     </div>
@@ -1895,11 +2211,28 @@ function showError(message) {
 function updateEntitlementPanel() {
   const summary = getEntitlementStateSummary(entitlement);
   const presentation = getEntitlementPresentation(summary);
+  const backend = getBackendState();
+  const useLiveAuthority = hasBackendConfiguration(backend);
   const refreshOptions = ENTITLEMENT_REFRESH_SCENARIOS.map(({ id, label }) => {
     const selected = id === entitlementRefreshMode ? 'selected' : '';
     return `<option value="${escapeHtml(id)}" ${selected}>${escapeHtml(label)}</option>`;
   }).join('');
   const refreshButtonLabel = isRefreshingEntitlement ? 'Refreshing...' : 'Refresh entitlement';
+  const authorityControl = useLiveAuthority
+    ? `
+        <label class="field-label">
+          Authority source
+          <input type="text" value="Live backend transport" disabled />
+        </label>
+      `
+    : `
+        <label class="field-label">
+          Mock authority response
+          <select id="entitlement-refresh-mode">
+            ${refreshOptions}
+          </select>
+        </label>
+      `;
 
   entitlementPanelEl.innerHTML = `
     <div class="sync-header">
@@ -1925,15 +2258,10 @@ function updateEntitlementPanel() {
       </div>
     </div>
     <div class="control-row">
-      <label class="field-label">
-        Mock authority response
-        <select id="entitlement-refresh-mode">
-          ${refreshOptions}
-        </select>
-      </label>
+      ${authorityControl}
       <button id="entitlement-refresh-btn" type="button" ${isRefreshingEntitlement ? 'disabled' : ''}>${escapeHtml(refreshButtonLabel)}</button>
     </div>
-    <p class="sync-note">${escapeHtml(presentation.detail)}</p>
+    <p class="sync-note">${escapeHtml(useLiveAuthority ? `${presentation.detail} The configured backend transport now drives entitlement refreshes.` : presentation.detail)}</p>
   `;
 }
 
@@ -2017,10 +2345,16 @@ function buildPlannerState(shellState) {
 function updateSyncStatus() {
   const sync = getSyncStateSummary(appData);
   const cache = getClientCacheSummary(appData);
+  const backend = getBackendState();
+  const backendPresentation = getBackendPresentation(backend);
   const presentation = getSyncPresentation(sync);
   const cacheKeysLabel = cache.displayKeys.length
     ? cache.displayKeys.join(' | ')
     : 'No persisted query keys yet.';
+  const connectLabel = isBackendBusy && backendBusyAction === 'connect' ? 'Connecting...' : 'Connect';
+  const refreshLabel = isBackendBusy && backendBusyAction === 'refresh' ? 'Refreshing...' : 'Refresh remote';
+  const pushLabel = isBackendBusy && backendBusyAction === 'push' ? 'Pushing...' : 'Push outbox';
+  const backendConfigured = hasBackendConfiguration(backend);
 
   syncPanelEl.innerHTML = `
     <div class="sync-header">
@@ -2065,6 +2399,46 @@ function updateSyncStatus() {
     </div>
     <p class="sync-note">${escapeHtml(presentation.detail)}</p>
     <p class="sync-note">${escapeHtml(`IndexedDB-style cache is hydrating ${cacheKeysLabel}. Active workspace: ${cache.activeWorkspaceId || 'Unknown'} | Active view: ${cache.activeViewId || 'Unknown'} | User: ${cache.userEmail}`)}</p>
+    <div class="sync-header">
+      <strong>Backend runtime</strong>
+      <span class="sync-pill ${backendPresentation.badgeClass}">${escapeHtml(backendPresentation.title)}</span>
+    </div>
+    <div class="sync-grid">
+      <div class="sync-stat">
+        <strong>Backend URL</strong>
+        <div class="sync-value">${escapeHtml(backend.baseUrl || 'Not set')}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Status</strong>
+        <div class="sync-value">${escapeHtml(backend.status)}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Last request</strong>
+        <div class="sync-value">${escapeHtml(formatSyncDate(backend.lastRequestAt))}</div>
+      </div>
+      <div class="sync-stat">
+        <strong>Last push</strong>
+        <div class="sync-value">${escapeHtml(formatSyncDate(backend.lastPushAt))}</div>
+      </div>
+    </div>
+    <div class="control-row">
+      <label class="field-label">
+        Backend URL
+        <input id="backend-base-url" type="url" placeholder="https://api.rabbit.local" value="${escapeHtml(backendBaseUrlInput)}" />
+      </label>
+      <label class="field-label">
+        Bearer token
+        <input id="backend-auth-token" type="password" placeholder="Optional access token" value="${escapeHtml(backendAuthTokenInput)}" />
+      </label>
+    </div>
+    <div class="control-row">
+      <button type="button" data-backend-action="save">Save settings</button>
+      <button type="button" data-backend-action="connect" ${isBackendBusy || !backendConfigured ? 'disabled' : ''}>${escapeHtml(connectLabel)}</button>
+      <button type="button" data-backend-action="refresh" ${isBackendBusy || !backendConfigured ? 'disabled' : ''}>${escapeHtml(refreshLabel)}</button>
+      <button type="button" data-backend-action="push" ${isBackendBusy || !backendConfigured || !sync.pendingCount ? 'disabled' : ''}>${escapeHtml(pushLabel)}</button>
+    </div>
+    <p class="sync-note">${escapeHtml(backendPresentation.detail)}</p>
+    ${backend.lastError ? `<p class="sync-note">${escapeHtml(`Last backend error: ${backend.lastError}`)}</p>` : ''}
   `;
 }
 
@@ -2681,10 +3055,10 @@ function renderTasks(plannerState, shellState) {
         ? '<div class="task-alert error">Calendar busy block overlaps this task.</div>'
         : '',
       pendingTaskSet.has(task.id)
-        ? '<div class="task-alert warning">Motion would treat this task as pending reschedule.</div>'
+        ? '<div class="task-alert warning">Rabbit currently treats this task as pending reschedule.</div>'
         : '',
       unschedulableTaskSet.has(task.id)
-        ? '<div class="task-alert error">Motion would treat this task as unable to fit in the current schedule window.</div>'
+        ? '<div class="task-alert error">Rabbit currently treats this task as unable to fit in the current schedule window.</div>'
         : ''
     ].filter(Boolean).join('');
     const item = document.createElement('article');
@@ -2772,7 +3146,7 @@ function resolveTaskIdFromUrl(taskUrl = '') {
   }
 
   try {
-    const parsed = new URL(normalizedUrl, 'https://app.usemotion.com');
+    const parsed = new URL(normalizedUrl, 'https://app.rabbit.local');
     const taskIdFromQuery = sanitizeText(parsed.searchParams.get('taskId'));
     if (taskIdFromQuery && tasks.some((task) => task.id === taskIdFromQuery)) {
       return taskIdFromQuery;
@@ -3101,6 +3475,71 @@ taskListEl.addEventListener('click', (event) => {
   performTaskAction(id, action);
 });
 
+syncPanelEl.addEventListener('input', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (target.id === 'backend-base-url') {
+    backendBaseUrlInput = target.value;
+    return;
+  }
+
+  if (target.id === 'backend-auth-token') {
+    backendAuthTokenInput = target.value;
+  }
+});
+
+syncPanelEl.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const action = target.dataset.backendAction;
+  if (!action) {
+    return;
+  }
+
+  if (action === 'save') {
+    const next = setBackendState({
+      status: hasBackendConfiguration({
+        baseUrl: backendBaseUrlInput,
+        authToken: backendAuthTokenInput
+      })
+        ? 'idle'
+        : 'unconfigured'
+    });
+    renderAll();
+    showEditorMessage(
+      next.baseUrl
+        ? `Saved backend settings for ${next.baseUrl}.`
+        : 'Cleared the backend settings. Rabbit is local-only again.',
+      'success'
+    );
+    return;
+  }
+
+  if (isBackendBusy) {
+    return;
+  }
+
+  if (action === 'connect') {
+    await handleBackendConnect();
+    return;
+  }
+
+  if (action === 'refresh') {
+    await handleBackendRefresh();
+    return;
+  }
+
+  if (action === 'push') {
+    await handleBackendPush();
+  }
+});
+
 entitlementPanelEl.addEventListener('change', (event) => {
   const target = event.target;
   if (!(target instanceof HTMLSelectElement)) {
@@ -3127,9 +3566,27 @@ entitlementPanelEl.addEventListener('click', async (event) => {
   updateEntitlementPanel();
 
   try {
-    await refreshEntitlementSnapshot({
-      scenario: entitlementRefreshMode
-    });
+    const backend = getBackendState();
+    const useLiveAuthority = hasBackendConfiguration(backend);
+    const snapshot = await refreshEntitlementSnapshot(useLiveAuthority
+      ? {
+          scenario: 'active',
+          transport: createBackendEntitlementTransport(backend),
+          source: 'backend-authority'
+        }
+      : {
+          scenario: entitlementRefreshMode
+        });
+    if (useLiveAuthority) {
+      setBackendState({
+        status: snapshot.authority?.status === 'fresh' ? 'online' : 'error',
+        lastEntitlementRefreshAt: new Date().toISOString(),
+        lastRequestAt: new Date().toISOString(),
+        lastError: snapshot.authority?.status === 'fresh'
+          ? null
+          : snapshot.authority?.reason || 'Entitlement refresh did not confirm authority state.'
+      });
+    }
     showError('');
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Entitlement refresh failed.';
