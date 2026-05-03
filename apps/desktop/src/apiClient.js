@@ -35,7 +35,7 @@ function resolveValue(value, args) {
 
 export const KEEP_PREVIOUS_DATA = 'keep-previous-data';
 
-export function createMotionKey(...segments) {
+export function createQueryKey(...segments) {
   const key = [];
 
   segments.forEach((segment) => {

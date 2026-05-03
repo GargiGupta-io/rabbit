@@ -1,6 +1,6 @@
 import {
   KEEP_PREVIOUS_DATA,
-  createMotionKey,
+  createQueryKey,
   defineMutation,
   defineQuery
 } from './apiClient.js';
@@ -9,12 +9,12 @@ const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const TWO_MINUTES = 2 * 60 * 1000;
 
 export const queryKeys = {
-  query: createMotionKey('v2/tasks', 'query'),
-  byIdRoot: createMotionKey('v2/tasks', 'by-id'),
-  taskById: (id) => createMotionKey('v2/tasks', 'by-id', id),
-  pastDue: () => createMotionKey('v2/tasks', 'past-due'),
-  taskFeedById: (id) => createMotionKey('v2/tasks', 'feed', id),
-  lazyByIdRoot: createMotionKey('lazy', 'v2/tasks', 'by-id')
+  query: createQueryKey('v2/tasks', 'query'),
+  byIdRoot: createQueryKey('v2/tasks', 'by-id'),
+  taskById: (id) => createQueryKey('v2/tasks', 'by-id', id),
+  pastDue: () => createQueryKey('v2/tasks', 'past-due'),
+  taskFeedById: (id) => createQueryKey('v2/tasks', 'feed', id),
+  lazyByIdRoot: createQueryKey('lazy', 'v2/tasks', 'by-id')
 };
 
 export const queryTasks = defineQuery({

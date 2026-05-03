@@ -1,18 +1,18 @@
-import { createMotionKey, defineMutation, defineQuery } from './apiClient.js';
+import { createQueryKey, defineMutation, defineQuery } from './apiClient.js';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const THIRTY_MINUTES = 30 * 60 * 1000;
 const FIVE_MINUTES = 5 * 60 * 1000;
 
 export const queryKeys = {
-  bootstrap: (args = {}) => createMotionKey('bootstrap', args),
-  usersRoot: createMotionKey('v2', 'users'),
-  me: () => createMotionKey(queryKeys.usersRoot, 'me'),
-  mySettings: () => createMotionKey(queryKeys.me(), 'settings'),
-  pageViewSettings: () => createMotionKey(queryKeys.me(), 'pageViewSettings'),
-  firebaseProviderTypes: () => createMotionKey(queryKeys.me(), 'firebaseProviderTypes'),
-  featurePermissions: () => createMotionKey(queryKeys.me(), 'feature-permissions'),
-  guestTeams: () => createMotionKey(queryKeys.me(), 'guest-teams')
+  bootstrap: (args = {}) => createQueryKey('bootstrap', args),
+  usersRoot: createQueryKey('v2', 'users'),
+  me: () => createQueryKey(queryKeys.usersRoot, 'me'),
+  mySettings: () => createQueryKey(queryKeys.me(), 'settings'),
+  pageViewSettings: () => createQueryKey(queryKeys.me(), 'pageViewSettings'),
+  firebaseProviderTypes: () => createQueryKey(queryKeys.me(), 'firebaseProviderTypes'),
+  featurePermissions: () => createQueryKey(queryKeys.me(), 'feature-permissions'),
+  guestTeams: () => createQueryKey(queryKeys.me(), 'guest-teams')
 };
 
 export const fetchBootstrap = defineQuery({

@@ -1,4 +1,4 @@
-import { createMotionKey, defineMutation, defineQuery } from './apiClient.js';
+import { createQueryKey, defineMutation, defineQuery } from './apiClient.js';
 
 function ensureViewDefaults(definition = {}) {
   const type = definition.type;
@@ -38,7 +38,7 @@ export function normalizeViewsResponse(data = {}) {
 }
 
 export const queryKeys = {
-  root: createMotionKey('v3', 'views')
+  root: createQueryKey('v3', 'views')
 };
 
 export const getViews = defineQuery({

@@ -1,6 +1,6 @@
 import {
   KEEP_PREVIOUS_DATA,
-  createMotionKey,
+  createQueryKey,
   defineMutation,
   defineQuery,
   sortStringList
@@ -13,13 +13,13 @@ function buildProviderIdParams(providerIds = []) {
 }
 
 export const queryKeys = {
-  root: createMotionKey('calendars'),
-  uncachedCalendarList: createMotionKey('uncached_calendar_list'),
-  calendarEventsRoot: createMotionKey('calendar-events'),
-  searchEvents: (searchQuery) => createMotionKey(queryKeys.calendarEventsRoot, searchQuery || ''),
-  teammateEvents: (userIds = []) => createMotionKey(queryKeys.calendarEventsRoot, 'teammates', sortStringList(userIds)),
-  calendarEventsByProviderIds: (providerIds = []) => createMotionKey(queryKeys.calendarEventsRoot, 'calendars', sortStringList(providerIds)),
-  scheduleAssistant: (args = {}) => [...createMotionKey(queryKeys.calendarEventsRoot, 'scheduleAssistant'), args]
+  root: createQueryKey('calendars'),
+  uncachedCalendarList: createQueryKey('uncached_calendar_list'),
+  calendarEventsRoot: createQueryKey('calendar-events'),
+  searchEvents: (searchQuery) => createQueryKey(queryKeys.calendarEventsRoot, searchQuery || ''),
+  teammateEvents: (userIds = []) => createQueryKey(queryKeys.calendarEventsRoot, 'teammates', sortStringList(userIds)),
+  calendarEventsByProviderIds: (providerIds = []) => createQueryKey(queryKeys.calendarEventsRoot, 'calendars', sortStringList(providerIds)),
+  scheduleAssistant: (args = {}) => [...createQueryKey(queryKeys.calendarEventsRoot, 'scheduleAssistant'), args]
 };
 
 export const getCalendars = defineQuery({
