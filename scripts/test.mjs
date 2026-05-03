@@ -3,6 +3,14 @@ import { applySyncBatchResult, applyTaskMutation, buildInboxSeedData, buildSeedD
 import { generatePlanSlice, buildPlanWindow, rankConflicts } from '../apps/desktop/src/scheduler.js';
 import { ENTITLEMENT_REFRESH_STALE_MS, ENTITLEMENT_STORAGE_KEY, getEntitlementSnapshot, getEntitlementStateSummary, refreshEntitlementSnapshot, requireEntitlement } from '../apps/desktop/src/entitlement.js';
 import { validatePersistedPayload, CURRENT_SCHEMA_VERSION } from '../apps/desktop/src/contracts.js';
+import {
+  createBackendEntitlementTransport,
+  createDefaultBackendState,
+  executeBackendDefinition,
+  executeBackendPowerSyncUpload,
+  hydrateAppDataFromBackend,
+  normalizeBackendState
+} from '../apps/desktop/src/backendClient.js';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
 import { buildCalendarBusyBlocks, normalizeCalendarEvent, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
@@ -157,6 +165,58 @@ function withLocalStorage(storage, fn) {
   }
 }
 
+function createFetchResponse({ status = 200, json = null, text = null, headers = {} } = {}) {
+  const headerMap = new Map(
+    Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value])
+  );
+  const payloadJson = json == null ? null : JSON.parse(JSON.stringify(json));
+  const payloadText = text;
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: {
+      get(name) {
+        return headerMap.get(String(name).toLowerCase()) || null;
+      }
+    },
+    async json() {
+      if (payloadJson == null) {
+        throw new Error('No JSON body available.');
+      }
+      return JSON.parse(JSON.stringify(payloadJson));
+    },
+    async text() {
+      if (payloadText != null) {
+        return String(payloadText);
+      }
+      return payloadJson == null ? '' : JSON.stringify(payloadJson);
+    }
+  };
+}
+
+function withGlobalFetch(fetchImpl, fn) {
+  const previous = globalThis.fetch;
+  const restore = () => {
+    if (previous) {
+      globalThis.fetch = previous;
+    } else {
+      delete globalThis.fetch;
+    }
+  };
+  globalThis.fetch = fetchImpl;
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') {
+      return result.finally(restore);
+    }
+    restore();
+    return result;
+  } catch (error) {
+    restore();
+    throw error;
+  }
+}
+
 runTest('fixture set is deterministic and parseable', () => {
   const normalized = getFixtureState();
   assert.equal(normalized.workspaces.length, FIXTURE_WORKSPACES.length);
@@ -167,21 +227,21 @@ runTest('fixture set is deterministic and parseable', () => {
   assert.equal(normalized.tasks.every((task) => typeof task.title === 'string'), true);
 });
 
-runTest('project seed data carries the Motion tutorial workspace and staged project graph', () => {
+runTest('project seed data carries the Rabbit tutorial workspace and staged project graph', () => {
   const seed = buildSeedData(getFixtureState());
   const tutorialWorkspace = getWorkspaceById(seed.workspaces, 'ws_private_my_tasks');
-  const tutorialDefinition = getProjectDefinitionById(seed.projectDefinitions, 'pde_learn_motion');
-  const basicsStage = getStageDefinitionById(seed.projectDefinitions, 'stagedef_motion_basics');
+  const tutorialDefinition = getProjectDefinitionById(seed.projectDefinitions, 'pde_learn_rabbit');
+  const basicsStage = getStageDefinitionById(seed.projectDefinitions, 'stagedef_rabbit_basics');
   const dashboardsTask = getTaskDefinitionById(seed.projectDefinitions, 'taskdef_dashboards');
-  const tutorialProject = seed.projects.find((project) => project.id === 'pr_learn_motion');
+  const tutorialProject = seed.projects.find((project) => project.id === 'pr_learn_rabbit');
 
   assert.equal(tutorialWorkspace?.name, 'My Tasks (Private)');
-  assert.equal(tutorialDefinition?.name, 'Learn motion');
+  assert.equal(tutorialDefinition?.name, 'Learn Rabbit');
   assert.equal(tutorialDefinition?.stages.length, 3);
-  assert.equal(basicsStage?.name, 'Motion Basics');
+  assert.equal(basicsStage?.name, 'Rabbit Basics');
   assert.equal(dashboardsTask?.name, 'Setup Dashboards');
-  assert.equal(tutorialProject?.projectDefinitionId, 'pde_learn_motion');
-  assert.equal(tutorialProject?.activeStageDefinitionId, 'stagedef_motion_basics');
+  assert.equal(tutorialProject?.projectDefinitionId, 'pde_learn_rabbit');
+  assert.equal(tutorialProject?.activeStageDefinitionId, 'stagedef_rabbit_basics');
   assert.equal(tutorialProject?.stages.length, 3);
 });
 
@@ -214,7 +274,7 @@ runTest('fixture tasks expose richer Motion-like dependency and scheduling field
   const notesTask = normalized.find((task) => task.id === 'f5');
 
   assert.equal(draftWeeklyPlan.priorityLevel, 'HIGH');
-  assert.equal(draftWeeklyPlan.workspaceId, 'ws_motion_team');
+  assert.equal(draftWeeklyPlan.workspaceId, 'ws_rabbit_team');
   assert.equal(draftWeeklyPlan.scheduledStatus, 'ON_TRACK');
   assert.equal(draftWeeklyPlan.taskDefinitionId, 'taskdef_weekly_plan');
   assert.deepEqual(draftWeeklyPlan.blockingTaskIds, ['f4']);
@@ -243,8 +303,8 @@ runTest('task form state seeds Motion-like defaults from project and workspace c
 
   assert.equal(form.projectId, 'work');
   assert.equal(form.projectName, 'Work');
-  assert.equal(form.workspaceId, 'ws_motion_team');
-  assert.equal(form.assigneeUserId, 'user_manager_motion');
+  assert.equal(form.workspaceId, 'ws_rabbit_team');
+  assert.equal(form.assigneeUserId, 'user_manager_rabbit');
   assert.equal(form.statusId, 'status_todo');
   assert.equal(form.priorityLevel, 'MEDIUM');
   assert.equal(form.deadlineType, 'SOFT');
@@ -261,12 +321,12 @@ runTest('task form options expose project, assignee, schedule, and recurrence co
   const options = getTaskFormOptions(fixtureState, form);
 
   assert.equal(options.projectOptions.length, 4);
-  assert.equal(options.assigneeOptions.some((option) => option.id === 'user_manager_motion'), true);
+  assert.equal(options.assigneeOptions.some((option) => option.id === 'user_manager_rabbit'), true);
   assert.equal(options.scheduleOptions.length, 2);
   assert.equal(options.scheduleModeOptions.length, 3);
   assert.equal(options.deadlineOptions.length, 4);
   assert.equal(options.recurrenceOptions.length, 3);
-  assert.equal(options.activeWorkspace?.id, 'ws_motion_team');
+  assert.equal(options.activeWorkspace?.id, 'ws_rabbit_team');
 });
 
 runTest('task form draft builder converts fixed-time form state into a normalized draft', () => {
@@ -285,7 +345,7 @@ runTest('task form draft builder converts fixed-time form state into a normalize
 
   assert.equal(draft.title, 'Fixed kickoff prep');
   assert.equal(draft.projectId, 'work');
-  assert.equal(draft.workspaceId, 'ws_motion_team');
+  assert.equal(draft.workspaceId, 'ws_rabbit_team');
   assert.equal(draft.isFixedTimeTask, true);
   assert.equal(draft.isAutoScheduled, false);
   assert.equal(draft.scheduleOverridden, true);
@@ -300,23 +360,23 @@ runTest('project task form defaults derive stage-aware start and due windows fro
   const defaults = getProjectTaskFormDefaults({
     projects: fixtureState.projects,
     projectDefinitions: fixtureState.projectDefinitions,
-    projectId: 'pr_learn_motion',
+    projectId: 'pr_learn_rabbit',
     now: FIXTURE_NOW
   });
   const advancedDefaults = getProjectTaskFormDefaults({
     projects: fixtureState.projects,
     projectDefinitions: fixtureState.projectDefinitions,
-    projectId: 'pr_learn_motion',
-    stageDefinitionId: 'stagedef_motion_advanced',
+    projectId: 'pr_learn_rabbit',
+    stageDefinitionId: 'stagedef_rabbit_advanced',
     now: FIXTURE_NOW
   });
 
-  assert.equal(defaults.projectDefinitionId, 'pde_learn_motion');
-  assert.equal(defaults.selectedStageId, 'stagedef_motion_basics');
+  assert.equal(defaults.projectDefinitionId, 'pde_learn_rabbit');
+  assert.equal(defaults.selectedStageId, 'stagedef_rabbit_basics');
   assert.equal(defaults.stageOptions.length, 3);
   assert.equal(defaults.defaultStartAt, '2026-04-20T09:00:00.000Z');
   assert.equal(defaults.defaultDueAt, '2026-04-30T17:00:00.000Z');
-  assert.equal(advancedDefaults.selectedStageId, 'stagedef_motion_advanced');
+  assert.equal(advancedDefaults.selectedStageId, 'stagedef_rabbit_advanced');
   assert.equal(advancedDefaults.defaultStartAt, '2026-04-30T09:00:00.000Z');
   assert.equal(advancedDefaults.defaultDueAt, '2026-05-15T17:00:00.000Z');
 });
@@ -324,11 +384,11 @@ runTest('project task form defaults derive stage-aware start and due windows fro
 runTest('task form draft builder carries project stage defaults and recurrence intervals', () => {
   const draft = buildTaskDraftFromFormState({
     title: 'Template follow-up',
-    projectId: 'pr_learn_motion',
-    projectName: 'Learn motion',
+    projectId: 'pr_learn_rabbit',
+    projectName: 'Learn Rabbit',
     workspaceId: 'ws_private_my_tasks',
-    projectDefinitionId: 'pde_learn_motion',
-    stageDefinitionId: 'stagedef_motion_advanced',
+    projectDefinitionId: 'pde_learn_rabbit',
+    stageDefinitionId: 'stagedef_rabbit_advanced',
     scheduleMode: 'auto',
     dueAtInput: '2026-05-15T17:00',
     startAtInput: '2026-04-30T09:00',
@@ -337,8 +397,8 @@ runTest('task form draft builder carries project stage defaults and recurrence i
     durationMinutes: 45
   });
 
-  assert.equal(draft.projectDefinitionId, 'pde_learn_motion');
-  assert.equal(draft.stageDefinitionId, 'stagedef_motion_advanced');
+  assert.equal(draft.projectDefinitionId, 'pde_learn_rabbit');
+  assert.equal(draft.stageDefinitionId, 'stagedef_rabbit_advanced');
   assert.equal(draft.startAt, null);
   assert.equal(draft.startOn, '2026-04-30');
   assert.equal(draft.isAutoScheduled, true);
@@ -393,7 +453,7 @@ runTest('task client wrappers mirror Motion task query and mutation shapes', () 
   assert.equal(pastDueRequest.uri, '/v2/tasks/past_due?include=project');
 });
 
-runTest('views client wrapper applies Motion-style column and completed defaults', () => {
+runTest('views client wrapper applies Rabbit defaults for columns and completed state', () => {
   const transformed = applyClientTransform(getViews, {
     ids: ['view_my_tasks', 'view_team_schedule'],
     models: {
@@ -473,7 +533,7 @@ runTest('inbox and bootstrap client wrappers expose Motion-like query keys and s
     itemIds: ['notif_2', 'notif_1']
   });
   const bootstrapRequest = resolveClientRequest(fetchBootstrap, {
-    workspaceId: 'ws_motion_team',
+    workspaceId: 'ws_rabbit_team',
     viewId: 'view_my_tasks'
   });
   const settingsRequest = resolveClientRequest(getMySettings);
@@ -489,7 +549,7 @@ runTest('inbox and bootstrap client wrappers expose Motion-like query keys and s
   assert.deepEqual(markReadRequest.key, ['inbox', 'mark-item-as-read', 'notif_2', 'notif_1']);
   assert.equal(markReadRequest.uri, '/v2/notifications/mark-status');
   assert.equal(bootstrapRequest.method, 'POST');
-  assert.deepEqual(bootstrapRequest.key, ['bootstrap', { workspaceId: 'ws_motion_team', viewId: 'view_my_tasks' }]);
+  assert.deepEqual(bootstrapRequest.key, ['bootstrap', { workspaceId: 'ws_rabbit_team', viewId: 'view_my_tasks' }]);
   assert.equal(settingsRequest.uri, '/v2/users/me/settings');
   assert.deepEqual(settingsRequest.key, ['v2', 'users', 'me', 'settings']);
   assert.equal(settingsRequest.queryOptions.staleTime, 60 * 60 * 1000);
@@ -778,7 +838,7 @@ runTest('inbox runtime normalizes unread counts and resolves task and project ta
   assert.equal(inboxState.needsActionCount, 3);
   assert.equal(inboxState.items[0].id, 'notif_1');
   assert.equal(inboxState.items[0].targetTitle, 'Draft weekly plan');
-  assert.equal(inboxState.items[2].targetTitle, 'Motion Basics');
+  assert.equal(inboxState.items[2].targetTitle, 'Rabbit Basics');
 });
 
 runTest('missing inbox data degrades to a safe empty inbox surface', () => {
@@ -820,7 +880,7 @@ runTest('seeded task/project reconciliation adds workspace and tutorial metadata
   const workTask = seed.tasks.find((task) => task.id === 'f1');
   const personalTask = seed.tasks.find((task) => task.id === 'f3');
 
-  assert.equal(workTask.workspaceName, 'Motion Team');
+  assert.equal(workTask.workspaceName, 'Rabbit Team');
   assert.equal(workTask.projectName, 'Work');
   assert.equal(workTask.isTutorialProject, false);
   assert.equal(personalTask.workspaceName, 'My Tasks (Private)');
@@ -1563,7 +1623,10 @@ await runAsyncTest('authority refresh can mock an upgrade and unlock premium fla
       scenario: 'upgrade',
       transport: createMockEntitlementTransport()
     });
-    const summary = getEntitlementStateSummary(snapshot);
+    const summary = getEntitlementStateSummary({
+      ...snapshot,
+      now
+    });
 
     assert.equal(snapshot.authority.status, 'fresh');
     assert.equal(snapshot.plan, 'pro');
@@ -1589,7 +1652,10 @@ await runAsyncTest('offline authority refresh keeps the last safe snapshot and m
       scenario: 'offline',
       transport: createMockEntitlementTransport()
     });
-    const summary = getEntitlementStateSummary(snapshot);
+    const summary = getEntitlementStateSummary({
+      ...snapshot,
+      now: offlineNow
+    });
 
     assert.equal(summary.isOffline, true);
     assert.equal(summary.authorityStatus, 'offline');
@@ -1608,7 +1674,10 @@ await runAsyncTest('revoked authority refresh forces read-only fallback', async 
       scenario: 'revoked',
       transport: createMockEntitlementTransport()
     });
-    const summary = getEntitlementStateSummary(snapshot);
+    const summary = getEntitlementStateSummary({
+      ...snapshot,
+      now
+    });
     const taskCheck = requireEntitlement('tasks_manage', now, snapshot);
 
     assert.equal(summary.isRevoked, true);
@@ -1656,7 +1725,7 @@ runTest('storage contract keeps seeded shell state on current fixture payloads',
 
   assert.equal(result.ok, true);
   assert.equal(result.value.schemaVersion, CURRENT_SCHEMA_VERSION);
-  assert.equal(result.value.tasks[0].workspaceId, 'ws_motion_team');
+  assert.equal(result.value.tasks[0].workspaceId, 'ws_rabbit_team');
   assert.equal(result.value.tasks[0].priorityLevel, 'HIGH');
   assert.equal(result.value.tasks[0].scheduledStatus, 'ON_TRACK');
   assert.equal(result.value.tasks[0].taskDefinitionId, 'taskdef_weekly_plan');
@@ -1668,6 +1737,8 @@ runTest('storage contract keeps seeded shell state on current fixture payloads',
   assert.equal(result.value.calendarOverlay.calendars[0]?.providerType, 'GOOGLE');
   assert.equal(result.value.calendarOverlay.importedEvents[0]?.providerType, 'GOOGLE');
   assert.equal(result.value.calendarOverlay.importedEvents[0]?.attendees.length, 2);
+  assert.equal(result.value.backend.status, 'unconfigured');
+  assert.equal(Array.isArray(result.value.inbox.items), true);
 });
 
 runTest('storage contract removes malformed payload rows while retaining valid fixture-like rows', () => {
@@ -1716,6 +1787,12 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
       projects: getFixtureState().projects,
       tasks: getFixtureState().tasks,
       calendarOverlay: getFixtureState().calendarOverlay,
+      inbox: getFixtureState().inbox,
+      backend: {
+        baseUrl: 'https://api.rabbit.test/',
+        authToken: 'backend-token',
+        status: 'online'
+      },
       shell: getFixtureState().shell,
       outbox: [outboxEvent, outboxEvent],
       lastSyncAt: '2026-04-17T12:00:00.000Z',
@@ -1725,7 +1802,7 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     };
 
     const savedSnapshot = saveStoredData(payload);
-    const raw = storage.getItem('motion_clone_phase1_app_data');
+    const raw = storage.getItem('rabbit_phase1_app_data');
     assert.equal(typeof raw, 'string');
 
     const saved = JSON.parse(raw);
@@ -1736,6 +1813,9 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.metadata.syncState, 'pending');
     assert.equal(saved.metadata.shellState, 'present');
     assert.equal(saved.metadata.queryCacheState, 'present');
+    assert.equal(saved.metadata.backendConfigured, true);
+    assert.equal(saved.metadata.backendState, 'online');
+    assert.equal(saved.metadata.inboxItemCount, FIXTURE_INBOX_STATE.items.length);
     assert.equal(saved.metadata.cachedQueryCount, 8);
     assert.equal(Array.isArray(saved.outbox), true);
     assert.equal(saved.outbox.length, 1);
@@ -1747,7 +1827,11 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(saved.calendarOverlay.importedEvents.length, 3);
     assert.equal(saved.calendarOverlay.source.providerType, 'GOOGLE');
     assert.equal(saved.calendarOverlay.source.accountEmail, DEFAULT_CURRENT_USER_EMAIL);
-    assert.equal(saved.tasks[0].workspaceId, 'ws_motion_team');
+    assert.equal(saved.inbox.items.length, FIXTURE_INBOX_STATE.items.length);
+    assert.equal(saved.backend.baseUrl, 'https://api.rabbit.test');
+    assert.equal(saved.backend.authToken, 'backend-token');
+    assert.equal(saved.backend.status, 'online');
+    assert.equal(saved.tasks[0].workspaceId, 'ws_rabbit_team');
     assert.equal(saved.tasks[0].priorityLevel, 'HIGH');
     assert.equal(saved.tasks[0].blockingTaskIds.includes('f4'), true);
     assert.equal(saved.shell.theme.mode, 'dark');
@@ -1761,6 +1845,8 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(savedSnapshot.syncStatus, 'pending');
     assert.equal(savedSnapshot.outbox.length, 1);
     assert.equal(savedSnapshot.calendarOverlay.source.provider, 'google');
+    assert.equal(savedSnapshot.inbox.items.length, FIXTURE_INBOX_STATE.items.length);
+    assert.equal(savedSnapshot.backend.baseUrl, 'https://api.rabbit.test');
     assert.equal(savedSnapshot.tasks[0].scheduledStatus, 'ON_TRACK');
     assert.equal(savedSnapshot.shell.activeViewId, 'view_my_tasks');
     assert.equal(Array.isArray(savedSnapshot.queryCache?.queries), true);
@@ -1781,7 +1867,11 @@ runTest('storage load/save path keeps sync metadata, outbox, and revision-safe d
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.provider, 'google');
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.providerType, 'GOOGLE');
     assert.equal(loaded.calendarOverlay.importedEvents[0]?.attendees.length, 2);
-    assert.equal(loaded.tasks[0].workspaceId, 'ws_motion_team');
+    assert.equal(loaded.inbox.items.length, FIXTURE_INBOX_STATE.items.length);
+    assert.equal(loaded.backend.baseUrl, 'https://api.rabbit.test');
+    assert.equal(loaded.backend.authToken, 'backend-token');
+    assert.equal(loaded.backend.status, 'online');
+    assert.equal(loaded.tasks[0].workspaceId, 'ws_rabbit_team');
     assert.equal(loaded.tasks[0].priorityLevel, 'HIGH');
     assert.equal(loaded.tasks[0].scheduledStatus, 'ON_TRACK');
     assert.equal(Array.isArray(loaded.shell.tabs), true);
@@ -1814,7 +1904,214 @@ runTest('storage handles future schema payload by applying an upgrade compatibil
     assert.equal(loaded.migration?.fromVersion, CURRENT_SCHEMA_VERSION + 1);
     assert.equal(Array.isArray(loaded.migration?.steps), true);
     assert.equal(loaded.migration?.steps.length > 0, true);
+    assert.equal(loaded.backend.status, 'unconfigured');
+    assert.equal(Array.isArray(loaded.inbox.items), true);
   });
+});
+
+runTest('backend state normalization keeps transport config and status stable', () => {
+  const normalized = normalizeBackendState({
+    baseUrl: 'api.rabbit.test/',
+    authToken: ' secret-token ',
+    status: 'online',
+    lastError: 'last error',
+    lastPushAt: '2026-04-17T12:00:00.000Z'
+  });
+  const localhost = normalizeBackendState({
+    baseUrl: 'localhost:3000'
+  });
+  const defaults = createDefaultBackendState();
+
+  assert.equal(normalized.baseUrl, 'https://api.rabbit.test');
+  assert.equal(normalized.authToken, 'secret-token');
+  assert.equal(normalized.status, 'online');
+  assert.equal(normalized.lastError, 'last error');
+  assert.equal(normalized.lastPushAt, '2026-04-17T12:00:00.000Z');
+  assert.equal(localhost.baseUrl, 'http://localhost:3000');
+  assert.equal(defaults.status, 'unconfigured');
+});
+
+await runAsyncTest('backend request executor resolves existing query definitions against live config', async () => {
+  const calls = [];
+  await withGlobalFetch(async (url, init = {}) => {
+    calls.push({ url, init });
+    return createFetchResponse({
+      status: 200,
+      json: {
+        id: 'user_backend',
+        email: 'rabbit@example.com'
+      },
+      headers: {
+        'content-type': 'application/json'
+      }
+    });
+  }, async () => {
+    const result = await executeBackendDefinition(getCurrentUser, {}, {
+      backend: {
+        baseUrl: 'api.rabbit.test',
+        authToken: 'secret-token'
+      }
+    });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://api.rabbit.test/v2/users/me');
+    assert.equal(calls[0].init.method, 'GET');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer secret-token');
+    assert.equal(result.data.id, 'user_backend');
+    assert.equal(result.data.email, 'rabbit@example.com');
+  });
+});
+
+await runAsyncTest('backend PowerSync upload posts CRUD operations and normalizes id mappings', async () => {
+  const outboxEvent = createTaskSyncEvent({
+    action: 'create',
+    task: normalizeTask({
+      id: 'temp_sync_backend',
+      title: 'Upload to backend',
+      projectId: 'inbox',
+      dueAt: '2026-04-17T12:05:00.000Z',
+      durationMinutes: 30
+    }),
+    revision: 'mut_backend_upload',
+    occurredAt: '2026-04-17T12:05:00.000Z'
+  });
+  const calls = [];
+
+  await withGlobalFetch(async (url, init = {}) => {
+    calls.push({ url, init });
+    return createFetchResponse({
+      status: 200,
+      json: {
+        success: true,
+        idMappings: [
+          {
+            tempId: 'temp_sync_backend',
+            realId: 'task_real_backend',
+            table: 'tasks'
+          }
+        ]
+      },
+      headers: {
+        'content-type': 'application/json'
+      }
+    });
+  }, async () => {
+    const result = await executeBackendPowerSyncUpload([outboxEvent], {
+      baseUrl: 'https://api.rabbit.test'
+    });
+    const body = JSON.parse(calls[0].init.body);
+
+    assert.equal(calls[0].url, 'https://api.rabbit.test/powersync/upload');
+    assert.equal(calls[0].init.method, 'POST');
+    assert.equal(Array.isArray(body.operations), true);
+    assert.equal(body.operations.length, 1);
+    assert.equal(result.syncResponse.taskIdMap.temp_sync_backend, 'task_real_backend');
+    assert.equal(result.syncResponse.successCount, 1);
+  });
+});
+
+await runAsyncTest('backend entitlement transport synthesizes a live authority payload from backend permissions', async () => {
+  await withGlobalFetch(async (url) => {
+    if (url === 'https://api.rabbit.test/v2/users/me') {
+      return createFetchResponse({
+        status: 200,
+        json: {
+          id: 'user_backend',
+          email: 'rabbit@example.com'
+        },
+        headers: {
+          'content-type': 'application/json'
+        }
+      });
+    }
+
+    if (url === 'https://api.rabbit.test/v2/users/me/feature-permissions') {
+      return createFetchResponse({
+        status: 200,
+        json: {
+          featurePermissionTier: 'pro',
+          aiChat: true,
+          calendarRead: true,
+          calendarWrite: true,
+          advancedRecurrence: true,
+          tasksManage: true
+        },
+        headers: {
+          'content-type': 'application/json'
+        }
+      });
+    }
+
+    throw new Error(`Unexpected URL: ${url}`);
+  }, async () => {
+    const transport = createBackendEntitlementTransport({
+      baseUrl: 'https://api.rabbit.test',
+      authToken: 'secret-token'
+    });
+    const response = await transport({
+      now: new Date('2026-04-17T12:00:00.000Z').valueOf(),
+      previousSnapshot: {
+        userId: 'local-dev',
+        plan: 'free',
+        featureFlags: {}
+      }
+    });
+
+    assert.equal(response.status, 'active');
+    assert.equal(response.source, 'backend-authority');
+    assert.equal(response.payload.userId, 'user_backend');
+    assert.equal(response.payload.plan, 'pro');
+    assert.equal(response.payload.featureFlags.ai_suggest, true);
+    assert.equal(response.payload.featureFlags.calendar_read, true);
+    assert.equal(response.payload.featureFlags.calendar_write, true);
+    assert.equal(response.payload.featureFlags.advanced_recurrence, true);
+    assert.equal(response.payload.featureFlags.tasks_manage, true);
+  });
+});
+
+runTest('backend hydration preserves pending local task edits while merging remote state', () => {
+  const localRenamedTask = normalizeTask({
+    ...FIXTURE_TASKS_RAW[0],
+    title: 'Draft weekly plan (local edit)'
+  });
+  const remoteOnlyTask = {
+    id: 'remote_only_task',
+    title: 'Remote only task',
+    projectId: 'work',
+    projectName: 'Work',
+    status: 'todo',
+    durationMinutes: 30
+  };
+  const current = {
+    ...getFixtureState(),
+    backend: createDefaultBackendState(),
+    tasks: [localRenamedTask, ...getFixtureState().tasks.filter((task) => task.id !== 'f1')],
+    outbox: [
+      createTaskSyncEvent({
+        action: 'update',
+        task: localRenamedTask,
+        previousTask: normalizeTask(FIXTURE_TASKS_RAW[0]),
+        revision: 'mut_local_title',
+        occurredAt: '2026-04-17T12:10:00.000Z'
+      })
+    ]
+  };
+
+  const hydrated = hydrateAppDataFromBackend(current, {
+    tasks: [
+      {
+        ...FIXTURE_TASKS_RAW[0],
+        title: 'Draft weekly plan (remote stale)'
+      },
+      remoteOnlyTask
+    ]
+  }, {
+    now: new Date('2026-04-17T12:20:00.000Z').valueOf()
+  });
+
+  assert.equal(hydrated.tasks.find((task) => task.id === 'f1')?.title, 'Draft weekly plan (local edit)');
+  assert.equal(hydrated.tasks.some((task) => task.id === 'remote_only_task'), true);
+  assert.equal(hydrated.projects.some((project) => project.id === 'work'), true);
 });
 
 console.log(`PASS: Domain regression suite completed (${baseTasks.length} fixture tasks)`);
