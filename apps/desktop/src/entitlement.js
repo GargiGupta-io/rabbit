@@ -1,6 +1,7 @@
 import { createMockEntitlementTransport, normalizeAuthorityRefreshResponse } from './entitlementClient.js';
 
-export const ENTITLEMENT_STORAGE_KEY = 'motion_clone_phase2_entitlement_snapshot';
+export const ENTITLEMENT_STORAGE_KEY = 'rabbit_phase2_entitlement_snapshot';
+const LEGACY_ENTITLEMENT_STORAGE_KEYS = ['motion_clone_phase2_entitlement_snapshot'];
 export const ENTITLEMENT_REFRESH_STALE_MS = 12 * 60 * 60 * 1000;
 
 const MIN_TOKEN_PREFIX = 'rabbit-signature';
@@ -98,7 +99,15 @@ function readStoredEntitlementSnapshot() {
     return null;
   }
 
-  const raw = storage.getItem(ENTITLEMENT_STORAGE_KEY);
+  let raw = storage.getItem(ENTITLEMENT_STORAGE_KEY);
+  if (!isNonEmptyText(raw)) {
+    for (const legacyKey of LEGACY_ENTITLEMENT_STORAGE_KEYS) {
+      raw = storage.getItem(legacyKey);
+      if (isNonEmptyText(raw)) {
+        break;
+      }
+    }
+  }
   if (!isNonEmptyText(raw)) {
     return null;
   }
