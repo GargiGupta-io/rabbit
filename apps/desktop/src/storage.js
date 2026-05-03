@@ -1,5 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, APP_DATA_DEFAULT, normalizePersistedPayload } from './contracts.js';
-import { createMotionKey, resolveClientRequest } from './apiClient.js';
+import { createQueryKey, resolveClientRequest } from './apiClient.js';
 import {
   fetchBootstrap,
   getCurrentUser,
@@ -17,8 +17,10 @@ import { buildProjectDomainSeedData, getWorkspaceById } from './projectService.j
 import { createStableDeviceId, getCurrentSyncSessionId, normalizeSyncState } from './syncContract.js';
 import { getViews } from './viewsClient.js';
 
-const STORAGE_KEY = 'motion_clone_phase1_app_data';
+const STORAGE_KEY = 'rabbit_phase1_app_data';
+const LEGACY_STORAGE_KEYS = ['motion_clone_phase1_app_data'];
 const DEVICE_ID_KEY = `${STORAGE_KEY}:device_id`;
+const LEGACY_DEVICE_ID_KEYS = LEGACY_STORAGE_KEYS.map((key) => `${key}:device_id`);
 const DEFAULT_APP_VERSION = '1.0.0';
 const DEFAULT_SYNC_STATUS = 'local';
 const DEFAULT_USER_ID = DEFAULT_CURRENT_USER_ID;
@@ -46,11 +48,18 @@ function hasStorage() {
   return Boolean(typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function');
 }
 
-function readStoredValue(key) {
+function readStoredValue(keyOrKeys) {
   if (!hasStorage()) {
     return null;
   }
-  return localStorage.getItem(key);
+  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+    if (value != null) {
+      return value;
+    }
+  }
+  return null;
 }
 
 function writeStoredValue(key, value) {
@@ -60,11 +69,12 @@ function writeStoredValue(key, value) {
   localStorage.setItem(key, value);
 }
 
-function removeStoredValue(key) {
+function removeStoredValue(keyOrKeys) {
   if (!hasStorage()) {
     return;
   }
-  localStorage.removeItem(key);
+  const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+  keys.forEach((key) => localStorage.removeItem(key));
 }
 
 function ensureSafeText(value, fallback = '') {
@@ -322,7 +332,7 @@ function buildSettingsCacheData(payload = {}, projectDomain = {}) {
     },
     sidebarDisplay: {
       density: ensureSafeText(shell.theme?.density, 'comfortable'),
-      accent: ensureSafeText(shell.theme?.accent, 'motion')
+      accent: ensureSafeText(shell.theme?.accent, 'rabbit')
     },
     notetaker: {
       enableBotForAllMeetings: false,
@@ -464,14 +474,14 @@ export function normalizeQueryCacheState(raw = {}, payload = {}) {
       updatedAt: now
     }),
     createCustomQueryEntry(
-      createMotionKey('v2', 'workspaces', {
+      createQueryKey('v2', 'workspaces', {
         includeArchived: false,
         activeWorkspaceId: pageViewSettingsData.activeWorkspaceId
       }),
       buildWorkspaceCacheData(projectDomain),
       {
         scope: 'workspaces',
-        previous: previousEntries.get(serializeQueryKey(createMotionKey('v2', 'workspaces', {
+        previous: previousEntries.get(serializeQueryKey(createQueryKey('v2', 'workspaces', {
           includeArchived: false,
           activeWorkspaceId: pageViewSettingsData.activeWorkspaceId
         }))),
@@ -505,8 +515,9 @@ function detectPlatform() {
 }
 
 function getOrCreateDeviceId(preferred = '') {
-  const existing = ensureSafeText(readStoredValue(DEVICE_ID_KEY), '');
+  const existing = ensureSafeText(readStoredValue([DEVICE_ID_KEY, ...LEGACY_DEVICE_ID_KEYS]), '');
   if (existing) {
+    writeStoredValue(DEVICE_ID_KEY, existing);
     return existing;
   }
 
@@ -532,6 +543,9 @@ function normalizeStorageMetadata(payload, now, { incomingSchemaVersion, syncSta
     syncState: ensureSafeText(syncStatus, DEFAULT_SYNC_STATUS),
     shellState: hasShellState(payload) ? 'present' : 'missing',
     queryCacheState: hasQueryCacheState(payload) ? 'present' : 'missing',
+    backendConfigured: Boolean(payload?.backend?.baseUrl),
+    backendState: ensureSafeText(payload?.backend?.status, 'unconfigured'),
+    inboxItemCount: Array.isArray(payload?.inbox?.items) ? payload.inbox.items.length : 0,
     cachedQueryCount: Array.isArray(payload?.queryCache?.queries) ? payload.queryCache.queries.length : 0,
     source: ensureSafeText(source || payload.source, 'desktop'),
     revision: ensureSafeText(payload.revision, `r_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`),
@@ -612,7 +626,7 @@ function withUpgradeGuard(raw) {
 }
 
 export function loadStoredData() {
-  const raw = readStoredValue(STORAGE_KEY);
+  const raw = readStoredValue([STORAGE_KEY, ...LEGACY_STORAGE_KEYS]);
   if (!raw) {
     return fallbackPayload();
   }
@@ -667,6 +681,6 @@ export function saveStoredData(data = {}) {
 }
 
 export function resetStoredData() {
-  removeStoredValue(STORAGE_KEY);
-  removeStoredValue(DEVICE_ID_KEY);
+  removeStoredValue([STORAGE_KEY, ...LEGACY_STORAGE_KEYS]);
+  removeStoredValue([DEVICE_ID_KEY, ...LEGACY_DEVICE_ID_KEYS]);
 }

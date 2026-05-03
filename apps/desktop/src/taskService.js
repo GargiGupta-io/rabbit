@@ -361,9 +361,9 @@ export function getTaskScheduleType(task, { now = Date.now() } = {}) {
     return 'completed';
   }
 
-  const isScheduledByMotion = task.isAutoScheduled || task.isFixedTimeTask;
+  const isPlannerScheduled = task.isAutoScheduled || task.isFixedTimeTask;
 
-  if (!isScheduledByMotion) {
+  if (!isPlannerScheduled) {
     return 'notScheduled';
   }
 

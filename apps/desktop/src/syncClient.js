@@ -1,4 +1,4 @@
-import { createMotionKey } from './apiClient.js';
+import { createQueryKey } from './apiClient.js';
 import { normalizeOutbox, toPushSyncEvent } from './syncContract.js';
 
 const POWER_SYNC_TABLE_BY_ENTITY = Object.freeze({
@@ -165,9 +165,9 @@ function normalizeIdMapping(entry = {}) {
 }
 
 export const queryKeys = {
-  root: createMotionKey('sync-events'),
-  push: () => createMotionKey(queryKeys.root, 'push'),
-  powersyncUpload: () => createMotionKey('powersync', 'upload')
+  root: createQueryKey('sync-events'),
+  push: () => createQueryKey(queryKeys.root, 'push'),
+  powersyncUpload: () => createQueryKey('powersync', 'upload')
 };
 
 export function createPushEventBatchRequest(outbox = []) {

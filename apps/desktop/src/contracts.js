@@ -1,4 +1,5 @@
 import { createEmptyCalendarOverlay, normalizeCalendarOverlay } from './calendarService.js';
+import { createDefaultBackendState, normalizeBackendState } from './backendClient.js';
 import {
   buildAgendaSnapshot,
   buildSidebarSections,
@@ -9,7 +10,7 @@ import {
 } from './shellService.js';
 import { normalizeTask as normalizeDomainTask } from './taskService.js';
 
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 6;
 const EARLIEST_SCHEMA_VERSION = 1;
 const DEFAULT_APP_VERSION = '1.0.0';
 
@@ -161,6 +162,84 @@ function normalizeTasks(tasks = [], projectIds = new Set()) {
     .map(({ _seedIndex, ...task }) => task);
 }
 
+function createDefaultInboxState() {
+  return {
+    inboxes: [
+      {
+        id: 'inbox_personal',
+        label: 'Inbox',
+        kind: 'personal',
+        sourceIds: ['rabbit-notifications']
+      }
+    ],
+    activeInboxId: 'inbox_personal',
+    items: []
+  };
+}
+
+function normalizeInboxDescriptor(raw = {}) {
+  if (!isPlainObject(raw)) {
+    return null;
+  }
+
+  const id = sanitizeText(raw.id);
+  const label = sanitizeText(raw.label || raw.name);
+  if (!id || !label) {
+    return null;
+  }
+
+  return {
+    id,
+    label,
+    kind: sanitizeText(raw.kind, 'personal'),
+    sourceIds: Array.isArray(raw.sourceIds)
+      ? raw.sourceIds.map((value) => sanitizeText(value)).filter(Boolean)
+      : []
+  };
+}
+
+function normalizeInboxItem(raw = {}, fallbackInboxId = 'inbox_personal') {
+  if (!isPlainObject(raw)) {
+    return null;
+  }
+
+  const id = sanitizeText(raw.id);
+  const type = sanitizeText(raw.type);
+  const createdTime = normalizeDate(raw.createdTime || raw.createdAt);
+  if (!id || !type || !createdTime) {
+    return null;
+  }
+
+  return {
+    ...raw,
+    id,
+    inboxId: sanitizeText(raw.inboxId, fallbackInboxId),
+    type,
+    read: Boolean(raw.read),
+    createdTime
+  };
+}
+
+function normalizeInboxState(raw = {}) {
+  const defaults = createDefaultInboxState();
+  const input = isPlainObject(raw) ? raw : {};
+  const inboxes = (Array.isArray(input.inboxes) ? input.inboxes : defaults.inboxes)
+    .map((entry) => normalizeInboxDescriptor(entry))
+    .filter(Boolean);
+  const activeInboxId = sanitizeText(input.activeInboxId, inboxes[0]?.id || defaults.activeInboxId);
+  const items = Array.isArray(input.items)
+    ? input.items
+        .map((entry) => normalizeInboxItem(entry, activeInboxId))
+        .filter(Boolean)
+    : [];
+
+  return {
+    inboxes: inboxes.length ? inboxes : defaults.inboxes,
+    activeInboxId,
+    items
+  };
+}
+
 function normalizeShellState(raw = {}, context = {}) {
   const shell = isPlainObject(raw) ? raw : {};
   const defaults = createDefaultShellState();
@@ -225,6 +304,12 @@ function normalizeMigrationInfo(payload = {}, fromVersion = EARLIEST_SCHEMA_VERS
   if (fromVersion < 5) {
     steps.push('expanded calendar entity defaults');
   }
+  if (fromVersion < 6 || !isPlainObject(payload?.backend)) {
+    steps.push('injected backend runtime snapshot');
+  }
+  if (fromVersion < 6 || !isPlainObject(payload?.inbox)) {
+    steps.push('injected inbox snapshot');
+  }
   return {
     fromVersion,
     toVersion,
@@ -241,6 +326,8 @@ export function normalizePersistedPayload(raw = {}) {
   const projectIds = new Set(projects.map((project) => project.id));
   const tasks = normalizeTasks(Array.isArray(payload.tasks) ? payload.tasks : [], projectIds);
   const calendarOverlay = normalizeCalendarOverlay(payload.calendarOverlay || createEmptyCalendarOverlay());
+  const inbox = normalizeInboxState(payload.inbox);
+  const backend = normalizeBackendState(payload.backend || createDefaultBackendState());
 
   const migration = normalizeMigrationInfo(payload, fromVersion, CURRENT_SCHEMA_VERSION);
 
@@ -255,6 +342,8 @@ export function normalizePersistedPayload(raw = {}) {
     projects,
     tasks,
     calendarOverlay,
+    inbox,
+    backend,
     shell: normalizeShellState(payload.shell, {
       projects,
       tasks,
@@ -288,6 +377,14 @@ export function validatePersistedPayload(payload = {}) {
     errors.push('calendarOverlay.calendars must be an array');
   }
 
+  if (!Array.isArray(normalized.inbox?.items)) {
+    errors.push('inbox.items must be an array');
+  }
+
+  if (!isPlainObject(normalized.backend)) {
+    errors.push('backend must be an object');
+  }
+
   if (!Array.isArray(normalized.shell?.tabs)) {
     errors.push('shell.tabs must be an array');
   }
@@ -317,6 +414,8 @@ export const APP_DATA_DEFAULT = normalizePersistedPayload({
   projects: DEFAULT_PROJECTS,
   tasks: [],
   calendarOverlay: createEmptyCalendarOverlay(),
+  inbox: createDefaultInboxState(),
+  backend: createDefaultBackendState(),
   shell: createDefaultShellState()
 });
 
