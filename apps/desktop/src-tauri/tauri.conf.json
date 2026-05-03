@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MotionClone",
+  "productName": "Rabbit",
   "version": "0.1.0",
-  "identifier": "com.motionclone.desktop",
+  "identifier": "com.rabbit.desktop",
   "build": {
     "beforeDevCommand": "",
     "beforeBuildCommand": "npm --prefix .. run build",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Motion Clone",
+        "title": "Rabbit",
         "width": 1200,
         "height": 800,
         "minWidth": 1100,
