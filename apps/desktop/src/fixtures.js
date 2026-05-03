@@ -21,7 +21,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'Draft weekly plan',
     projectId: 'work',
     projectName: 'Work',
-    workspaceId: 'ws_motion_team',
+    workspaceId: 'ws_rabbit_team',
     description: 'Prepare agenda for sprint planning.',
     status: 'todo',
     statusId: 'status_todo',
@@ -131,7 +131,7 @@ export const FIXTURE_TASKS_RAW = [
     title: 'Overlapping call',
     projectId: 'work',
     projectName: 'Work',
-    workspaceId: 'ws_motion_team',
+    workspaceId: 'ws_rabbit_team',
     status: 'todo',
     statusId: 'status_todo',
     priorityLevel: 'HIGH',
@@ -202,7 +202,7 @@ export const FIXTURE_INBOX_STATE = {
       id: 'inbox_personal',
       label: 'Inbox',
       kind: 'personal',
-      sourceIds: ['motion-notifications', 'meeting-insights']
+      sourceIds: ['rabbit-notifications', 'meeting-insights']
     }
   ],
   activeInboxId: 'inbox_personal',
@@ -221,7 +221,7 @@ export const FIXTURE_INBOX_STATE = {
         },
         metadata: {
           taskId: 'f1',
-          assignerUserId: 'user_manager_motion'
+          assignerUserId: 'user_manager_rabbit'
         }
       }
     },
@@ -241,7 +241,7 @@ export const FIXTURE_INBOX_STATE = {
           taskId: 'f3',
           commentId: 'comment_design_review',
           threadId: 'thread_design_review',
-          mentionerUserId: 'user_manager_motion'
+          mentionerUserId: 'user_manager_rabbit'
         }
       }
     },
@@ -254,12 +254,12 @@ export const FIXTURE_INBOX_STATE = {
       createdTime: '2026-04-17T09:30:00.000Z',
       payload: {
         snapshot: {
-          title: 'Learn motion entered Motion Basics',
+          title: 'Learn Rabbit entered Rabbit Basics',
           description: 'The tutorial project advanced into the next stage.'
         },
         metadata: {
-          projectId: 'pr_learn_motion',
-          stageDefinitionId: 'stagedef_motion_basics'
+          projectId: 'pr_learn_rabbit',
+          stageDefinitionId: 'stagedef_rabbit_basics'
         }
       }
     },
@@ -273,7 +273,7 @@ export const FIXTURE_INBOX_STATE = {
       payload: {
         snapshot: {
           title: 'Meeting insights are ready',
-          description: 'Motion finished the recap for the customer kickoff.'
+          description: 'Rabbit finished the recap for the customer kickoff.'
         },
         metadata: {
           noteId: 'meeting_note_kickoff'
@@ -289,7 +289,7 @@ export const FIXTURE_INBOX_STATE = {
       createdTime: '2026-04-16T18:00:00.000Z',
       payload: {
         snapshot: {
-          title: 'Try Motion AI next',
+          title: 'Try Rabbit AI next',
           description: 'Explore the AI employee and notetaker workflows.'
         },
         metadata: {
@@ -572,7 +572,7 @@ function createFixtureShellState() {
       ...base.theme,
       mode: 'dark',
       dataTheme: 'dark',
-      accent: 'motion',
+      accent: 'rabbit',
       density: 'comfortable',
       useSystem: false
     },

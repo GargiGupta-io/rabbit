@@ -648,7 +648,7 @@ export function buildInboxSeedData(rawInbox = {}, context = {}) {
       id: DEFAULT_INBOX_ID,
       label: 'Inbox',
       kind: 'personal',
-      sourceIds: ['motion-notifications']
+      sourceIds: ['rabbit-notifications']
     }
   ])
     .map((entry) => normalizeInboxDescriptor(entry))

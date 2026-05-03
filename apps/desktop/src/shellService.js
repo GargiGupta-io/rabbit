@@ -2,7 +2,7 @@ import { DEFAULT_CURRENT_USER_ID } from './identityDefaults.js';
 
 const DEFAULT_THEME_MODE = 'dark';
 const ALLOWED_THEME_MODES = new Set(['light', 'dark']);
-const DEFAULT_ACCENT = 'motion';
+const DEFAULT_ACCENT = 'rabbit';
 const DEFAULT_DENSITY = 'comfortable';
 const DEFAULT_TAB_ID = 'tab_calendar';
 const DEFAULT_VIEW_ID = 'view_my_tasks';

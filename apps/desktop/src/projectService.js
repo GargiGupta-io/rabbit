@@ -24,10 +24,10 @@ const DEFAULT_WORKSPACES = [
     systemType: null
   },
   {
-    id: 'ws_motion_team',
-    uniquenessId: 'uniq_ws_motion_team',
-    name: 'Motion Team',
-    teamId: 'team_motion',
+    id: 'ws_rabbit_team',
+    uniquenessId: 'uniq_ws_rabbit_team',
+    name: 'Rabbit Team',
+    teamId: 'team_rabbit',
     type: 'TEAM',
     systemType: null
   }
@@ -35,40 +35,40 @@ const DEFAULT_WORKSPACES = [
 
 const DEFAULT_PROJECT_DEFINITIONS = [
   {
-    id: 'pde_learn_motion',
+    id: 'pde_learn_rabbit',
     workspaceId: DEFAULT_WORKSPACE_ID,
-    name: 'Learn motion',
+    name: 'Learn Rabbit',
     color: '#889096',
-    description: 'Learn how to use Motion for yourself and your team!',
-    definitionDescription: 'Tutorial project that teaches the core Motion flows.',
+    description: 'Learn how to use Rabbit for yourself and your team!',
+    definitionDescription: 'Tutorial project that teaches the core Rabbit flows.',
     managerId: DEFAULT_USER_ID,
     createdByUserId: DEFAULT_USER_ID,
     priorityLevel: 'MEDIUM',
     labelIds: ['tutorial'],
     stageDefinitionReferences: [
       {
-        id: 'stage_ref_setup_motion',
+        id: 'stage_ref_setup_rabbit',
         rank: '0|i00007:',
-        stageDefinitionId: 'stagedef_setup_motion',
-        projectDefinitionId: 'pde_learn_motion'
+        stageDefinitionId: 'stagedef_setup_rabbit',
+        projectDefinitionId: 'pde_learn_rabbit'
       },
       {
-        id: 'stage_ref_motion_basics',
+        id: 'stage_ref_rabbit_basics',
         rank: '0|i0000f:',
-        stageDefinitionId: 'stagedef_motion_basics',
-        projectDefinitionId: 'pde_learn_motion'
+        stageDefinitionId: 'stagedef_rabbit_basics',
+        projectDefinitionId: 'pde_learn_rabbit'
       },
       {
-        id: 'stage_ref_motion_advanced',
+        id: 'stage_ref_rabbit_advanced',
         rank: '0|i0000n:',
-        stageDefinitionId: 'stagedef_motion_advanced',
-        projectDefinitionId: 'pde_learn_motion'
+        stageDefinitionId: 'stagedef_rabbit_advanced',
+        projectDefinitionId: 'pde_learn_rabbit'
       }
     ],
     stages: [
       {
-        id: 'stagedef_setup_motion',
-        name: 'Setup Motion',
+        id: 'stagedef_setup_rabbit',
+        name: 'Setup Rabbit',
         color: '#3b82f6',
         duration: { unit: 'DAYS', value: 7 },
         workspaceId: DEFAULT_WORKSPACE_ID,
@@ -80,21 +80,21 @@ const DEFAULT_PROJECT_DEFINITIONS = [
         ]
       },
       {
-        id: 'stagedef_motion_basics',
-        name: 'Motion Basics',
+        id: 'stagedef_rabbit_basics',
+        name: 'Rabbit Basics',
         color: '#10b981',
         duration: { unit: 'DAYS', value: 10 },
         workspaceId: DEFAULT_WORKSPACE_ID,
         variables: [],
         tasks: [
-          createTaskDefinition('taskdef_pm_philosophy', "Learn about Motion's Project Management Philosophy"),
+          createTaskDefinition('taskdef_pm_philosophy', "Learn about Rabbit's Project Management Philosophy"),
           createTaskDefinition('taskdef_create_projects', 'Create your first 3 projects', { blockedByTaskIds: ['taskdef_pm_philosophy'] }),
           createTaskDefinition('taskdef_templates', 'Learn how to create project templates', { blockedByTaskIds: ['taskdef_create_projects'] })
         ]
       },
       {
-        id: 'stagedef_motion_advanced',
-        name: 'Motion Advanced',
+        id: 'stagedef_rabbit_advanced',
+        name: 'Rabbit Advanced',
         color: '#8b5cf6',
         duration: { unit: 'DAYS', value: 14 },
         workspaceId: DEFAULT_WORKSPACE_ID,
@@ -102,7 +102,7 @@ const DEFAULT_PROJECT_DEFINITIONS = [
         tasks: [
           createTaskDefinition('taskdef_team_views', 'Setup Team Views'),
           createTaskDefinition('taskdef_dashboards', 'Setup Dashboards', { blockedByTaskIds: ['taskdef_team_views'] }),
-          createTaskDefinition('taskdef_ai_in_motion', 'Learn about AI in Motion', { blockedByTaskIds: ['taskdef_dashboards'] })
+          createTaskDefinition('taskdef_ai_in_rabbit', 'Learn about AI in Rabbit', { blockedByTaskIds: ['taskdef_dashboards'] })
         ]
       }
     ],
@@ -122,8 +122,8 @@ const DEFAULT_PROJECTS = [
     id: 'work',
     name: 'Work',
     color: '#10b981',
-    workspaceId: 'ws_motion_team',
-    managerId: 'user_manager_motion'
+    workspaceId: 'ws_rabbit_team',
+    managerId: 'user_manager_rabbit'
   }),
   createBaseProject({
     id: 'personal',
@@ -131,20 +131,20 @@ const DEFAULT_PROJECTS = [
     color: '#f59e0b'
   }),
   createBaseProject({
-    id: 'pr_learn_motion',
-    name: 'Learn motion',
+    id: 'pr_learn_rabbit',
+    name: 'Learn Rabbit',
     color: '#889096',
-    projectDefinitionId: 'pde_learn_motion',
-    activeStageDefinitionId: 'stagedef_motion_basics',
+    projectDefinitionId: 'pde_learn_rabbit',
+    activeStageDefinitionId: 'stagedef_rabbit_basics',
     startDate: '2026-04-15',
     dueDate: '2026-05-15',
     stages: [
       createStageInstance({
-        id: 'stage_setup_motion_instance',
-        name: 'Setup Motion',
+        id: 'stage_setup_rabbit_instance',
+        name: 'Setup Rabbit',
         rank: '0|i00007:',
         color: '#3b82f6',
-        stageDefinitionId: 'stagedef_setup_motion',
+        stageDefinitionId: 'stagedef_setup_rabbit',
         dueDate: '2026-04-20',
         visited: true,
         completedTime: '2026-04-18T10:00:00.000Z',
@@ -155,11 +155,11 @@ const DEFAULT_PROJECTS = [
         scheduledStatus: 'ON_TRACK'
       }),
       createStageInstance({
-        id: 'stage_motion_basics_instance',
-        name: 'Motion Basics',
+        id: 'stage_rabbit_basics_instance',
+        name: 'Rabbit Basics',
         rank: '0|i0000f:',
         color: '#10b981',
-        stageDefinitionId: 'stagedef_motion_basics',
+        stageDefinitionId: 'stagedef_rabbit_basics',
         dueDate: '2026-04-30',
         visited: true,
         completedDuration: 60,
@@ -170,11 +170,11 @@ const DEFAULT_PROJECTS = [
         estimatedCompletionTime: '2026-04-29T12:00:00.000Z'
       }),
       createStageInstance({
-        id: 'stage_motion_advanced_instance',
-        name: 'Motion Advanced',
+        id: 'stage_rabbit_advanced_instance',
+        name: 'Rabbit Advanced',
         rank: '0|i0000n:',
         color: '#8b5cf6',
-        stageDefinitionId: 'stagedef_motion_advanced',
+        stageDefinitionId: 'stagedef_rabbit_advanced',
         dueDate: '2026-05-15',
         duration: 300,
         taskCount: 3,
