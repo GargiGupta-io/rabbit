@@ -117,8 +117,8 @@ The most important file here is `apps/desktop/src/projectService.js`.
 
 The default data now includes the observed Motion tutorial graph:
 - workspace `My Tasks (Private)`
-- project definition `Learn motion`
-- stages `Setup Motion`, `Motion Basics`, and `Motion Advanced`
+- project definition `Learn Rabbit`
+- stages `Setup Rabbit`, `Rabbit Basics`, and `Rabbit Advanced`
 - task definitions like `Connect your calendars`, `Setup your work schedule`, and `Setup Dashboards`
 
 This was not random seed data. It came from the authenticated Motion findings and extracted assets.
@@ -128,8 +128,8 @@ One important pattern is that definitions and instances are separate:
 ```js
 const DEFAULT_PROJECT_DEFINITIONS = [
   {
-    id: 'pde_learn_motion',
-    name: 'Learn motion',
+    id: 'pde_learn_rabbit',
+    name: 'Learn Rabbit',
     stageDefinitionReferences: [...],
     stages: [...]
   }
@@ -137,9 +137,9 @@ const DEFAULT_PROJECT_DEFINITIONS = [
 
 const DEFAULT_PROJECTS = [
   createBaseProject({
-    id: 'pr_learn_motion',
-    projectDefinitionId: 'pde_learn_motion',
-    activeStageDefinitionId: 'stagedef_motion_basics',
+    id: 'pr_learn_rabbit',
+    projectDefinitionId: 'pde_learn_rabbit',
+    activeStageDefinitionId: 'stagedef_rabbit_basics',
     stages: [...]
   })
 ];
@@ -438,4 +438,3 @@ All passed on 2026-04-24.
 ## Updates
 
 - 2026-04-24 — Created the initial Phase 5 deep-learn write-up after the verification gate passed and the roadmap moved on to Phase 6.
-

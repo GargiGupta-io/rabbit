@@ -677,4 +677,4 @@ If you only copy the surface, the clone looks right but is fragile. If you only 
 
 ---
 
-*Generated: 2026-04-27 | Project: Motion clone | Files: apps/desktop/src/desktopShellBridge.js, apps/desktop/src/desktopPlatform.js, apps/desktop/src/main.tsx, apps/desktop/src/identityDefaults.js, apps/desktop/src-tauri/src/main.rs, docs/contracts/desktop-shell-hardening-contract.md, docs/contracts/release-security-contract.md, docs/release-checklist.md*
+*Generated: 2026-04-27 | Project: Rabbit | Files: apps/desktop/src/desktopShellBridge.js, apps/desktop/src/desktopPlatform.js, apps/desktop/src/main.tsx, apps/desktop/src/identityDefaults.js, apps/desktop/src-tauri/src/main.rs, docs/contracts/desktop-shell-hardening-contract.md, docs/contracts/release-security-contract.md, docs/release-checklist.md*
