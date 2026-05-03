@@ -7,6 +7,7 @@
                     "build":  "node ./scripts/build.mjs",
                     "lint":  "node ./scripts/lint.mjs",
                     "test":  "node ./scripts/test.mjs",
+                    "validate:backend":  "node ./scripts/validate-live-backend.mjs",
                     "desktop:build":  "npm --prefix ./apps/desktop run build",
                     "desktop:lint":  "npm --prefix ./apps/desktop run lint",
                     "desktop:native:preflight":  "npm --prefix ./apps/desktop run native:preflight --",
