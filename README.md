@@ -17,6 +17,8 @@ This repo is the planning-and-build workspace for Rabbit, a macOS-first producti
   - `npm run desktop:native:build -- --dry-run`
 - Validate a real backend host without touching the UI:
   - `npm run validate:backend`
+- Start the local Rabbit backend:
+  - `npm run backend:start`
 - Platform strategy:
   - Primary development on Windows
   - macOS signing/notarization handled in CI or remote Mac sessions
@@ -40,6 +42,19 @@ Example PowerShell usage:
 ```powershell
 $env:RABBIT_BACKEND_URL = "https://api.rabbit.example"
 $env:RABBIT_BACKEND_TOKEN = "replace-with-real-token"
+npm.cmd run validate:backend
+```
+
+Local development backend:
+
+```powershell
+npm.cmd run backend:start
+```
+
+Then, in a second PowerShell window:
+
+```powershell
+$env:RABBIT_BACKEND_URL = "http://127.0.0.1:8787"
 npm.cmd run validate:backend
 ```
 
