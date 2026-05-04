@@ -15,9 +15,42 @@ This repo is the planning-and-build workspace for Rabbit, a macOS-first producti
   - `npm run desktop:native:preflight`
 - Preview the native packaging command without running it:
   - `npm run desktop:native:build -- --dry-run`
+- Validate a real backend host without touching the UI:
+  - `npm run validate:backend`
 - Platform strategy:
   - Primary development on Windows
   - macOS signing/notarization handled in CI or remote Mac sessions
+
+## Live backend validation
+
+The backend validator reuses Rabbit's real desktop runtime transport layer instead of a separate test-only client. It is read-only by default and only touches `/powersync/upload` if you explicitly opt in.
+
+Required environment variables:
+- `RABBIT_BACKEND_URL` - backend base URL such as `https://api.rabbit.example`
+
+Optional environment variables:
+- `RABBIT_BACKEND_TOKEN` or `RABBIT_BACKEND_AUTH_TOKEN` - bearer token for authenticated hosts
+- `RABBIT_VALIDATE_WORKSPACE_ID` - bootstrap workspace override
+- `RABBIT_VALIDATE_VIEW_ID` - bootstrap view override
+- `RABBIT_VALIDATE_PROVIDER_IDS` - comma-separated calendar provider ids for the calendar events request
+- `RABBIT_VALIDATE_ALLOW_UPLOAD=1` - allows a real `/powersync/upload` probe; leave unset to keep validation read-only
+
+Example PowerShell usage:
+
+```powershell
+$env:RABBIT_BACKEND_URL = "https://api.rabbit.example"
+$env:RABBIT_BACKEND_TOKEN = "replace-with-real-token"
+npm.cmd run validate:backend
+```
+
+If you want to allow a real upload probe as part of validation:
+
+```powershell
+$env:RABBIT_BACKEND_URL = "https://api.rabbit.example"
+$env:RABBIT_BACKEND_TOKEN = "replace-with-real-token"
+$env:RABBIT_VALIDATE_ALLOW_UPLOAD = "1"
+npm.cmd run validate:backend
+```
 
 ## Packaging status
 
