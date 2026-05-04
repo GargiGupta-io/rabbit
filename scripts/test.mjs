@@ -11,6 +11,11 @@ import {
   hydrateAppDataFromBackend,
   normalizeBackendState
 } from '../apps/desktop/src/backendClient.js';
+import {
+  buildBootstrapResponse,
+  createLocalBackendState,
+  handlePowerSyncUpload
+} from '../apps/backend/server.mjs';
 import { loadStoredData, saveStoredData } from '../apps/desktop/src/storage.js';
 import { createTaskSyncEvent, normalizeOutbox } from '../apps/desktop/src/syncContract.js';
 import { buildCalendarBusyBlocks, normalizeCalendarEvent, normalizeCalendarOverlay } from '../apps/desktop/src/calendarService.js';
@@ -1929,6 +1934,51 @@ runTest('backend state normalization keeps transport config and status stable', 
   assert.equal(normalized.lastPushAt, '2026-04-17T12:00:00.000Z');
   assert.equal(localhost.baseUrl, 'http://localhost:3000');
   assert.equal(defaults.status, 'unconfigured');
+});
+
+runTest('local backend bootstrap response preserves requested workspace and view context', () => {
+  const state = createLocalBackendState();
+  const response = buildBootstrapResponse(state, {
+    workspaceId: 'ws_rabbit_team',
+    viewId: 'view_calendar'
+  });
+
+  assert.equal(response.activeViewId, 'view_calendar');
+  assert.equal(response.pageViewSettings.activeWorkspaceId, 'ws_rabbit_team');
+  assert.equal(response.settings.pageViewSettings.activeViewId, 'view_calendar');
+});
+
+runTest('local backend upload handler remaps temp task ids and persists created tasks', () => {
+  const state = createLocalBackendState();
+  const previousTaskCount = state.tasks.length;
+  const response = handlePowerSyncUpload(state, {
+    operations: [
+      {
+        op_id: 1,
+        op: 'PUT',
+        type: 'tasks',
+        id: 'rabbit_validate_upload_task',
+        data: {
+          id: 'rabbit_validate_upload_task',
+          title: 'Validator upload task',
+          projectId: 'inbox',
+          projectName: 'Inbox',
+          workspaceId: 'ws_private_my_tasks',
+          durationMinutes: 30
+        }
+      }
+    ]
+  });
+
+  assert.equal(response.success, true);
+  assert.equal(response.errors.length, 0);
+  assert.equal(response.idMappings.length, 1);
+  assert.equal(response.idMappings[0].tempId, 'rabbit_validate_upload_task');
+  assert.equal(state.tasks.length, previousTaskCount + 1);
+  assert.equal(
+    state.tasks.some((task) => task.id === response.idMappings[0].realId && task.title === 'Validator upload task'),
+    true
+  );
 });
 
 await runAsyncTest('backend request executor resolves existing query definitions against live config', async () => {
