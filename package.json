@@ -5,6 +5,7 @@
     "type":  "module",
     "scripts":  {
                     "build":  "node ./scripts/build.mjs",
+                    "backend:start":  "node ./apps/backend/server.mjs",
                     "lint":  "node ./scripts/lint.mjs",
                     "test":  "node ./scripts/test.mjs",
                     "validate:backend":  "node ./scripts/validate-live-backend.mjs",
