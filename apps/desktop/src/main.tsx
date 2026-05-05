@@ -86,6 +86,9 @@ if (!root) {
   throw new Error('Missing app root');
 }
 
+const SHOW_INTERNAL_SURFACES = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
+
 const shell = document.createElement('main');
 shell.className = 'desktop-shell';
 root.appendChild(shell);
@@ -96,16 +99,11 @@ shell.innerHTML = `
       <div class="brand-mark">R</div>
       <div class="brand-copy">
         <strong>Rabbit</strong>
-        <p>Reverse-engineered desktop shell baseline</p>
+        <p>Plan the day without the noise.</p>
       </div>
     </div>
 
     <div id="sidebar-nav" class="sidebar-nav"></div>
-
-    <div class="sidebar-footer">
-      <span class="sidebar-foot-label">Phase 4</span>
-      <strong>Shell parity in progress</strong>
-    </div>
   </aside>
 
   <section class="shell-workspace">
@@ -117,12 +115,15 @@ shell.innerHTML = `
           <span class="traffic-light zoom"></span>
         </div>
         <div class="workspace-heading">
-          <span class="workspace-kicker" id="workspace-kicker">Desktop shell</span>
-          <h1>Rabbit planner shell</h1>
+          <span class="workspace-kicker" id="workspace-kicker">Private workspace</span>
+          <h1>Rabbit</h1>
         </div>
       </div>
       <div class="workspace-meta">
-        <p class="workspace-status" id="entitlement-status"></p>
+        <div class="workspace-status-row">
+          <span class="workspace-pill local-only" id="workspace-status-pill">Ready</span>
+          <p class="workspace-status" id="entitlement-status"></p>
+        </div>
         <div class="shell-actions" id="shell-actions">
           <button type="button" class="shell-action" data-shell-command="search">
             <span>Search</span>
@@ -187,8 +188,8 @@ shell.innerHTML = `
         <section class="panel task-surface">
           <div class="surface-header">
             <div>
-              <strong>Task surface</strong>
-              <p id="surface-caption" class="surface-caption">Current planner output</p>
+              <strong>Tasks</strong>
+              <p id="surface-caption" class="surface-caption">Your active queue.</p>
             </div>
             <span id="surface-count" class="surface-count"></span>
           </div>
@@ -200,7 +201,7 @@ shell.innerHTML = `
         <section class="panel agenda-panel" id="agenda-panel"></section>
         <section class="panel inbox-panel" id="inbox-panel"></section>
         <section class="panel sync-panel" id="sync-panel" aria-live="polite"></section>
-        <section class="panel entitlement-panel" id="entitlement-panel" aria-live="polite"></section>
+        <section class="panel entitlement-panel" id="entitlement-panel" aria-live="polite" hidden></section>
       </aside>
     </div>
   </section>
@@ -472,11 +473,17 @@ style.textContent = `
 
   .workspace-status {
     margin: 0;
-    max-width: 360px;
-    font-size: 12px;
+    max-width: 300px;
+    font-size: 13px;
     line-height: 1.5;
     color: var(--text-muted);
     text-align: right;
+  }
+
+  .workspace-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .workspace-meta {
@@ -625,6 +632,10 @@ style.textContent = `
     padding: 18px;
   }
 
+  .panel[hidden] {
+    display: none !important;
+  }
+
   .view-header {
     display: flex;
     align-items: flex-start;
@@ -677,6 +688,30 @@ style.textContent = `
     gap: 10px;
     grid-template-columns: repeat(3, minmax(88px, 1fr));
     min-width: 260px;
+  }
+
+  .view-focus-card {
+    min-width: 180px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+
+  .view-focus-card strong {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .view-focus-card span {
+    color: var(--text-strong);
+    font-size: 15px;
+    line-height: 1.4;
   }
 
   .view-stat {
@@ -867,6 +902,34 @@ style.textContent = `
     font-size: 12px;
   }
 
+  .task-form-advanced {
+    margin-top: 16px;
+    border-top: 1px solid var(--panel-border);
+    padding-top: 14px;
+  }
+
+  .task-form-advanced summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    list-style: none;
+  }
+
+  .task-form-advanced summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .task-form-advanced[open] summary {
+    color: var(--text-strong);
+  }
+
+  .task-form-advanced-grid {
+    margin-top: 14px;
+  }
+
   .form-row {
     display: grid;
     gap: 12px;
@@ -983,9 +1046,9 @@ style.textContent = `
     border: 1px solid var(--panel-border);
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.02);
-    padding: 14px;
+    padding: 16px;
     display: grid;
-    gap: 14px;
+    gap: 12px;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
@@ -1058,7 +1121,7 @@ style.textContent = `
   }
 
   .task-side {
-    width: 190px;
+    width: 168px;
     display: grid;
     gap: 10px;
     align-content: start;
@@ -1118,6 +1181,13 @@ style.textContent = `
   .entitlement-panel {
     display: grid;
     gap: 14px;
+  }
+
+  .rail-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .inbox-summary-grid {
@@ -1228,7 +1298,8 @@ style.textContent = `
   }
 
   .rail-count,
-  .sync-pill {
+  .sync-pill,
+  .workspace-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1241,23 +1312,28 @@ style.textContent = `
   }
 
   .rail-count,
-  .sync-pill.local-only {
+  .sync-pill.local-only,
+  .workspace-pill.local-only {
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-muted);
   }
 
   .sync-pill.pending,
-  .sync-pill.offline {
+  .sync-pill.offline,
+  .workspace-pill.pending,
+  .workspace-pill.offline {
     background: #fff2d8;
     color: #9a6700;
   }
 
-  .sync-pill.healthy {
+  .sync-pill.healthy,
+  .workspace-pill.healthy {
     background: #dcfae6;
     color: #067647;
   }
 
-  .sync-pill.degraded {
+  .sync-pill.degraded,
+  .workspace-pill.degraded {
     background: #fee4e2;
     color: #b42318;
   }
@@ -1408,6 +1484,7 @@ const taskFormPanelEl = shell.querySelector('#task-form-panel') as HTMLDivElemen
 const editorEl = shell.querySelector('#editor') as HTMLElement;
 const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
+const workspaceStatusPillEl = shell.querySelector('#workspace-status-pill') as HTMLSpanElement;
 const surfaceCountEl = shell.querySelector('#surface-count') as HTMLSpanElement;
 const surfaceCaptionEl = shell.querySelector('#surface-caption') as HTMLParagraphElement;
 const warningEl = document.createElement('p');
@@ -1961,10 +2038,15 @@ function renderTaskForm() {
   taskForm = createProjectAwareTaskFormState(taskForm);
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
-    ? 'Rabbit auto-scheduled task'
+    ? 'Auto-scheduled'
     : taskForm.scheduleMode === 'manual'
-      ? 'Manual task outside auto-scheduling'
-      : 'Fixed-time task';
+      ? 'Manual placement'
+      : 'Fixed time';
+  const shouldExpandAdvanced = taskForm.scheduleMode !== 'auto'
+    || taskForm.recurrencePattern !== 'none'
+    || taskForm.recurrenceInterval !== 1
+    || taskForm.minimumDuration !== taskForm.durationMinutes
+    || taskForm.statusId !== 'TODO';
   const stageOptions = taskForm.stageOptions.length
     ? taskForm.stageOptions.map((option) => `
       <option value="${escapeHtml(option.id)}" ${option.id === taskForm.stageDefinitionId ? 'selected' : ''}>
@@ -2019,8 +2101,8 @@ function renderTaskForm() {
   taskFormPanelEl.innerHTML = `
     <div class="composer-header">
       <div>
-        <strong>Task form</strong>
-        <p>Rabbit defaults with project, schedule, and priority context.</p>
+        <strong>New task</strong>
+        <p>Capture the work first. Scheduling details stay tucked away until you need them.</p>
       </div>
       <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
     </div>
@@ -2038,10 +2120,6 @@ function renderTaskForm() {
         <select name="projectId">${projectOptions}</select>
       </label>
       <label class="task-form-field">
-        Assignee
-        <select name="assigneeUserId">${assigneeOptions}</select>
-      </label>
-      <label class="task-form-field">
         Stage
         <select name="stageDefinitionId" ${taskForm.stageOptions.length ? '' : 'disabled'}>${stageOptions}</select>
       </label>
@@ -2050,57 +2128,66 @@ function renderTaskForm() {
         <select name="priorityLevel">${priorityOptions}</select>
       </label>
       <label class="task-form-field">
-        Status
-        <select name="statusId">${statusOptions}</select>
-      </label>
-      <label class="task-form-field">
-        Schedule mode
-        <select name="scheduleMode">${scheduleModeOptions}</select>
-      </label>
-      <label class="task-form-field">
-        Schedule
-        <select name="scheduleId">${scheduleOptions}</select>
-      </label>
-      <label class="task-form-field">
         Due
         <input name="dueAtInput" type="datetime-local" value="${escapeHtml(taskForm.dueAtInput)}" />
-      </label>
-      <label class="task-form-field">
-        ${taskForm.scheduleMode === 'fixed' ? 'Starts' : 'Earliest start'}
-        <input name="startAtInput" type="datetime-local" value="${escapeHtml(taskForm.startAtInput)}" />
       </label>
       <label class="task-form-field">
         Duration
         <input name="durationMinutes" type="number" min="5" max="720" step="5" value="${escapeHtml(String(taskForm.durationMinutes))}" />
       </label>
-      <label class="task-form-field">
-        Min chunk
-        <input name="minimumDuration" type="number" min="5" max="720" step="5" value="${escapeHtml(String(taskForm.minimumDuration))}" />
-      </label>
-      <label class="task-form-field">
-        Deadline
-        <select name="deadlineType">${deadlineOptions}</select>
-      </label>
-      <label class="task-form-field">
-        Recurrence
-        <select name="recurrencePattern">${recurrenceOptions}</select>
-      </label>
-      <label class="task-form-field">
-        Repeat every
-        <input
-          name="recurrenceInterval"
-          type="number"
-          min="1"
-          max="30"
-          step="1"
-          value="${escapeHtml(String(taskForm.recurrenceInterval))}"
-          ${taskForm.recurrencePattern === 'none' ? 'disabled' : ''}
-        />
-      </label>
     </div>
+    <details class="task-form-advanced" ${shouldExpandAdvanced ? 'open' : ''}>
+      <summary>More options</summary>
+      <div class="task-form-grid task-form-advanced-grid">
+        <label class="task-form-field">
+          Assignee
+          <select name="assigneeUserId">${assigneeOptions}</select>
+        </label>
+        <label class="task-form-field">
+          Status
+          <select name="statusId">${statusOptions}</select>
+        </label>
+        <label class="task-form-field">
+          Schedule mode
+          <select name="scheduleMode">${scheduleModeOptions}</select>
+        </label>
+        <label class="task-form-field">
+          Schedule
+          <select name="scheduleId">${scheduleOptions}</select>
+        </label>
+        <label class="task-form-field">
+          ${taskForm.scheduleMode === 'fixed' ? 'Starts' : 'Earliest start'}
+          <input name="startAtInput" type="datetime-local" value="${escapeHtml(taskForm.startAtInput)}" />
+        </label>
+        <label class="task-form-field">
+          Min chunk
+          <input name="minimumDuration" type="number" min="5" max="720" step="5" value="${escapeHtml(String(taskForm.minimumDuration))}" />
+        </label>
+        <label class="task-form-field">
+          Deadline
+          <select name="deadlineType">${deadlineOptions}</select>
+        </label>
+        <label class="task-form-field">
+          Recurrence
+          <select name="recurrencePattern">${recurrenceOptions}</select>
+        </label>
+        <label class="task-form-field">
+          Repeat every
+          <input
+            name="recurrenceInterval"
+            type="number"
+            min="1"
+            max="30"
+            step="1"
+            value="${escapeHtml(String(taskForm.recurrenceInterval))}"
+            ${taskForm.recurrencePattern === 'none' ? 'disabled' : ''}
+          />
+        </label>
+      </div>
+    </details>
     <div class="task-form-foot">
       <div class="task-form-summary">
-        Workspace: ${escapeHtml(taskForm.workspaceName)} | Project: ${escapeHtml(taskForm.projectName)} | Stage: ${escapeHtml(taskForm.stageName || 'No project stage')} | Due: ${escapeHtml(taskForm.dueAtInput || 'No due date')} | Assignee: ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
+        ${escapeHtml(taskForm.workspaceName)} • ${escapeHtml(taskForm.projectName)} • ${escapeHtml(taskForm.stageName || 'No project stage')} • ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
       </div>
       <div class="task-form-actions">
         <button type="button" id="task-form-reset">Reset</button>
@@ -2209,6 +2296,13 @@ function showError(message) {
 }
 
 function updateEntitlementPanel() {
+  if (!SHOW_INTERNAL_SURFACES) {
+    entitlementPanelEl.hidden = true;
+    entitlementPanelEl.innerHTML = '';
+    return;
+  }
+
+  entitlementPanelEl.hidden = false;
   const summary = getEntitlementStateSummary(entitlement);
   const presentation = getEntitlementPresentation(summary);
   const backend = getBackendState();
@@ -2270,10 +2364,13 @@ function refreshEntitlementState() {
   const entitlementSummary = getEntitlementStateSummary(entitlement);
   const entitlementCheck = requireEntitlement('tasks_manage', Date.now(), entitlement);
   canMutate = entitlementCheck.allowed;
-  const aiStatus = entitlementSummary.aiEnabled ? 'enabled' : 'disabled';
-  const calendarStatus = entitlementSummary.calendarReadEnabled ? 'enabled' : 'disabled';
-  const mutationState = canMutate ? 'enabled' : 'read-only';
-  entitlementStatusEl.textContent = `Plan: ${entitlement.plan} | Authority: ${entitlementSummary.authorityStatus} | AI: ${aiStatus} | Calendar read: ${calendarStatus} | Mutations: ${mutationState}`;
+  entitlementStatusEl.textContent = !canMutate
+    ? `Read-only mode: ${entitlementCheck.reason || 'Planning access is currently limited.'}`
+    : entitlementSummary.isOffline
+      ? 'Using cached access while Rabbit waits for a fresh authority check.'
+      : entitlementSummary.isStale
+        ? 'Everything is available. Access will refresh again shortly.'
+        : 'Everything you need to plan, capture, and update work is available.';
   updateEntitlementPanel();
 
   if (!canMutate && entitlementCheck.reason) {
@@ -2348,6 +2445,8 @@ function updateSyncStatus() {
   const backend = getBackendState();
   const backendPresentation = getBackendPresentation(backend);
   const presentation = getSyncPresentation(sync);
+  workspaceStatusPillEl.textContent = presentation.title;
+  workspaceStatusPillEl.className = `workspace-pill ${presentation.badgeClass}`;
   const cacheKeysLabel = cache.displayKeys.length
     ? cache.displayKeys.join(' | ')
     : 'No persisted query keys yet.';
@@ -2355,6 +2454,27 @@ function updateSyncStatus() {
   const refreshLabel = isBackendBusy && backendBusyAction === 'refresh' ? 'Refreshing...' : 'Refresh remote';
   const pushLabel = isBackendBusy && backendBusyAction === 'push' ? 'Pushing...' : 'Push outbox';
   const backendConfigured = hasBackendConfiguration(backend);
+
+  if (!SHOW_INTERNAL_SURFACES) {
+    syncPanelEl.innerHTML = `
+      <div class="rail-header">
+        <strong>Sync</strong>
+        <span class="sync-pill ${presentation.badgeClass}">${escapeHtml(presentation.title)}</span>
+      </div>
+      <div class="sync-grid">
+        <div class="sync-stat">
+          <strong>Pending</strong>
+          <div class="sync-value">${escapeHtml(String(sync.pendingCount))}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Last update</strong>
+          <div class="sync-value">${escapeHtml(formatSyncDate(sync.lastSyncAt))}</div>
+        </div>
+      </div>
+      <p class="sync-note">${escapeHtml(presentation.detail)}</p>
+    `;
+    return;
+  }
 
   syncPanelEl.innerHTML = `
     <div class="sync-header">
@@ -2448,9 +2568,7 @@ function renderDesktopPlatformChrome(platformProfile) {
   shell.classList.toggle('platform-macos', platformProfile.isMacLike);
   shell.classList.toggle('platform-windows', platformProfile.isWindowsLike);
   windowChromeEl.style.visibility = platformProfile.windowChrome.showTrafficLights ? 'visible' : 'hidden';
-  workspaceKickerEl.textContent = platformProfile.isMacLike
-    ? 'macOS desktop shell'
-    : 'Desktop shell';
+  workspaceKickerEl.textContent = 'Private workspace';
 
   shellActionsEl.querySelectorAll('[data-key-hint]').forEach((element) => {
     if (!(element instanceof HTMLElement)) {
@@ -2778,11 +2896,11 @@ function updateSummary(plannerState, shellState) {
   };
   const activeLabel = meta.title || 'Calendar';
   const permissionLabel = overlay.permissionStatus === 'granted'
-    ? `${plannerState.planWindow.busyBlocks.length} busy blocks active in ${activeLabel}`
-    : `Calendar overlay ${overlay.permissionStatus}`;
+    ? `${plannerState.planWindow.busyBlocks.length} busy times are already protected in ${activeLabel}.`
+    : 'Calendar availability has not synced yet.';
   const pendingLabel = plannerState.pendingTaskIds.length
-    ? `${plannerState.pendingTaskIds.length} pending reschedule`
-    : 'No pending reschedule';
+    ? `${plannerState.pendingTaskIds.length} task${plannerState.pendingTaskIds.length === 1 ? '' : 's'} need a fresh schedule.`
+    : 'The queue is fitting cleanly into the current plan.';
 
   metricsEl.innerHTML = `
     <div class="metric-grid">
@@ -2803,23 +2921,11 @@ function updateSummary(plannerState, shellState) {
         <div class="metric-value">${escapeHtml(String(plannerState.planWindow.busyBlocks.length))}</div>
       </div>
       <div class="metric-card">
-        <strong>Blocked tasks</strong>
-        <div class="metric-value">${escapeHtml(String(plannerState.blockedTaskIds.length))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Conflict tasks</strong>
-        <div class="metric-value">${escapeHtml(String(plannerState.conflictTaskIds.length))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Can't fit</strong>
-        <div class="metric-value">${escapeHtml(String(plannerState.unschedulableTaskIds.length))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Available minutes</strong>
+        <strong>Open space</strong>
         <div class="metric-value">${escapeHtml(String(plannerState.planWindow.availableMinutes))}</div>
       </div>
     </div>
-    <p class="metric-note">${escapeHtml(permissionLabel)} | ${escapeHtml(pendingLabel)} | Refreshed: ${escapeHtml(formatSyncDate(overlay.refreshedAt))}</p>
+    <p class="metric-note">${escapeHtml(permissionLabel)} ${escapeHtml(pendingLabel)} Last calendar refresh: ${escapeHtml(formatSyncDate(overlay.refreshedAt))}.</p>
   `;
 }
 
@@ -2885,41 +2991,34 @@ function renderTabStrip(shellState) {
 
 function renderViewHeader(shellState, plannerState) {
   const meta = plannerState.viewState.meta;
-  const visibleColumns = Array.isArray(meta.columns) ? meta.columns.filter((column) => column.visible) : [];
   const chips = [
-    `${meta.visibility} view`,
-    `${meta.layout} layout`,
-    `${meta.itemType} collection`,
     meta.collectionLabel,
-    `${plannerState.visibleTasks.length} visible ${meta.itemType === 'projects' ? 'records' : 'tasks'}`,
-    `${meta.sort.field} ${meta.sort.direction}`,
-    `${visibleColumns.length} visible columns`
+    activePlanWindow === 'today'
+      ? 'Today'
+      : activePlanWindow === 'week'
+        ? 'This week'
+        : 'All planned work',
+    `${plannerState.visibleTasks.length} visible ${meta.itemType === 'projects' ? 'records' : 'tasks'}`
   ]
-    .concat(Array.isArray(meta.groupBy) ? meta.groupBy.map((entry) => `${entry.key}${entry.by ? ` by ${entry.by}` : ''}`) : [])
-    .concat(Array.isArray(meta.filterSummary) ? meta.filterSummary : [])
+    .concat(Array.isArray(meta.filterSummary) ? meta.filterSummary.slice(0, 2) : [])
     .map((chip) => `<span class="view-chip">${escapeHtml(chip)}</span>`)
     .join('');
+  const focusLabel = activePlanWindow === 'today'
+    ? 'Focused on today'
+    : activePlanWindow === 'week'
+      ? 'Focused on this week'
+      : 'Full queue';
 
   viewHeaderEl.innerHTML = `
     <div class="view-copy">
-      <div class="view-breadcrumb">Workspace / ${escapeHtml(meta.title)}</div>
+      <div class="view-breadcrumb">My workspace</div>
       <h2>${escapeHtml(meta.title)}</h2>
       <p>${escapeHtml(meta.description)}</p>
       <div class="view-chip-row">${chips}</div>
     </div>
-    <div class="view-stat-grid">
-      <div class="view-stat">
-        <strong>Visible</strong>
-        <span>${escapeHtml(String(plannerState.visibleTasks.length))}</span>
-      </div>
-      <div class="view-stat">
-        <strong>Columns</strong>
-        <span>${escapeHtml(String(visibleColumns.length))}</span>
-      </div>
-      <div class="view-stat">
-        <strong>Groups</strong>
-        <span>${escapeHtml(String(meta.groupBy.length))}</span>
-      </div>
+    <div class="view-focus-card">
+      <strong>${escapeHtml(focusLabel)}</strong>
+      <span>${escapeHtml(String(plannerState.visibleTasks.length))} task${plannerState.visibleTasks.length === 1 ? '' : 's'} ready to review.</span>
     </div>
   `;
 }
@@ -2950,7 +3049,7 @@ function renderAgenda(shellState) {
   const agenda = shellState.agenda;
   agendaPanelEl.innerHTML = `
     <div class="rail-header">
-      <strong>Agenda rail</strong>
+      <strong>Agenda</strong>
       <span class="rail-count">${escapeHtml(String(agenda.counts.total))} items</span>
     </div>
     <div class="agenda-groups">
@@ -2987,23 +3086,10 @@ function renderInboxPanel() {
 
   inboxPanelEl.innerHTML = `
     <div class="rail-header">
-      <strong>${escapeHtml(inboxState.activeInboxLabel)}</strong>
+      <strong>Inbox</strong>
       <span class="rail-count">${escapeHtml(String(inboxState.unreadCount))} unread</span>
     </div>
-    <div class="inbox-summary-grid">
-      <div class="inbox-summary-card">
-        <strong>Total</strong>
-        <span>${escapeHtml(String(inboxState.totalCount))}</span>
-      </div>
-      <div class="inbox-summary-card">
-        <strong>Needs action</strong>
-        <span>${escapeHtml(String(inboxState.needsActionCount))}</span>
-      </div>
-      <div class="inbox-summary-card">
-        <strong>Sources</strong>
-        <span>${escapeHtml(String(inboxState.sourceCount))}</span>
-      </div>
-    </div>
+    <p class="rail-note">${escapeHtml(String(inboxState.needsActionCount))} item(s) still need action across ${escapeHtml(String(inboxState.sourceCount))} source(s).</p>
     <div class="inbox-list">${items}</div>
   `;
 }
@@ -3028,10 +3114,10 @@ function renderTasks(plannerState, shellState) {
   taskListEl.innerHTML = '';
   surfaceCountEl.textContent = `${visibleTasks.length} visible`;
   surfaceCaptionEl.textContent = activePlanWindow === 'today'
-    ? `${meta.collectionLabel} scoped to today.`
+    ? 'Scheduled for today.'
     : activePlanWindow === 'week'
-      ? `${meta.collectionLabel} scoped to this week.`
-      : `${meta.description} ${meta.filterSummary.length ? `Filters: ${meta.filterSummary.join(', ')}.` : ''}`;
+      ? 'Scheduled for the next seven days.'
+      : `${meta.description}${meta.filterSummary.length ? ` Filters: ${meta.filterSummary.join(', ')}.` : ''}`;
 
   if (!visibleTasks.length) {
     taskListEl.innerHTML = `<p class="muted">${escapeHtml(meta.emptyState)}</p>`;
@@ -3046,19 +3132,19 @@ function renderTasks(plannerState, shellState) {
     const blockerLabels = (semantics.blockedByOpenTaskIds || []).map((taskId) => taskTitleById.get(taskId) || taskId);
     const alerts = [
       blockerLabels.length
-        ? `<div class="task-alert warning">Blocked by open tasks: ${escapeHtml(blockerLabels.join(', '))}</div>`
+        ? `<div class="task-alert warning">Blocked by: ${escapeHtml(blockerLabels.join(', '))}</div>`
         : '',
       conflictTaskSet.has(task.id) && conflictLabels.length
-        ? `<div class="task-alert error">Task overlap with: ${escapeHtml(conflictLabels.join(', '))}</div>`
+        ? `<div class="task-alert error">Overlap with: ${escapeHtml(conflictLabels.join(', '))}</div>`
         : '',
       calendarConflictTaskSet.has(task.id)
-        ? '<div class="task-alert error">Calendar busy block overlaps this task.</div>'
+        ? '<div class="task-alert error">Busy time conflict.</div>'
         : '',
       pendingTaskSet.has(task.id)
-        ? '<div class="task-alert warning">Rabbit currently treats this task as pending reschedule.</div>'
+        ? '<div class="task-alert warning">Needs a new schedule.</div>'
         : '',
       unschedulableTaskSet.has(task.id)
-        ? '<div class="task-alert error">Rabbit currently treats this task as unable to fit in the current schedule window.</div>'
+        ? '<div class="task-alert error">Does not fit in this planning window.</div>'
         : ''
     ].filter(Boolean).join('');
     const item = document.createElement('article');
@@ -3067,16 +3153,16 @@ function renderTasks(plannerState, shellState) {
       <div class="task-main">
         <div class="task-meta-row">
           <span class="project-chip">${escapeHtml(task.projectName || 'Inbox')}</span>
-          <span class="status-chip">${escapeHtml(task.status)}</span>
+          ${task.status === 'done' ? '<span class="status-chip">Done</span>' : ''}
           ${schedule.shouldDisplay ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
         <div class="task-note">${escapeHtml(task.description || 'No notes')}</div>
         <div class="task-foot">
-          <span>Due: ${escapeHtml(formatDisplayDateTime(task.dueAt))}</span>
-          <span>Duration: ${escapeHtml(String(task.durationMinutes))} min</span>
-          <span>Recurrence: ${escapeHtml(task.recurrence.pattern)}</span>
-          ${schedule.shouldDisplay ? `<span>Schedule: ${escapeHtml(schedule.label)}</span>` : ''}
+          <span>Due ${escapeHtml(formatDisplayDateTime(task.dueAt))}</span>
+          <span>${escapeHtml(String(task.durationMinutes))} min</span>
+          <span>${escapeHtml(task.recurrence.pattern)}</span>
+          ${schedule.shouldDisplay ? `<span>${escapeHtml(schedule.label)}</span>` : ''}
         </div>
         ${alerts}
       </div>
