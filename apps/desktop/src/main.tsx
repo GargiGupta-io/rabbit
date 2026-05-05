@@ -1889,50 +1889,50 @@ function getSyncPresentation(sync) {
     return {
       badgeClass: 'offline',
       title: 'Offline',
-      detail: 'Changes are saved on this device and will stay queued until sync is available again.'
+      detail: 'Rabbit saved your latest changes here and will try again once you are back online.'
     };
   }
 
   if (sync.isFailed) {
     return {
       badgeClass: 'degraded',
-      title: 'Degraded',
-      detail: 'The local outbox is preserved, but remote sync needs attention before these changes are confirmed elsewhere.'
+      title: 'Needs attention',
+      detail: 'Rabbit kept your latest changes safe on this device, but it could not finish syncing them yet.'
     };
   }
 
   if (sync.isSyncing) {
     return {
       badgeClass: 'healthy',
-      title: 'Syncing',
-      detail: 'The local outbox is actively being prepared for sync.'
+      title: 'Saving',
+      detail: 'Rabbit is saving your latest changes now.'
     };
   }
 
   if (sync.hasPendingChanges) {
     return {
       badgeClass: 'pending',
-      title: 'Pending',
+      title: 'Changes waiting',
       detail: backendConfigured
-        ? 'Changes are stored locally and waiting for the next backend push.'
-        : 'Changes are stored locally and waiting for the future remote sync path.'
+        ? 'Rabbit saved your changes and will send them on the next sync.'
+        : 'Rabbit saved your changes on this device.'
     };
   }
 
   if (sync.isSynced) {
     return {
       badgeClass: 'healthy',
-      title: 'Healthy',
-      detail: 'No pending local changes are waiting in the outbox.'
+      title: 'Up to date',
+      detail: 'Everything in this workspace is saved.'
     };
   }
 
   return {
     badgeClass: 'local-only',
-    title: backendConfigured ? 'Configured' : 'Local only',
+    title: backendConfigured ? 'Connected' : 'Saved here',
     detail: backendConfigured
-      ? 'A backend is configured, but Rabbit has not completed a live sync operation in this session yet.'
-      : 'This install is ready for sync later, but no remote sync has run in this session yet.'
+      ? 'Rabbit is connected and ready for the next update.'
+      : 'Rabbit is ready to plan locally on this device.'
   };
 }
 
@@ -2458,16 +2458,16 @@ function updateSyncStatus() {
   if (!SHOW_INTERNAL_SURFACES) {
     syncPanelEl.innerHTML = `
       <div class="rail-header">
-        <strong>Sync</strong>
+        <strong>Workspace status</strong>
         <span class="sync-pill ${presentation.badgeClass}">${escapeHtml(presentation.title)}</span>
       </div>
       <div class="sync-grid">
         <div class="sync-stat">
-          <strong>Pending</strong>
-          <div class="sync-value">${escapeHtml(String(sync.pendingCount))}</div>
+          <strong>${sync.pendingCount ? 'Changes waiting' : 'All saved'}</strong>
+          <div class="sync-value">${escapeHtml(String(sync.pendingCount || 0))}</div>
         </div>
         <div class="sync-stat">
-          <strong>Last update</strong>
+          <strong>Last saved</strong>
           <div class="sync-value">${escapeHtml(formatSyncDate(sync.lastSyncAt))}</div>
         </div>
       </div>
@@ -3562,6 +3562,10 @@ taskListEl.addEventListener('click', (event) => {
 });
 
 syncPanelEl.addEventListener('input', (event) => {
+  if (!SHOW_INTERNAL_SURFACES) {
+    return;
+  }
+
   const target = event.target;
   if (!(target instanceof HTMLInputElement)) {
     return;
@@ -3578,6 +3582,10 @@ syncPanelEl.addEventListener('input', (event) => {
 });
 
 syncPanelEl.addEventListener('click', async (event) => {
+  if (!SHOW_INTERNAL_SURFACES) {
+    return;
+  }
+
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
     return;
@@ -3627,6 +3635,10 @@ syncPanelEl.addEventListener('click', async (event) => {
 });
 
 entitlementPanelEl.addEventListener('change', (event) => {
+  if (!SHOW_INTERNAL_SURFACES) {
+    return;
+  }
+
   const target = event.target;
   if (!(target instanceof HTMLSelectElement)) {
     return;
@@ -3640,6 +3652,10 @@ entitlementPanelEl.addEventListener('change', (event) => {
 });
 
 entitlementPanelEl.addEventListener('click', async (event) => {
+  if (!SHOW_INTERNAL_SURFACES) {
+    return;
+  }
+
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
     return;
