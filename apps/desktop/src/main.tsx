@@ -620,13 +620,12 @@ style.textContent = `
   .view-header {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
+    gap: 14px;
   }
 
   .view-copy h2 {
-    margin: 6px 0 8px;
-    font-size: 26px;
+    margin: 4px 0 6px;
+    font-size: 24px;
     line-height: 1.1;
     letter-spacing: -0.03em;
     color: var(--text-strong);
@@ -634,8 +633,9 @@ style.textContent = `
 
   .view-copy p {
     margin: 0;
-    max-width: 620px;
+    max-width: 560px;
     color: var(--text-muted);
+    font-size: 13px;
     line-height: 1.55;
   }
 
@@ -647,21 +647,21 @@ style.textContent = `
   }
 
   .view-chip-row {
-    margin-top: 14px;
+    margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
   }
 
   .view-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 10px;
+    padding: 6px 9px;
     border-radius: 999px;
-    background: rgba(96, 165, 250, 0.12);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .view-stat-grid {
@@ -669,30 +669,6 @@ style.textContent = `
     gap: 10px;
     grid-template-columns: repeat(3, minmax(88px, 1fr));
     min-width: 260px;
-  }
-
-  .view-focus-card {
-    min-width: 180px;
-    padding: 14px 16px;
-    border-radius: 18px;
-    border: 1px solid var(--panel-border);
-    background: rgba(255, 255, 255, 0.03);
-    display: grid;
-    gap: 6px;
-    align-content: start;
-  }
-
-  .view-focus-card strong {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-soft);
-  }
-
-  .view-focus-card span {
-    color: var(--text-strong);
-    font-size: 15px;
-    line-height: 1.4;
   }
 
   .view-stat {
@@ -864,39 +840,42 @@ style.textContent = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 14px;
   }
 
   .composer-header p {
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .composer-mode {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 999px;
-    background: rgba(96, 165, 250, 0.12);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .task-form-advanced {
-    margin-top: 16px;
+    margin-top: 14px;
     border-top: 1px solid var(--panel-border);
-    padding-top: 14px;
+    padding-top: 12px;
   }
 
   .task-form-advanced summary {
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     list-style: none;
   }
@@ -910,7 +889,7 @@ style.textContent = `
   }
 
   .task-form-advanced-grid {
-    margin-top: 14px;
+    margin-top: 12px;
   }
 
   .form-row {
@@ -922,13 +901,13 @@ style.textContent = `
 
   .task-form-grid {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .task-form-field {
     display: grid;
-    gap: 6px;
+    gap: 5px;
     font-size: 12px;
     color: var(--text-muted);
   }
@@ -942,43 +921,55 @@ style.textContent = `
   .task-form-field select {
     width: 100%;
     border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    padding: 11px 12px;
+    border-radius: 12px;
+    padding: 10px 11px;
     background: rgba(255, 255, 255, 0.02);
     color: var(--text-strong);
     font: inherit;
   }
 
   .task-form-field textarea {
-    min-height: 84px;
+    min-height: 68px;
     resize: vertical;
   }
 
   .task-form-foot {
-    margin-top: 14px;
+    margin-top: 12px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
   }
 
   .task-form-summary {
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.5;
+  }
+
+  .task-summary-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-soft);
+    font-size: 11px;
+    line-height: 1.4;
   }
 
   .task-form-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
   .task-form-actions button {
     border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    padding: 10px 14px;
+    border-radius: 12px;
+    padding: 9px 12px;
     background: rgba(255, 255, 255, 0.02);
     color: var(--text-strong);
     cursor: pointer;
@@ -1000,12 +991,12 @@ style.textContent = `
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
 
   .surface-header p {
     margin: 4px 0 0;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-muted);
   }
 
@@ -1013,25 +1004,25 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 999px;
-    background: #eef4fb;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .task-list {
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
   .task-item {
     border: 1px solid var(--panel-border);
-    border-radius: 18px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.02);
-    padding: 16px;
+    padding: 14px;
     display: grid;
-    gap: 12px;
+    gap: 10px;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
@@ -1042,8 +1033,8 @@ style.textContent = `
   .task-meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
   }
 
   .project-chip,
@@ -1052,12 +1043,12 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-muted);
-    font-size: 11px;
-    letter-spacing: 0.06em;
+    font-size: 10px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
@@ -1077,7 +1068,7 @@ style.textContent = `
   }
 
   .task-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--text-strong);
     line-height: 1.3;
@@ -1089,39 +1080,55 @@ style.textContent = `
   }
 
   .task-note {
-    margin-top: 8px;
+    margin-top: 6px;
     color: var(--text-muted);
+    font-size: 13px;
     line-height: 1.5;
   }
 
   .task-foot {
-    margin-top: 12px;
+    margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  .task-foot span {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .task-side {
-    width: 168px;
+    width: 132px;
     display: grid;
-    gap: 10px;
+    gap: 8px;
     align-content: start;
     justify-items: end;
   }
 
   .task-time {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-muted);
     text-align: right;
   }
 
   .task-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+
+  .task-actions button {
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 12px;
   }
 
   .muted {
@@ -1132,8 +1139,8 @@ style.textContent = `
   .task-alert,
   .error,
   .editor-message {
-    margin-top: 10px;
-    font-size: 12px;
+    margin-top: 8px;
+    font-size: 11px;
     line-height: 1.5;
   }
 
@@ -1163,13 +1170,13 @@ style.textContent = `
   .sync-panel,
   .entitlement-panel {
     display: grid;
-    gap: 14px;
+    gap: 12px;
   }
 
   .rail-note {
     margin: 0;
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.5;
   }
 
@@ -1203,21 +1210,22 @@ style.textContent = `
 
   .inbox-list {
     display: grid;
-    gap: 10px;
+    gap: 8px;
   }
 
   .inbox-item {
     border: 1px solid var(--panel-border);
-    border-radius: 18px;
-    padding: 12px;
+    border-radius: 16px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.02);
     display: grid;
-    gap: 10px;
+    gap: 8px;
   }
 
   .inbox-item.unread {
     border-color: rgba(96, 165, 250, 0.4);
     background: rgba(96, 165, 250, 0.08);
+    box-shadow: inset 2px 0 0 rgba(96, 165, 250, 0.72);
   }
 
   .inbox-item-head,
@@ -1229,7 +1237,7 @@ style.textContent = `
   }
 
   .inbox-item-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--text-strong);
     line-height: 1.35;
@@ -1238,7 +1246,7 @@ style.textContent = `
   .inbox-item-subtitle,
   .inbox-item-note,
   .inbox-item-time {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.5;
     color: var(--text-muted);
   }
@@ -1257,12 +1265,12 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-muted);
-    font-size: 11px;
-    letter-spacing: 0.05em;
+    font-size: 10px;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
@@ -1323,17 +1331,17 @@ style.textContent = `
 
   .agenda-groups {
     display: grid;
-    gap: 14px;
+    gap: 12px;
   }
 
   .agenda-group {
     display: grid;
-    gap: 10px;
+    gap: 8px;
   }
 
   .agenda-group h3 {
     margin: 0;
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-soft);
@@ -1341,26 +1349,27 @@ style.textContent = `
 
   .agenda-items {
     display: grid;
-    gap: 10px;
+    gap: 8px;
   }
 
   .agenda-item {
     border: 1px solid var(--panel-border);
-    border-radius: 16px;
-    padding: 12px;
+    border-radius: 14px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.03);
     display: grid;
-    gap: 8px;
+    gap: 6px;
   }
 
   .agenda-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
   }
 
   .agenda-title {
+    font-size: 13px;
     font-weight: 700;
     color: var(--text-strong);
     line-height: 1.35;
@@ -1368,7 +1377,7 @@ style.textContent = `
 
   .agenda-subtitle,
   .agenda-time {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-muted);
   }
 
@@ -2085,7 +2094,7 @@ function renderTaskForm() {
     <div class="composer-header">
       <div>
         <strong>New task</strong>
-        <p>Capture the work first. Scheduling details stay tucked away until you need them.</p>
+        <p>Capture the work first. Scheduling can stay tucked away until you need it.</p>
       </div>
       <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
     </div>
@@ -2980,17 +2989,11 @@ function renderViewHeader(shellState, plannerState) {
       ? 'Today'
       : activePlanWindow === 'week'
         ? 'This week'
-        : 'All planned work',
-    `${plannerState.visibleTasks.length} visible ${meta.itemType === 'projects' ? 'records' : 'tasks'}`
+        : 'All planned work'
   ]
-    .concat(Array.isArray(meta.filterSummary) ? meta.filterSummary.slice(0, 2) : [])
+    .concat(Array.isArray(meta.filterSummary) ? meta.filterSummary.slice(0, 1) : [])
     .map((chip) => `<span class="view-chip">${escapeHtml(chip)}</span>`)
     .join('');
-  const focusLabel = activePlanWindow === 'today'
-    ? 'Focused on today'
-    : activePlanWindow === 'week'
-      ? 'Focused on this week'
-      : 'Full queue';
 
   viewHeaderEl.innerHTML = `
     <div class="view-copy">
@@ -2998,10 +3001,6 @@ function renderViewHeader(shellState, plannerState) {
       <h2>${escapeHtml(meta.title)}</h2>
       <p>${escapeHtml(meta.description)}</p>
       <div class="view-chip-row">${chips}</div>
-    </div>
-    <div class="view-focus-card">
-      <strong>${escapeHtml(focusLabel)}</strong>
-      <span>${escapeHtml(String(plannerState.visibleTasks.length))} task${plannerState.visibleTasks.length === 1 ? '' : 's'} ready to review.</span>
     </div>
   `;
 }
@@ -3011,11 +3010,13 @@ function renderAgendaGroup(title, entries, emptyMessage) {
     ? entries.map((entry) => `
         <article class="agenda-item">
           <div class="agenda-head">
-            <div class="agenda-title">${escapeHtml(entry.title)}</div>
-            <span class="agenda-type">${escapeHtml(entry.sourceType)}</span>
+            <div>
+              <div class="agenda-title">${escapeHtml(entry.title)}</div>
+              ${entry.subtitle ? `<div class="agenda-subtitle">${escapeHtml(entry.subtitle)}</div>` : ''}
+            </div>
+            <div class="agenda-time">${escapeHtml(formatCompactDate(entry.startAt || entry.dueAt || entry.sortAt))}</div>
           </div>
-          <div class="agenda-subtitle">${escapeHtml(entry.subtitle || 'Untitled source')}</div>
-          <div class="agenda-time">${escapeHtml(formatCompactDate(entry.startAt || entry.dueAt || entry.sortAt))}</div>
+          <span class="agenda-type">${escapeHtml(entry.sourceType)}</span>
         </article>
       `).join('')
     : `<p class="muted">${escapeHtml(emptyMessage)}</p>`;
@@ -3055,24 +3056,26 @@ function renderInboxPanel() {
             </div>
             <div class="inbox-item-time">${escapeHtml(formatCompactDate(item.createdTime))}</div>
           </div>
-          <p class="inbox-item-note">${escapeHtml(item.description || 'No additional details are available yet.')}</p>
-          <div class="inbox-item-foot">
-            <div class="inbox-pill-row">
-              <span class="inbox-pill">${escapeHtml(item.sourceLabel)}</span>
-              <span class="inbox-pill">${escapeHtml(item.actionLabel)}</span>
-            </div>
-            <div class="inbox-item-time">${escapeHtml(item.targetTitle || 'Inbox item')}</div>
+          ${item.description ? `<p class="inbox-item-note">${escapeHtml(item.description)}</p>` : ''}
+          <div class="inbox-pill-row">
+            <span class="inbox-pill">${escapeHtml(item.sourceLabel)}</span>
+            <span class="inbox-pill">${escapeHtml(item.actionLabel)}</span>
           </div>
         </article>
       `).join('')
     : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`;
+  const inboxNote = inboxState.items.length
+    ? inboxState.needsActionCount > 0
+      ? `${inboxState.needsActionCount} item(s) still need action.`
+      : 'Everything in your inbox is clear.'
+    : 'No inbox follow-up is waiting right now.';
 
   inboxPanelEl.innerHTML = `
     <div class="rail-header">
       <strong>Inbox</strong>
       <span class="rail-count">${escapeHtml(String(inboxState.unreadCount))} unread</span>
     </div>
-    <p class="rail-note">${escapeHtml(String(inboxState.needsActionCount))} item(s) still need action across ${escapeHtml(String(inboxState.sourceCount))} source(s).</p>
+    <p class="rail-note">${escapeHtml(inboxNote)}</p>
     <div class="inbox-list">${items}</div>
   `;
 }
@@ -3095,7 +3098,7 @@ function renderTasks(plannerState, shellState) {
   const pendingTaskSet = new Set(pendingTaskIds);
   const taskTitleById = new Map(appData.tasks.map((task) => [task.id, task.title]));
   taskListEl.innerHTML = '';
-  surfaceCountEl.textContent = `${visibleTasks.length} visible`;
+  surfaceCountEl.textContent = `${visibleTasks.length} ${meta.itemType === 'projects' ? 'records' : 'tasks'}`;
   surfaceCaptionEl.textContent = activePlanWindow === 'today'
     ? 'Scheduled for today.'
     : activePlanWindow === 'week'
@@ -3113,21 +3116,27 @@ function renderTasks(plannerState, shellState) {
     const schedule = getTaskScheduleSummary(task);
     const conflictLabels = conflictIds.map((taskId) => taskTitleById.get(taskId) || taskId);
     const blockerLabels = (semantics.blockedByOpenTaskIds || []).map((taskId) => taskTitleById.get(taskId) || taskId);
+    const footItems = [
+      task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : '',
+      task.durationMinutes ? `${task.durationMinutes} min` : '',
+      task.recurrence.pattern !== 'none' ? task.recurrence.pattern : '',
+      schedule.shouldDisplay ? schedule.label : ''
+    ].filter(Boolean);
     const alerts = [
       blockerLabels.length
-        ? `<div class="task-alert warning">Blocked by: ${escapeHtml(blockerLabels.join(', '))}</div>`
+        ? `<div class="task-alert warning">Blocked by open task: ${escapeHtml(blockerLabels.join(', '))}</div>`
         : '',
       conflictTaskSet.has(task.id) && conflictLabels.length
-        ? `<div class="task-alert error">Overlap with: ${escapeHtml(conflictLabels.join(', '))}</div>`
+        ? `<div class="task-alert error">Conflicts with: ${escapeHtml(conflictLabels.join(', '))}</div>`
         : '',
       calendarConflictTaskSet.has(task.id)
-        ? '<div class="task-alert error">Busy time conflict.</div>'
+        ? '<div class="task-alert error">Busy calendar slot.</div>'
         : '',
       pendingTaskSet.has(task.id)
-        ? '<div class="task-alert warning">Needs a new schedule.</div>'
+        ? '<div class="task-alert warning">Needs reschedule.</div>'
         : '',
       unschedulableTaskSet.has(task.id)
-        ? '<div class="task-alert error">Does not fit in this planning window.</div>'
+        ? '<div class="task-alert error">Outside this planning window.</div>'
         : ''
     ].filter(Boolean).join('');
     const item = document.createElement('article');
@@ -3140,13 +3149,8 @@ function renderTasks(plannerState, shellState) {
           ${schedule.shouldDisplay ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
-        <div class="task-note">${escapeHtml(task.description || 'No notes')}</div>
-        <div class="task-foot">
-          <span>Due ${escapeHtml(formatDisplayDateTime(task.dueAt))}</span>
-          <span>${escapeHtml(String(task.durationMinutes))} min</span>
-          <span>${escapeHtml(task.recurrence.pattern)}</span>
-          ${schedule.shouldDisplay ? `<span>${escapeHtml(schedule.label)}</span>` : ''}
-        </div>
+        ${task.description ? `<div class="task-note">${escapeHtml(task.description)}</div>` : ''}
+        ${footItems.length ? `<div class="task-foot">${footItems.map((label) => `<span>${escapeHtml(label)}</span>`).join('')}</div>` : ''}
         ${alerts}
       </div>
       <div class="task-side">
