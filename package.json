@@ -10,6 +10,7 @@
                     "test":  "node ./scripts/test.mjs",
                     "validate:backend":  "node ./scripts/validate-live-backend.mjs",
                     "desktop:build":  "npm --prefix ./apps/desktop run build",
+                    "desktop:serve":  "node ./apps/desktop/scripts/serve.mjs",
                     "desktop:lint":  "npm --prefix ./apps/desktop run lint",
                     "desktop:native:preflight":  "npm --prefix ./apps/desktop run native:preflight --",
                     "desktop:native:build":  "npm --prefix ./apps/desktop run native:build --",
