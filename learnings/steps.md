@@ -1291,3 +1291,34 @@ Rabbit is no longer only a local desktop shell with backend-shaped code lying un
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run lint`
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run build`
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
+
+---
+## Maintenance - Windows Product Polish and Completion
+*Completed: 2026-05-05*
+
+**What was built**
+- `apps/desktop/src/main.tsx` - removes prototype-facing shell copy, hides diagnostics from the customer surface by default, simplifies the sync/status experience, tightens the shell hierarchy, and reduces clutter across the task, agenda, inbox, and composer surfaces.
+- `apps/desktop/src/state.js` and `apps/desktop/src/shellService.js` - shorten inbox and saved-view empty states so the app sounds calmer when there is nothing to show.
+- `learnings/rabbit-windows-polish-finish-line.md` - defines what counts as done for this Windows polish pass and explicitly defers the Mac/release/backend-expansion work that should not keep the phase open.
+- `learnings/phase-10-windows-product-polish-deeplearn.md` - captures the deeper reasoning behind the polish pass, the Motion-facing subtraction decisions, the live QA loop, and the phase boundary.
+
+**In plain English**
+Rabbit already worked before this pass, but it still looked and talked too much like an internal build. This phase made the product calmer: less scaffolding language, less diagnostic noise, denser content surfaces, and better empty/loading/error states. Just as important, it did not stop at visual cleanup. The app was run through a live create, push, refresh, complete, and delete flow against the local backend so the product finish would be backed by a real task loop and not only by CSS-level confidence.
+
+**Verification**
+- `npm.cmd run lint`
+- `npm.cmd run build`
+- `npm.cmd run test`
+- `npm.cmd run desktop:build`
+- live Windows preview served at `http://127.0.0.1:4173`
+- live local backend served at `http://127.0.0.1:8787`
+- verified:
+  - task create
+  - outbox push
+  - remote refresh
+  - task complete
+  - task delete
+  - inbox and agenda summaries after those actions
+
+---
+*Next: Start a new `/plan` for Mac/Tauri desktop validation, production backend hardening, or deeper product-surface expansion. The Windows polish pass is now closed.*

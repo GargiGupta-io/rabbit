@@ -189,6 +189,8 @@ New priority order:
 - `learnings/phase-9-packaging-native-build-release-deeplearn.md` - Phase 9 packaging, native build lane, and release-setup learning write-up
 - `learnings/live-backend-integration-deeplearn.md` - live backend runtime notes covering transport execution, remote hydration, PowerSync upload wiring, and backend-driven entitlement refresh
 - `learnings/rabbit-rebrand-deeplearn.md` - Rabbit product-identity rebrand notes covering metadata, persistence compatibility, seeded content, and documentation scope
+- `learnings/rabbit-windows-polish-finish-line.md` - explicit boundary for what counts as done in the Windows polish pass and what is intentionally deferred
+- `learnings/phase-10-windows-product-polish-deeplearn.md` - Windows product-polish learning write-up covering shell subtraction, density work, live QA, and phase closeout
 - `learnings/how-i-built-rabbit.md` - single narrative doc for explaining the full build process, reverse-engineering pivot, architecture, and release state
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
@@ -237,12 +239,19 @@ Supporting research inside the repo:
 
 ### Current roadmap state
 - Phases 4 to 9 are complete.
+- The Windows product-polish and completion pass is also complete.
+- Rabbit's customer-facing Windows preview now has:
+  - reduced shell/debug clutter,
+  - calmer sync and status copy,
+  - tighter task, agenda, inbox, and composer surfaces,
+  - and a verified live local task loop against the local backend.
 - Rabbit now also has a live backend runtime path for:
   - backend configuration persistence,
   - live bootstrap and remote data refresh,
   - PowerSync-style outbox push,
   - and backend-driven entitlement refresh.
 - The next stage should be either:
-  - real backend-host validation and endpoint-shape reconciliation,
-  - real Mac packaging/signing execution on a Rust-enabled Mac host or CI runner,
+  - real Mac/Tauri desktop validation and release-path execution,
+  - production backend hardening and hosted auth/persistence work,
+  - deeper product-surface expansion such as account/workspace, event-authoring, utility, or collaboration flows,
   - or a new recon-driven parity pass if Motion behavior changes.
