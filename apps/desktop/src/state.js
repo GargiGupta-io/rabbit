@@ -678,7 +678,7 @@ export function buildInboxSeedData(rawInbox = {}, context = {}) {
     needsActionCount: unreadItems.length,
     sourceCount: new Set((inboxes.find((entry) => entry.id === activeInboxId)?.sourceIds || [])).size,
     highlightedItem: items[0] || null,
-    emptyState: 'Inbox is clear. New notifications and mentions will appear here.',
+    emptyState: 'Inbox is clear.',
     typeCounts
   };
 }

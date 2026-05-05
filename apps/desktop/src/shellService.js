@@ -18,7 +18,7 @@ const SHELL_VIEW_META = {
     layout: 'schedule',
     collectionLabel: 'Full schedule',
     description: 'Everything with scheduling context appears in one timeline-oriented surface.',
-    emptyState: 'No scheduled work is visible in this calendar view.'
+    emptyState: 'Nothing is scheduled here right now.'
   },
   view_my_deadlines: {
     id: 'view_my_deadlines',
@@ -26,7 +26,7 @@ const SHELL_VIEW_META = {
     layout: 'kanban',
     collectionLabel: 'Deadline pressure',
     description: 'Tasks are ordered by due date so urgent work rises to the top.',
-    emptyState: 'No deadline-driven tasks are waiting right now.'
+    emptyState: 'No deadlines are pressing right now.'
   },
   view_my_tasks: {
     id: 'view_my_tasks',
@@ -34,7 +34,7 @@ const SHELL_VIEW_META = {
     layout: 'kanban',
     collectionLabel: 'Personal queue',
     description: 'This view keeps the current task queue visible across scheduled and unscheduled work.',
-    emptyState: 'No active tasks match this saved view.'
+    emptyState: 'Nothing is waiting in this view.'
   },
   view_project_timelines: {
     id: 'view_project_timelines',
@@ -42,7 +42,7 @@ const SHELL_VIEW_META = {
     layout: 'gantt',
     collectionLabel: 'Project sequence',
     description: 'Project work is ordered to emphasize timeline flow instead of the raw inbox.',
-    emptyState: 'No project timeline work is available yet.'
+    emptyState: 'No project work is ready yet.'
   },
   view_team_schedule: {
     id: 'view_team_schedule',
@@ -50,7 +50,7 @@ const SHELL_VIEW_META = {
     layout: 'kanban',
     collectionLabel: 'Scheduled work',
     description: 'Scheduled tasks are prioritized so the shell reads like a planning surface.',
-    emptyState: 'No scheduled team work is visible in this view.'
+    emptyState: 'No team work is scheduled here yet.'
   }
 };
 

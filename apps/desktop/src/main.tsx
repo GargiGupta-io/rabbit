@@ -1600,7 +1600,7 @@ function getBackendPresentation(backend) {
     return {
       badgeClass: 'local-only',
       title: 'Unconfigured',
-      detail: 'Rabbit is still local-first. Add a backend URL to enable live bootstrap, refresh, sync push, and authority refresh.'
+      detail: 'Add a backend URL when you want live refresh and sync.'
     };
   }
 
@@ -1608,7 +1608,7 @@ function getBackendPresentation(backend) {
     return {
       badgeClass: 'degraded',
       title: 'Error',
-      detail: backend.lastError || 'The configured backend returned an error, so Rabbit stayed on local state safely.'
+      detail: backend.lastError || 'Rabbit could not reach the saved backend, so your local work stayed safe.'
     };
   }
 
@@ -1616,7 +1616,7 @@ function getBackendPresentation(backend) {
     return {
       badgeClass: 'pending',
       title: 'Working',
-      detail: 'Rabbit is actively talking to the configured backend.'
+      detail: 'Rabbit is talking to the saved backend right now.'
     };
   }
 
@@ -1624,14 +1624,14 @@ function getBackendPresentation(backend) {
     return {
       badgeClass: 'healthy',
       title: 'Online',
-      detail: 'Rabbit has completed at least one successful backend operation in this session.'
+      detail: 'Rabbit can refresh and sync through the saved backend.'
     };
   }
 
   return {
     badgeClass: 'pending',
     title: 'Configured',
-    detail: 'Rabbit has a saved backend target, but no successful live operation has completed in this session yet.'
+    detail: 'Rabbit is ready to use the saved backend.'
   };
 }
 
@@ -1687,7 +1687,9 @@ function summarizeRemoteRefresh(appState) {
     ? appState.inbox.items.length
     : 0;
 
-  return `Refreshed ${appState.tasks.length} tasks, ${calendarCount} calendars, ${eventCount} events, and ${inboxCount} inbox items. ${sync.pendingCount} local change(s) remain queued.`;
+  return sync.pendingCount
+    ? `Refreshed ${appState.tasks.length} tasks, ${calendarCount} calendars, ${eventCount} events, and ${inboxCount} inbox items. ${sync.pendingCount} local change(s) are still waiting.`
+    : `Refreshed ${appState.tasks.length} tasks, ${calendarCount} calendars, ${eventCount} events, and ${inboxCount} inbox items. Everything is saved.`;
 }
 
 async function runBackendAction(action, callback) {
@@ -1703,7 +1705,7 @@ async function runBackendAction(action, callback) {
       lastAction: action
     });
     renderAll();
-    showError('Set a backend URL first. Rabbit will stay local-only until a backend is configured.');
+    showError('Add a backend URL first to use live refresh and sync.');
     return null;
   }
 
@@ -1722,11 +1724,11 @@ async function runBackendAction(action, callback) {
       lastAction: action,
       ...(result?.backendPatch || {})
     });
-    showEditorMessage(result?.message || `Backend ${action} completed successfully.`, 'success');
+    showEditorMessage(result?.message || 'Rabbit finished that backend action.', 'success');
     return result || {};
   } catch (error) {
     const completedAt = new Date().toISOString();
-    const message = error instanceof Error ? error.message : `Backend ${action} failed.`;
+    const message = error instanceof Error ? error.message : `Rabbit could not ${action} right now.`;
     if (action === 'push') {
       appData = {
         ...appData,
@@ -1758,7 +1760,7 @@ async function handleBackendConnect() {
       backendPatch: {
         lastBootstrapAt: connectedAt
       },
-      message: `Connected to ${backend.baseUrl}. Rabbit can now use the live backend path.`
+      message: `Connected to ${backend.baseUrl}. Rabbit can use live refresh and sync now.`
     };
   });
 }
@@ -1796,7 +1798,7 @@ async function handleBackendRefresh() {
         });
         calendarEventsData = calendarEventsResult.data;
       } catch (error) {
-        calendarEventsError = error instanceof Error ? error.message : 'Calendar event refresh failed.';
+        calendarEventsError = error instanceof Error ? error.message : 'Calendar events could not be refreshed.';
       }
     }
 
@@ -1825,7 +1827,9 @@ async function handleBackendRefresh() {
     const degradedCalls = results.filter((result) => result.status === 'rejected').length + (calendarEventsError ? 1 : 0);
     const refreshedAt = new Date().toISOString();
     const suffix = calendarEventsError
-      ? ` Calendar events stayed on the local snapshot because the live refresh failed: ${calendarEventsError}`
+      ? SHOW_INTERNAL_SURFACES
+        ? ` Calendar events stayed on the previous snapshot because refresh failed: ${calendarEventsError}`
+        : ' Calendar events stayed on the previous snapshot.'
       : '';
 
     return {
@@ -1834,7 +1838,7 @@ async function handleBackendRefresh() {
         lastDataRefreshAt: refreshedAt
       },
       message: degradedCalls
-        ? `${summarizeRemoteRefresh(appData)} ${degradedCalls} backend call(s) degraded during the refresh.${suffix}`
+        ? `${summarizeRemoteRefresh(appData)} ${degradedCalls} part(s) of the refresh fell back to the previous snapshot.${suffix}`
         : `${summarizeRemoteRefresh(appData)}`
     };
   });
@@ -1842,7 +1846,7 @@ async function handleBackendRefresh() {
 
 async function handleBackendPush() {
   if (!getSyncStateSummary(appData).pendingCount) {
-    showEditorMessage('No queued local changes need to be pushed right now.', 'info');
+    showEditorMessage('Everything is already saved. Nothing needs to be pushed right now.', 'info');
     return;
   }
 
@@ -1860,8 +1864,8 @@ async function handleBackendPush() {
 
     const pushedAt = new Date().toISOString();
     const summary = upload.syncResponse.failureCount > 0
-      ? `Pushed ${upload.syncResponse.successCount} change(s); ${upload.syncResponse.failureCount} stayed queued because the backend rejected them.`
-      : `Pushed ${upload.syncResponse.successCount} queued change(s) to the backend.`;
+      ? `Sent ${upload.syncResponse.successCount} change(s). ${upload.syncResponse.failureCount} still need attention.`
+      : `Sent ${upload.syncResponse.successCount} queued change(s).`;
 
     return {
       backendPatch: {
@@ -1877,11 +1881,27 @@ function getSyncPresentation(sync) {
   const backend = getBackendState();
   const backendConfigured = hasBackendConfiguration(backend);
 
+  if (isBackendBusy && backendBusyAction === 'connect') {
+    return {
+      badgeClass: 'pending',
+      title: 'Connecting',
+      detail: 'Rabbit is checking the saved backend now.'
+    };
+  }
+
+  if (isBackendBusy && backendBusyAction === 'refresh') {
+    return {
+      badgeClass: 'pending',
+      title: 'Refreshing',
+      detail: 'Rabbit is pulling the latest workspace data now.'
+    };
+  }
+
   if (isOffline && sync.hasPendingChanges) {
     return {
       badgeClass: 'offline',
       title: 'Offline',
-      detail: 'Rabbit saved your latest changes here and will try again once you are back online.'
+      detail: 'Rabbit saved your changes here and will try again once you are back online.'
     };
   }
 
@@ -1889,7 +1909,7 @@ function getSyncPresentation(sync) {
     return {
       badgeClass: 'degraded',
       title: 'Needs attention',
-      detail: 'Rabbit kept your latest changes safe on this device, but it could not finish syncing them yet.'
+      detail: 'Rabbit saved your changes here, but it still needs to send them.'
     };
   }
 
@@ -1906,7 +1926,7 @@ function getSyncPresentation(sync) {
       badgeClass: 'pending',
       title: 'Changes waiting',
       detail: backendConfigured
-        ? 'Rabbit saved your changes and will send them on the next sync.'
+        ? 'Rabbit saved your changes and will send them the next time it syncs.'
         : 'Rabbit saved your changes on this device.'
     };
   }
@@ -1915,13 +1935,13 @@ function getSyncPresentation(sync) {
     return {
       badgeClass: 'healthy',
       title: 'Up to date',
-      detail: 'Everything in this workspace is saved.'
+      detail: 'Everything here is saved.'
     };
   }
 
   return {
     badgeClass: 'local-only',
-    title: backendConfigured ? 'Connected' : 'Saved here',
+    title: backendConfigured ? 'Ready' : 'Saved here',
     detail: backendConfigured
       ? 'Rabbit is connected and ready for the next update.'
       : 'Rabbit is ready to plan locally on this device.'
@@ -3037,9 +3057,9 @@ function renderAgenda(shellState) {
       <span class="rail-count">${escapeHtml(String(agenda.counts.total))} items</span>
     </div>
     <div class="agenda-groups">
-      ${renderAgendaGroup('Ongoing', agenda.ongoing, 'Nothing is in progress right now.')}
-      ${renderAgendaGroup('Upcoming', agenda.upcoming, 'No scheduled items are queued next.')}
-      ${renderAgendaGroup('Timeless', agenda.timeless, 'No timeless tasks are waiting.')}
+      ${renderAgendaGroup('Ongoing', agenda.ongoing, 'Nothing is in progress.')}
+      ${renderAgendaGroup('Upcoming', agenda.upcoming, 'Nothing is coming up next.')}
+      ${renderAgendaGroup('Timeless', agenda.timeless, 'No unscheduled work is waiting.')}
     </div>
   `;
 }
@@ -3066,7 +3086,7 @@ function renderInboxPanel() {
     : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`;
   const inboxNote = inboxState.items.length
     ? inboxState.needsActionCount > 0
-      ? `${inboxState.needsActionCount} item(s) still need action.`
+      ? `${inboxState.needsActionCount} ${inboxState.needsActionCount === 1 ? 'item still needs action.' : 'items still need action.'}`
       : 'Everything in your inbox is clear.'
     : 'No inbox follow-up is waiting right now.';
 
