@@ -63,7 +63,7 @@ You now have a real usable app surface: create/search/filter tasks, see today/up
 - Baseline lint/build/test scripts exist and were part of the phase lock.
 
 ## References
-- `plans/phase-0-plan.md` - Phase 0 foundation and acceptance gate
-- `planning.md` - overall roadmap and phase summary
-- `plans/phase-2-plan.md` - post-Phase-1 architecture, hardening, and scheduling work
+- `learnings/plans/phase-0-plan.md` - Phase 0 foundation and acceptance gate
+- `learnings/planning.md` - overall roadmap and phase summary
+- `learnings/plans/phase-2-plan.md` - post-Phase-1 architecture, hardening, and scheduling work
 - `learnings/steps.md` - chronological execution log across phases

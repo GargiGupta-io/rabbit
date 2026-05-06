@@ -84,7 +84,7 @@ The key files were:
 - `apps/desktop/src/desktopPlatform.js`
 - `apps/desktop/src/main.tsx`
 - `apps/desktop/src-tauri/tauri.conf.json`
-- `learnings/phase-8-macos-shell-validation.md`
+- manual macOS validation checklist now merged into this document
 
 This added:
 - Mac-style traffic-light window chrome
@@ -549,7 +549,7 @@ Code can drift silently. Checklists and contracts make the team re-assert the ru
    The phase uses a Mac-first platform profile and Tauri config assumptions, but the repo still lacks a live Mac build verification lane in this environment.
 
    How to avoid:
-   Keep `learnings/phase-8-macos-shell-validation.md` as a required follow-up checklist, not an optional note.
+   Keep the manual macOS validation checklist in this document as a required follow-up, not an optional note.
 
 2. **Hardening can accidentally break developer convenience**
 
@@ -622,6 +622,27 @@ Next depth: run the app in a real Mac session and compare shell behavior against
 
 ### Native secure storage
 Next depth: move sensitive token/device state into OS-backed secure storage where appropriate.
+
+## Manual macOS validation checklist
+
+This checklist was merged from the former standalone `phase-8-macos-shell-validation.md` note so the full Phase 8 learning record stays together.
+
+1. Launch the Tauri shell on macOS and confirm the main window uses overlay-style title bar behavior.
+2. Confirm the traffic-light controls appear in the expected top-left area and do not overlap the shell title.
+3. Press `Cmd+K` and verify the search field receives focus.
+4. Press `Option+Space` and verify the task composer opens through the option-space flow.
+5. Press `Option+C` and verify the shell opens the calendar tab.
+6. Press `Option+P` and verify the shell opens the project timeline surface.
+7. Press `Option+A` and verify the shell opens the scheduler or team schedule surface.
+8. Open multiple view tabs and verify `Cmd+W` closes only closable tabs.
+9. Verify `Cmd+Shift+[` and `Cmd+Shift+]` reorder the active tab without breaking active-view state.
+10. Trigger a theme change and confirm the window-level shell styling still looks correct.
+
+## Known limits from the Windows validation pass
+
+- These changes were validated through regression coverage and code-path verification, not through a live macOS window manager.
+- `tauri.conf.json` was updated for the macOS target, but this repo did not execute a real `tauri build` during the Windows-only validation pass.
+- Option-space behavior is currently modeled through shell events and the existing task composer, not a fully separate native window.
 
 ## Quick Reference
 

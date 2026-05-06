@@ -1,6 +1,8 @@
 # How I Built Rabbit
 
 > This is the single best document to read if you need to explain how Rabbit was built, what was reverse-engineered from Motion, what was reimplemented in our own codebase, and what still remains before it becomes a fully shipped Mac app.
+>
+> This file supersedes the older `how-i-built-the-motion-clone.md` version.
 
 ---
 

@@ -105,14 +105,14 @@ You now have a real usable app surface: create/search/filter tasks, see today/up
 - `apps/desktop/src/contracts.js` — added strict persisted-data schema contracts, migration detection, and normalization helpers.
 - `apps/desktop/src/storage.js` — updated load/save to always pass through contract normalization and revision markers.
 - `scripts/test.mjs` — added contract migration and payload validation tests for legacy/invalid persisted data.
-- `phase-2.md` — generated a deep learning reference document for Phase 2 architecture baseline.
+- `learnings/phase-2-architecture-and-security-deeplearn.md` — generated a deep learning reference document for Phase 2 architecture baseline.
 
 **In plain English**
 Your app now starts from a safe, predictable data shape every time, even if old or partially broken saves exist. If stored data is missing fields, the app repairs it to the current format and records what changed. That means future features can run on a stable foundation instead of guessing what was in storage.
 
 **Files changed**
 + created: `apps/desktop/src/contracts.js`
-+ created: `phase-2.md`
++ created: `learnings/phase-2-architecture-and-security-deeplearn.md`
 + modified: `apps/desktop/src/storage.js`
 + modified: `scripts/test.mjs`
 
@@ -982,7 +982,7 @@ The desktop shell now behaves more like a real app shell instead of just display
 - `apps/desktop/src/desktopPlatform.js` - adds a macOS-first platform profile for shortcut intent, menu behavior, window chrome expectations, and option-space semantics.
 - `apps/desktop/src/main.tsx` - applies Mac-specific shell polish by using the platform profile for key hints, traffic-light chrome, product-level shortcuts, and option-space quick-add behavior.
 - `apps/desktop/src-tauri/tauri.conf.json` - updates the native window config toward hidden-title and overlay title-bar behavior for the macOS target.
-- `learnings/phase-8-macos-shell-validation.md` - records the manual validation checklist for running this shell on a real Mac later.
+- manual macOS validation checklist merged into `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md`.
 - `scripts/test.mjs` - adds regression coverage for the macOS profile and shortcut matching.
 
 **In plain English**
@@ -992,7 +992,7 @@ The app now has a real macOS personality instead of only a generic desktop shell
 + created: `apps/desktop/src/desktopPlatform.js`
 ~ modified: `apps/desktop/src/main.tsx`
 ~ modified: `apps/desktop/src-tauri/tauri.conf.json`
-+ created: `learnings/phase-8-macos-shell-validation.md`
++ merged into: `learnings/phase-8-native-desktop-mac-hardening-deeplearn.md`
 ~ modified: `scripts/test.mjs`
 ~ modified: `learnings/steps.md`
 

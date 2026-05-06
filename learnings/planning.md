@@ -28,6 +28,15 @@ Execution rule:
 - no "while we are here" extra work,
 - no preserving old architecture when it clearly diverges from Motion.
 
+## Foundational assumptions carried forward
+
+These came from the original root-level planning document and still matter even though the canonical roadmap now lives here:
+
+- Rabbit is built around a Windows-first workflow with macOS as the final desktop target.
+- The practical desktop stack is Tauri plus a TypeScript UI layer and a native bridge instead of a daily Mac-only development flow.
+- Final Mac packaging, signing, notarization, and native validation are later-stage work, not day-to-day development requirements.
+- Clone resistance depends more on server authority, entitlement control, and release hardening than on trying to make the desktop client impossible to reverse engineer.
+
 ---
 
 ## Evidence base you have now
@@ -174,6 +183,7 @@ New priority order:
 - `learnings/plans/phase-0-plan.md` - historical Phase 0 foundation plan
 - `learnings/plans/phase-1-plan.md` - historical Phase 1 MVP kernel plan
 - `learnings/plans/phase-2-plan.md` - historical Phase 2 architecture and hardening plan
+- `learnings/phase-2-architecture-and-security-deeplearn.md` - Phase 2 deep-dive explanation covering contracts, service split, scheduling primitives, and entitlement hardening
 - `learnings/plans/phase-3-plan.md` - historical Phase 3 sync/calendar/entitlement plan
 - `learnings/plans/phase-4-plan.md` - completed Phase 4 shell parity plan
 - `learnings/phase-4-shell-parity-deeplearn.md` - Phase 4 shell parity learning write-up
