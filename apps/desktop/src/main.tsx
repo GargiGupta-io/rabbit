@@ -15,7 +15,6 @@ import {
   getShellThemeClassName,
   getSyncStateSummary,
   getTaskFilters,
-  getTaskStateSummary,
   getViewStateSummary,
   moveShellTab,
   navigateShellTabs,
@@ -67,6 +66,7 @@ let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
 let isBackendBusy = false;
 let backendBusyAction = '';
+let isTaskComposerExpanded = false;
 let backendBaseUrlInput = appData.backend?.baseUrl || '';
 let backendAuthTokenInput = appData.backend?.authToken || '';
 let taskForm = createProjectAwareTaskFormState();
@@ -148,10 +148,8 @@ shell.innerHTML = `
     <div id="tab-strip" class="tab-strip"></div>
 
     <div class="workspace-body">
-      <section class="content-surface">
+      <section class="content-surface" id="content-surface">
         <header class="panel view-header" id="view-header"></header>
-
-        <section class="panel metrics" id="metrics"></section>
 
         <section class="panel toolbar-panel">
           <div class="toolbar-search">
@@ -188,7 +186,7 @@ shell.innerHTML = `
         <section class="panel task-surface">
           <div class="surface-header">
             <div>
-              <strong>Tasks</strong>
+              <strong id="surface-title">Tasks</strong>
               <p id="surface-caption" class="surface-caption">Your active queue.</p>
             </div>
             <span id="surface-count" class="surface-count"></span>
@@ -197,7 +195,7 @@ shell.innerHTML = `
         </section>
       </section>
 
-      <aside class="shell-rail">
+      <aside class="shell-rail" id="shell-rail">
         <section class="panel agenda-panel" id="agenda-panel"></section>
         <section class="panel inbox-panel" id="inbox-panel"></section>
         <section class="panel sync-panel" id="sync-panel" aria-live="polite"></section>
@@ -864,6 +862,42 @@ style.textContent = `
     text-transform: uppercase;
   }
 
+  .composer-head-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .composer-close,
+  .calendar-link-button {
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 8px 11px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-strong);
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .composer-panel.composer-collapsed {
+    padding: 14px 16px;
+  }
+
+  .composer-collapsed-shell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .composer-collapsed-shell p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
   .task-form-advanced {
     margin-top: 14px;
     border-top: 1px solid var(--panel-border);
@@ -1009,6 +1043,245 @@ style.textContent = `
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
     font-size: 11px;
+  }
+
+  .content-surface.route-calendar {
+    gap: 12px;
+  }
+
+  .content-surface.route-calendar .task-surface {
+    padding: 16px;
+  }
+
+  .shell-rail.route-calendar {
+    gap: 12px;
+  }
+
+  .calendar-route {
+    overflow: hidden;
+  }
+
+  .calendar-grid-shell {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .calendar-time-axis {
+    display: grid;
+    grid-template-rows: 58px repeat(14, 52px);
+    gap: 0;
+    color: var(--text-soft);
+    font-size: 11px;
+  }
+
+  .calendar-axis-spacer {
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .calendar-hour {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-top: 4px;
+    padding-right: 8px;
+  }
+
+  .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0;
+    min-width: 0;
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .calendar-day {
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.015);
+    border-right: 1px solid var(--panel-border);
+  }
+
+  .calendar-day:last-child {
+    border-right: 0;
+  }
+
+  .calendar-day.today {
+    background: rgba(96, 165, 250, 0.06);
+  }
+
+  .calendar-day-head {
+    display: grid;
+    gap: 4px;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--panel-border);
+    text-align: center;
+  }
+
+  .calendar-weekday {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .calendar-day-number {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+
+  .calendar-all-day {
+    min-height: 40px;
+    padding: 8px 8px 10px;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .calendar-all-day-pill,
+  .calendar-all-day-empty {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .calendar-day-grid {
+    position: relative;
+  }
+
+  .calendar-slot {
+    display: block;
+    height: 52px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .calendar-entry-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .calendar-entry {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    padding: 7px 8px;
+    border-radius: 12px;
+    display: grid;
+    gap: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.25);
+    overflow: hidden;
+  }
+
+  .calendar-entry strong,
+  .calendar-entry span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-entry strong {
+    font-size: 12px;
+    color: var(--text-strong);
+  }
+
+  .calendar-entry span {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .calendar-entry.task {
+    background: rgba(59, 130, 246, 0.16);
+  }
+
+  .calendar-entry.calendar {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .mini-calendar-weekdays,
+  .mini-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .mini-calendar-weekdays {
+    margin-top: 10px;
+    color: var(--text-soft);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mini-calendar-day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .mini-calendar-day.outside {
+    opacity: 0.45;
+  }
+
+  .mini-calendar-day.today {
+    background: #f8fafc;
+    color: #111827;
+    font-weight: 700;
+  }
+
+  .calendar-source-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .calendar-source-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .calendar-source-item p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .calendar-source-state {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(96, 165, 250, 0.12);
+    color: #bfdbfe;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .task-list {
@@ -1461,7 +1734,6 @@ document.head.appendChild(style);
 const sidebarNavEl = shell.querySelector('#sidebar-nav') as HTMLDivElement;
 const tabStripEl = shell.querySelector('#tab-strip') as HTMLDivElement;
 const viewHeaderEl = shell.querySelector('#view-header') as HTMLDivElement;
-const metricsEl = shell.querySelector('#metrics') as HTMLDivElement;
 const agendaPanelEl = shell.querySelector('#agenda-panel') as HTMLDivElement;
 const inboxPanelEl = shell.querySelector('#inbox-panel') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
@@ -1469,6 +1741,8 @@ const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivE
 const shellActionsEl = shell.querySelector('#shell-actions') as HTMLDivElement;
 const windowChromeEl = shell.querySelector('#window-chrome') as HTMLDivElement;
 const workspaceKickerEl = shell.querySelector('#workspace-kicker') as HTMLSpanElement;
+const contentSurfaceEl = shell.querySelector('#content-surface') as HTMLElement;
+const shellRailEl = shell.querySelector('#shell-rail') as HTMLElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
@@ -1477,6 +1751,7 @@ const editorEl = shell.querySelector('#editor') as HTMLElement;
 const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
 const workspaceStatusPillEl = shell.querySelector('#workspace-status-pill') as HTMLSpanElement;
+const surfaceTitleEl = shell.querySelector('#surface-title') as HTMLSpanElement;
 const surfaceCountEl = shell.querySelector('#surface-count') as HTMLSpanElement;
 const surfaceCaptionEl = shell.querySelector('#surface-caption') as HTMLParagraphElement;
 const warningEl = document.createElement('p');
@@ -1523,6 +1798,110 @@ function formatCompactDate(value: unknown) {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+const CALENDAR_START_HOUR = 6;
+const CALENDAR_END_HOUR = 19;
+const CALENDAR_SLOT_HEIGHT = 52;
+const CALENDAR_TOTAL_SLOTS = CALENDAR_END_HOUR - CALENDAR_START_HOUR + 1;
+
+function parseDateValue(value: unknown) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(String(value));
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
+}
+
+function startOfCalendarDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function addCalendarDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function startOfCalendarWeek(date: Date) {
+  const next = startOfCalendarDay(date);
+  const offset = (next.getDay() + 6) % 7;
+  next.setDate(next.getDate() - offset);
+  return next;
+}
+
+function endOfCalendarDay(date: Date) {
+  const next = startOfCalendarDay(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+function isSameCalendarDay(left: Date | null, right: Date | null) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.getFullYear() === right.getFullYear()
+    && left.getMonth() === right.getMonth()
+    && left.getDate() === right.getDate();
+}
+
+function formatWeekdayLabel(date: Date) {
+  return date.toLocaleDateString([], { weekday: 'short' });
+}
+
+function formatMonthHeading(date: Date) {
+  return date.toLocaleDateString([], {
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+function formatMonthDayLabel(date: Date) {
+  return date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function formatTimeLabel(value: unknown) {
+  const parsed = parseDateValue(value);
+  if (!parsed) {
+    return '';
+  }
+
+  return parsed.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function formatHourSlotLabel(hour: number) {
+  const anchor = new Date();
+  anchor.setHours(hour, 0, 0, 0);
+  return anchor.toLocaleTimeString([], {
+    hour: 'numeric'
+  });
+}
+
+function getMinutesIntoDay(date: Date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function toCssToken(value: unknown, fallback = 'default') {
+  const normalized = sanitizeText(value, fallback).toLowerCase();
+  return normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || fallback;
+}
+
+function isCalendarRouteMeta(meta) {
+  return sanitizeText(meta?.id) === 'calendar';
 }
 
 function getEntitlementPresentation(summary) {
@@ -2046,8 +2425,15 @@ function createProjectAwareTaskFormState(input: any = {}) {
   };
 }
 
-function renderTaskForm() {
+function renderTaskForm(shellState, plannerState) {
   taskForm = createProjectAwareTaskFormState(taskForm);
+  const meta = plannerState?.viewState?.meta || getViewStateSummary({
+    ...appData,
+    shell: shellState
+  }, {
+    now: shellState?.referenceNow
+  }).meta;
+  const isCalendarRoute = isCalendarRouteMeta(meta);
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
     ? 'Auto-scheduled'
@@ -2110,13 +2496,31 @@ function renderTaskForm() {
     </option>
   `).join('');
 
+  taskFormPanelEl.classList.toggle('composer-collapsed', isCalendarRoute && !isTaskComposerExpanded);
+
+  if (isCalendarRoute && !isTaskComposerExpanded) {
+    taskFormPanelEl.innerHTML = `
+      <div class="composer-collapsed-shell">
+        <div>
+          <strong>New</strong>
+          <p>Capture work only when you need it. The schedule stays in focus.</p>
+        </div>
+        <button type="button" id="task-form-open" class="primary">New task</button>
+      </div>
+    `;
+    return;
+  }
+
   taskFormPanelEl.innerHTML = `
     <div class="composer-header">
       <div>
         <strong>New task</strong>
         <p>Capture the work first. Scheduling can stay tucked away until you need it.</p>
       </div>
-      <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
+      <div class="composer-head-actions">
+        <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
+        ${isCalendarRoute ? '<button type="button" id="task-form-close" class="composer-close">Close</button>' : ''}
+      </div>
     </div>
     <div class="task-form-grid">
       <label class="task-form-field span-2">
@@ -2214,14 +2618,16 @@ function updateTaskForm(patch) {
     ...taskForm,
     ...patch
   });
-  renderTaskForm();
+  const shellState = getShellState(appData);
+  renderTaskForm(shellState, buildPlannerState(shellState));
 }
 
 function resetTaskForm() {
   taskForm = createProjectAwareTaskFormState({
     projectId: taskForm.projectId
   });
-  renderTaskForm();
+  const shellState = getShellState(appData);
+  renderTaskForm(shellState, buildPlannerState(shellState));
 }
 
 function getTaskFormFieldValue(target: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement) {
@@ -2451,12 +2857,18 @@ function buildPlannerState(shellState) {
   };
 }
 
-function updateSyncStatus() {
+function updateSyncStatus(shellState = getShellState(appData)) {
   const sync = getSyncStateSummary(appData);
   const cache = getClientCacheSummary(appData);
   const backend = getBackendState();
   const backendPresentation = getBackendPresentation(backend);
   const presentation = getSyncPresentation(sync);
+  const isCalendarRoute = isCalendarRouteMeta(getViewStateSummary({
+    ...appData,
+    shell: shellState
+  }, {
+    now: shellState?.referenceNow
+  }).meta);
   workspaceStatusPillEl.textContent = presentation.title;
   workspaceStatusPillEl.className = `workspace-pill ${presentation.badgeClass}`;
   const cacheKeysLabel = cache.displayKeys.length
@@ -2466,6 +2878,12 @@ function updateSyncStatus() {
   const refreshLabel = isBackendBusy && backendBusyAction === 'refresh' ? 'Refreshing...' : 'Refresh remote';
   const pushLabel = isBackendBusy && backendBusyAction === 'push' ? 'Pushing...' : 'Push outbox';
   const backendConfigured = hasBackendConfiguration(backend);
+
+  syncPanelEl.hidden = isCalendarRoute && !SHOW_INTERNAL_SURFACES;
+  if (syncPanelEl.hidden) {
+    syncPanelEl.innerHTML = '';
+    return;
+  }
 
   if (!SHOW_INTERNAL_SURFACES) {
     syncPanelEl.innerHTML = `
@@ -2727,6 +3145,7 @@ function openNewTaskFromDesktopShell() {
   if (platformProfile.optionSpace.usesDedicatedWindow) {
     desktopShellBridge.send('openOptionSpace');
   }
+  isTaskComposerExpanded = true;
   resetTaskForm();
   showError('');
   renderAll();
@@ -2742,6 +3161,9 @@ function requestShellNewTask() {
   const payload = { type: 'task' };
   desktopShellBridge.send('main:openNew', payload);
   desktopShellBridge.emit('appBar:openNew', payload);
+  isTaskComposerExpanded = true;
+  renderAll();
+  focusTaskComposer();
 }
 
 function requestQuickMeeting() {
@@ -2899,46 +3321,24 @@ function installDesktopShellBridgeHandlers() {
 }
 
 function updateSummary(plannerState, shellState) {
-  const summary = getTaskStateSummary(tasks);
   const meta = plannerState.viewState.meta;
-  const overlay = appData.calendarOverlay || {
-    importedEvents: [],
-    permissionStatus: 'unknown',
-    refreshedAt: null
-  };
-  const activeLabel = meta.title || 'Calendar';
-  const permissionLabel = overlay.permissionStatus === 'granted'
-    ? `${plannerState.planWindow.busyBlocks.length} busy times are already protected in ${activeLabel}.`
-    : 'Calendar availability has not synced yet.';
-  const pendingLabel = plannerState.pendingTaskIds.length
-    ? `${plannerState.pendingTaskIds.length} task${plannerState.pendingTaskIds.length === 1 ? '' : 's'} need a fresh schedule.`
-    : 'The queue is fitting cleanly into the current plan.';
+  const isCalendarRoute = isCalendarRouteMeta(meta);
+  contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
+  shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
+  taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
 
-  metricsEl.innerHTML = `
-    <div class="metric-grid">
-      <div class="metric-card">
-        <strong>Today</strong>
-        <div class="metric-value">${escapeHtml(String(summary.today))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Upcoming</strong>
-        <div class="metric-value">${escapeHtml(String(summary.upcoming))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Overdue</strong>
-        <div class="metric-value">${escapeHtml(String(summary.overdue))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Busy blocks</strong>
-        <div class="metric-value">${escapeHtml(String(plannerState.planWindow.busyBlocks.length))}</div>
-      </div>
-      <div class="metric-card">
-        <strong>Open space</strong>
-        <div class="metric-value">${escapeHtml(String(plannerState.planWindow.availableMinutes))}</div>
-      </div>
-    </div>
-    <p class="metric-note">${escapeHtml(permissionLabel)} ${escapeHtml(pendingLabel)} Last calendar refresh: ${escapeHtml(formatSyncDate(overlay.refreshedAt))}.</p>
-  `;
+  if (isCalendarRoute) {
+    const referenceDate = parseDateValue(shellState?.referenceNow)
+      || parseDateValue(appData.calendarOverlay?.refreshedAt)
+      || new Date();
+    const weekStart = startOfCalendarWeek(referenceDate);
+    surfaceTitleEl.textContent = formatMonthHeading(referenceDate);
+    surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
+    surfaceCaptionEl.textContent = `Week of ${formatMonthDayLabel(weekStart)}. Calendar events and scheduled work share one surface.`;
+    return;
+  }
+
+  surfaceTitleEl.textContent = meta.title || 'Tasks';
 }
 
 function renderSidebar(shellState) {
@@ -3025,6 +3425,213 @@ function renderViewHeader(shellState, plannerState) {
   `;
 }
 
+function buildCalendarSurfaceState(plannerState, shellState) {
+  const referenceDate = parseDateValue(shellState?.referenceNow)
+    || parseDateValue(appData.calendarOverlay?.refreshedAt)
+    || new Date();
+  const weekStart = startOfCalendarWeek(referenceDate);
+  const weekDays = Array.from({ length: 7 }, (_, index) => addCalendarDays(weekStart, index));
+  const weekEnd = endOfCalendarDay(weekDays[6]);
+  const calendars = (Array.isArray(appData.calendarOverlay?.calendars)
+    ? appData.calendarOverlay.calendars
+    : []) as any[];
+  const calendarLookup = new Map<string, any>(
+    calendars.map((calendar: any) => [sanitizeText(calendar.id || calendar.providerId), calendar])
+  );
+  const entries: any[] = [];
+  let unscheduledTaskCount = 0;
+
+  plannerState.visibleTasks.forEach((task) => {
+    const start = parseDateValue(task.scheduledStart || task.startAt || task.dueAt);
+    if (!start) {
+      unscheduledTaskCount += 1;
+      return;
+    }
+
+    if (start < weekStart || start > weekEnd) {
+      return;
+    }
+
+    const durationMinutes = Math.max(15, Number(task.durationMinutes) || 30);
+    const end = parseDateValue(task.scheduledEnd || task.endAt || task.dueAt) || new Date(start.valueOf() + durationMinutes * 60 * 1000);
+    const slotStartMinutes = clampNumber(getMinutesIntoDay(start) - CALENDAR_START_HOUR * 60, 0, CALENDAR_TOTAL_SLOTS * 60 - 30);
+    const slotEndMinutes = clampNumber(
+      Math.max(slotStartMinutes + 30, getMinutesIntoDay(end) - CALENDAR_START_HOUR * 60),
+      slotStartMinutes + 30,
+      CALENDAR_TOTAL_SLOTS * 60
+    );
+
+    entries.push({
+      id: task.id,
+      kind: 'task',
+      tone: task.status === 'done' ? 'done' : task.projectName || 'task',
+      title: task.title,
+      subtitle: task.projectName || 'Inbox',
+      day: startOfCalendarDay(start),
+      start,
+      end,
+      allDay: false,
+      top: Math.round((slotStartMinutes / 60) * CALENDAR_SLOT_HEIGHT),
+      height: Math.max(38, Math.round(((slotEndMinutes - slotStartMinutes) / 60) * CALENDAR_SLOT_HEIGHT) - 4)
+    });
+  });
+
+  (appData.calendarOverlay?.importedEvents || []).forEach((event) => {
+    const start = parseDateValue(event.startAt || event.start);
+    const end = parseDateValue(event.endAt || event.end);
+    if (!start || !end || start > weekEnd || end < weekStart) {
+      return;
+    }
+
+    const calendar = calendarLookup.get(sanitizeText(event.calendarId || event.calendarUniqueId));
+    if (event.allDay || event.isAllDay) {
+      entries.push({
+        id: sanitizeText(event.id || event.providerId, 'calendar-entry'),
+        kind: 'calendar',
+        tone: sanitizeText(calendar?.title || event.calendarId || 'calendar'),
+        title: sanitizeText(event.title, 'All day'),
+        subtitle: sanitizeText(calendar?.title, 'Calendar'),
+        day: startOfCalendarDay(start),
+        start,
+        end,
+        allDay: true
+      });
+      return;
+    }
+
+    const slotStartMinutes = clampNumber(getMinutesIntoDay(start) - CALENDAR_START_HOUR * 60, 0, CALENDAR_TOTAL_SLOTS * 60 - 30);
+    const slotEndMinutes = clampNumber(
+      Math.max(slotStartMinutes + 30, getMinutesIntoDay(end) - CALENDAR_START_HOUR * 60),
+      slotStartMinutes + 30,
+      CALENDAR_TOTAL_SLOTS * 60
+    );
+
+    entries.push({
+      id: sanitizeText(event.id || event.providerId, 'calendar-entry'),
+      kind: 'calendar',
+      tone: sanitizeText(calendar?.title || event.calendarId || 'calendar'),
+      title: sanitizeText(event.title, 'Calendar event'),
+      subtitle: sanitizeText(calendar?.title, 'Calendar'),
+      day: startOfCalendarDay(start),
+      start,
+      end,
+      allDay: false,
+      top: Math.round((slotStartMinutes / 60) * CALENDAR_SLOT_HEIGHT),
+      height: Math.max(38, Math.round(((slotEndMinutes - slotStartMinutes) / 60) * CALENDAR_SLOT_HEIGHT) - 4)
+    });
+  });
+
+  return {
+    referenceDate,
+    weekStart,
+    weekDays,
+    calendars,
+    unscheduledTaskCount,
+    totalEntries: entries.length,
+    dayEntries: weekDays.map((day) => ({
+      day,
+      allDay: entries
+        .filter((entry) => entry.allDay && isSameCalendarDay(entry.day, day))
+        .sort((left, right) => left.title.localeCompare(right.title)),
+      timed: entries
+        .filter((entry) => !entry.allDay && isSameCalendarDay(entry.day, day))
+        .sort((left, right) => left.start.valueOf() - right.start.valueOf())
+    }))
+  };
+}
+
+function renderCalendarSurface(calendarState) {
+  const hourLabels = Array.from({ length: CALENDAR_TOTAL_SLOTS }, (_, index) => CALENDAR_START_HOUR + index);
+
+  return `
+    <div class="calendar-route">
+      <div class="calendar-grid-shell">
+        <div class="calendar-time-axis">
+          <div class="calendar-axis-spacer"></div>
+          ${hourLabels.map((hour) => `<span class="calendar-hour">${escapeHtml(formatHourSlotLabel(hour))}</span>`).join('')}
+        </div>
+        <div class="calendar-days">
+          ${calendarState.dayEntries.map(({ day, allDay, timed }) => `
+            <section class="calendar-day ${isSameCalendarDay(day, calendarState.referenceDate) ? 'today' : ''}">
+              <header class="calendar-day-head">
+                <span class="calendar-weekday">${escapeHtml(formatWeekdayLabel(day))}</span>
+                <span class="calendar-day-number">${escapeHtml(String(day.getDate()))}</span>
+              </header>
+              <div class="calendar-all-day">
+                ${allDay.length
+                  ? allDay.map((entry) => `
+                    <span class="calendar-all-day-pill tone-${escapeHtml(toCssToken(entry.tone))}">${escapeHtml(entry.title)}</span>
+                  `).join('')
+                  : '<span class="calendar-all-day-empty">Open</span>'}
+              </div>
+              <div class="calendar-day-grid" style="height: ${escapeHtml(String(CALENDAR_TOTAL_SLOTS * CALENDAR_SLOT_HEIGHT))}px">
+                ${hourLabels.map(() => '<span class="calendar-slot"></span>').join('')}
+                <div class="calendar-entry-layer">
+                  ${timed.map((entry) => `
+                    <article class="calendar-entry ${escapeHtml(entry.kind)} tone-${escapeHtml(toCssToken(entry.tone))}" style="top:${escapeHtml(String(entry.top))}px;height:${escapeHtml(String(entry.height))}px">
+                      <strong>${escapeHtml(entry.title)}</strong>
+                      <span>${escapeHtml(entry.subtitle)}</span>
+                      <span>${escapeHtml(`${formatTimeLabel(entry.start)} - ${formatTimeLabel(entry.end)}`)}</span>
+                    </article>
+                  `).join('')}
+                </div>
+              </div>
+            </section>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCalendarMiniMonth(calendarState) {
+  const monthStart = new Date(calendarState.referenceDate.getFullYear(), calendarState.referenceDate.getMonth(), 1);
+  const gridStart = addCalendarDays(monthStart, -monthStart.getDay());
+  const cells = Array.from({ length: 42 }, (_, index) => addCalendarDays(gridStart, index));
+
+  agendaPanelEl.innerHTML = `
+    <div class="rail-header">
+      <strong>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</strong>
+      <span class="rail-count">Today</span>
+    </div>
+    <div class="mini-calendar-weekdays">
+      ${['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((label) => `<span>${escapeHtml(label)}</span>`).join('')}
+    </div>
+    <div class="mini-calendar-grid">
+      ${cells.map((cell) => `
+        <span class="mini-calendar-day ${cell.getMonth() === calendarState.referenceDate.getMonth() ? '' : 'outside'} ${isSameCalendarDay(cell, calendarState.referenceDate) ? 'today' : ''}">
+          ${escapeHtml(String(cell.getDate()))}
+        </span>
+      `).join('')}
+    </div>
+    <p class="rail-note">Week of ${escapeHtml(formatMonthDayLabel(calendarState.weekStart))}</p>
+  `;
+}
+
+function renderCalendarSourcesPanel(calendarState) {
+  const calendars = calendarState.calendars.length
+    ? calendarState.calendars.map((calendar) => `
+      <article class="calendar-source-item">
+        <div>
+          <strong>${escapeHtml(calendar.title)}</strong>
+          <p>${escapeHtml(calendar.isPrimary ? 'Primary calendar' : 'Shared calendar')}</p>
+        </div>
+        <span class="calendar-source-state ${calendar.isEnabled !== false ? 'enabled' : 'muted'}">${escapeHtml(calendar.isEnabled !== false ? 'On' : 'Off')}</span>
+      </article>
+    `).join('')
+    : '<p class="muted">No calendars are linked yet.</p>';
+
+  inboxPanelEl.innerHTML = `
+    <div class="rail-header">
+      <strong>Calendars</strong>
+      <span class="rail-count">${escapeHtml(String(calendarState.calendars.length))} linked</span>
+    </div>
+    <button type="button" class="calendar-link-button" disabled>Link a calendar</button>
+    <div class="calendar-source-list">${calendars}</div>
+    <p class="rail-note">${escapeHtml(`${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a schedule.`)}</p>
+  `;
+}
+
 function renderAgendaGroup(title, entries, emptyMessage) {
   const items = entries.length
     ? entries.map((entry) => `
@@ -3049,7 +3656,12 @@ function renderAgendaGroup(title, entries, emptyMessage) {
   `;
 }
 
-function renderAgenda(shellState) {
+function renderAgenda(shellState, plannerState) {
+  if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
+    renderCalendarMiniMonth(buildCalendarSurfaceState(plannerState, shellState));
+    return;
+  }
+
   const agenda = shellState.agenda;
   agendaPanelEl.innerHTML = `
     <div class="rail-header">
@@ -3064,7 +3676,12 @@ function renderAgenda(shellState) {
   `;
 }
 
-function renderInboxPanel() {
+function renderInboxPanel(shellState, plannerState) {
+  if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
+    renderCalendarSourcesPanel(buildCalendarSurfaceState(plannerState, shellState));
+    return;
+  }
+
   const inboxState = getInboxStateSummary(appData);
   const items = inboxState.items.length
     ? inboxState.items.map((item) => `
@@ -3117,7 +3734,18 @@ function renderTasks(plannerState, shellState) {
   const unschedulableTaskSet = new Set(unschedulableTaskIds);
   const pendingTaskSet = new Set(pendingTaskIds);
   const taskTitleById = new Map(appData.tasks.map((task) => [task.id, task.title]));
+
+  if (isCalendarRouteMeta(meta)) {
+    const calendarState = buildCalendarSurfaceState(plannerState, shellState);
+    surfaceTitleEl.textContent = formatMonthHeading(calendarState.referenceDate);
+    surfaceCountEl.textContent = `${calendarState.totalEntries} items`;
+    surfaceCaptionEl.textContent = `Week of ${formatMonthDayLabel(calendarState.weekStart)}. ${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a schedule.`;
+    taskListEl.innerHTML = renderCalendarSurface(calendarState);
+    return;
+  }
+
   taskListEl.innerHTML = '';
+  surfaceTitleEl.textContent = meta.title || 'Tasks';
   surfaceCountEl.textContent = `${visibleTasks.length} ${meta.itemType === 'projects' ? 'records' : 'tasks'}`;
   surfaceCaptionEl.textContent = activePlanWindow === 'today'
     ? 'Scheduled for today.'
@@ -3352,17 +3980,17 @@ function renderWorkspace() {
   renderTabStrip(shellState);
   renderViewHeader(shellState, plannerState);
   updateSummary(plannerState, shellState);
-  renderTaskForm();
+  renderTaskForm(shellState, plannerState);
   renderTasks(plannerState, shellState);
-  renderAgenda(shellState);
-  renderInboxPanel();
+  renderAgenda(shellState, plannerState);
+  renderInboxPanel(shellState, plannerState);
+  updateSyncStatus(shellState);
   syncDesktopShell(shellState);
 }
 
 function renderAll() {
   refreshEntitlementState();
   persistAppData();
-  updateSyncStatus();
   renderWorkspace();
 }
 
@@ -3394,10 +4022,32 @@ taskFormPanelEl.addEventListener('click', (event) => {
     return;
   }
 
+  if (target.id === 'task-form-open') {
+    isTaskComposerExpanded = true;
+    renderAll();
+    focusTaskComposer();
+    return;
+  }
+
+  if (target.id === 'task-form-close') {
+    isTaskComposerExpanded = false;
+    renderAll();
+    return;
+  }
+
   if (target.id === 'task-form-reset') {
     resetTaskForm();
     if (getDesktopPlatformProfileState().optionSpace.usesDedicatedWindow) {
       desktopShellBridge.send('closeOptionSpace');
+    }
+    if (isCalendarRouteMeta(getViewStateSummary({
+      ...appData,
+      shell: getShellState(appData)
+    }, {
+      now: getShellState(appData).referenceNow
+    }).meta)) {
+      isTaskComposerExpanded = false;
+      renderAll();
     }
     showError('');
     return;
@@ -3421,6 +4071,14 @@ taskFormPanelEl.addEventListener('click', (event) => {
 
   appData = applyTaskMutation(appData, result);
   tasks = appData.tasks.slice();
+  if (isCalendarRouteMeta(getViewStateSummary({
+    ...appData,
+    shell: getShellState(appData)
+  }, {
+    now: getShellState(appData).referenceNow
+  }).meta)) {
+    isTaskComposerExpanded = false;
+  }
   resetTaskForm();
   if (getDesktopPlatformProfileState().optionSpace.usesDedicatedWindow) {
     desktopShellBridge.send('closeOptionSpace');
