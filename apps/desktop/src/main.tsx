@@ -1167,20 +1167,20 @@ style.textContent = `
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
-    padding: 2px 0 2px;
+    gap: 12px;
+    padding: 0;
   }
 
   .route-list-main {
     display: grid;
-    gap: 6px;
+    gap: 3px;
     min-width: 0;
   }
 
   .route-list-main h2 {
     margin: 0;
-    font-size: 28px;
-    line-height: 1.05;
+    font-size: 24px;
+    line-height: 1.08;
     letter-spacing: -0.04em;
     color: var(--text-strong);
   }
@@ -1207,8 +1207,8 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 36px;
-    padding: 8px 12px;
+    min-height: 32px;
+    padding: 6px 10px;
     border-radius: 12px;
     border: 1px solid var(--panel-border);
     background: rgba(255, 255, 255, 0.03);
@@ -1250,9 +1250,9 @@ style.textContent = `
     border: 1px solid var(--panel-border);
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.025);
-    padding: 14px;
+    padding: 12px;
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
   .project-timeline-head,
@@ -1290,8 +1290,8 @@ style.textContent = `
   .team-schedule-pill {
     display: inline-flex;
     align-items: center;
-    min-height: 32px;
-    padding: 6px 10px;
+    min-height: 28px;
+    padding: 5px 9px;
     border-radius: 12px;
     border: 1px solid var(--panel-border);
     background: rgba(255, 255, 255, 0.03);
@@ -1326,7 +1326,7 @@ style.textContent = `
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 9px 11px;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.03);
@@ -1594,9 +1594,9 @@ style.textContent = `
     border: 1px solid var(--panel-border);
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.02);
-    padding: 12px;
+    padding: 10px 11px;
     display: grid;
-    gap: 8px;
+    gap: 6px;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
@@ -1640,7 +1640,7 @@ style.textContent = `
   }
 
   .task-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-strong);
     line-height: 1.3;
@@ -1652,17 +1652,17 @@ style.textContent = `
   }
 
   .task-note {
-    margin-top: 6px;
+    margin-top: 4px;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.5;
   }
 
   .task-foot {
-    margin-top: 10px;
+    margin-top: 6px;
     display: block;
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .task-side {
@@ -1777,10 +1777,10 @@ style.textContent = `
   .inbox-item {
     border: 1px solid var(--panel-border);
     border-radius: 14px;
-    padding: 10px 11px;
+    padding: 9px 10px;
     background: rgba(255, 255, 255, 0.02);
     display: grid;
-    gap: 6px;
+    gap: 5px;
   }
 
   .inbox-item.unread {
@@ -3942,7 +3942,6 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-main">
           <div class="view-breadcrumb">My view</div>
           <h2>My Deadlines</h2>
-          <p>Focus on what needs to be finished and when.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
@@ -3959,17 +3958,14 @@ function renderViewHeader(shellState, plannerState) {
 
   if (isTaskQueueRouteMeta(meta)) {
     const openCount = plannerState.visibleTasks.filter((task) => sanitizeText(task.status) !== 'done').length;
-    const scheduledCount = plannerState.visibleTasks.filter((task) => parseDateValue(task.scheduledStart || task.startAt)).length;
     viewHeaderEl.innerHTML = `
       <div class="route-list-bar">
         <div class="route-list-main">
           <div class="view-breadcrumb">My view</div>
           <h2>My Tasks</h2>
-          <p>Your personal task list. Open the full form only when you need it.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
           <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
         </div>
       </div>
@@ -3984,12 +3980,10 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-main">
           <div class="view-breadcrumb">Workspace</div>
           <h2>Agenda</h2>
-          <p>What is happening now, next, and soon across scheduled work and meetings.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${agenda.counts.ongoing} ongoing`)}</span>
           <span class="route-list-pill">${escapeHtml(`${agenda.counts.upcoming} upcoming`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${agenda.counts.timeless} timeless`)}</span>
         </div>
       </div>
     `;
@@ -4003,11 +3997,9 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-main">
           <div class="view-breadcrumb">Workspace</div>
           <h2>Inbox</h2>
-          <p>Incoming items that still need attention live here instead of beside every route.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${inboxState.unreadCount} unread`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${inboxState.totalCount} total`)}</span>
         </div>
       </div>
     `;
@@ -4022,7 +4014,6 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-main">
           <div class="view-breadcrumb">Workspace</div>
           <h2>Workspace</h2>
-          <p>Connection, save state, and backend health belong here instead of living on every page.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(presentation.title)}</span>
@@ -4045,7 +4036,6 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-main">
           <div class="view-breadcrumb">Team view</div>
           <h2>Project Timelines</h2>
-          <p>See project progress by project, current stage, and the next due work instead of a generic task feed.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${projectIds.size} projects`)}</span>
@@ -4063,18 +4053,15 @@ function renderViewHeader(shellState, plannerState) {
         .filter(Boolean)
     );
     const scheduledCount = plannerState.visibleTasks.filter((task) => parseDateValue(task.scheduledStart || task.startAt)).length;
-    const backlogCount = plannerState.visibleTasks.length - scheduledCount;
     viewHeaderEl.innerHTML = `
       <div class="route-list-bar">
         <div class="route-list-main">
           <div class="view-breadcrumb">Team view</div>
           <h2>Team Schedule</h2>
-          <p>Keep scheduled work grouped by assignee so the page reads like a team plan, not another personal queue.</p>
         </div>
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${assigneeIds.size || 1} assignees`)}</span>
           <span class="route-list-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${backlogCount} backlog`)}</span>
         </div>
       </div>
     `;
@@ -4498,7 +4485,6 @@ function renderProjectTimelinesSurface(plannerState) {
             <div class="project-timeline-meta">
               <span class="timeline-meta-pill">${escapeHtml(`${card.scheduledCount} scheduled`)}</span>
               <span class="timeline-meta-pill">${escapeHtml(`${card.overdueCount} overdue`)}</span>
-              <span class="timeline-meta-pill">${escapeHtml(`${card.previewTasks.length} visible tasks`)}</span>
             </div>
             ${card.stageNames.length ? `
               <div class="project-timeline-section">
@@ -4584,7 +4570,6 @@ function renderTeamScheduleSurface(plannerState) {
             </div>
             <div class="team-schedule-stats">
               <span class="team-schedule-pill">${escapeHtml(`${card.backlog.length} backlog`)}</span>
-              <span class="team-schedule-pill">${escapeHtml(`${card.scheduled.length + card.backlog.length} total`)}</span>
             </div>
             <div class="team-schedule-section">
               <h3>Scheduled</h3>
@@ -4806,6 +4791,7 @@ function renderTasks(plannerState, shellState) {
     ].filter(Boolean).join('');
     const item = document.createElement('article');
     item.className = 'task-item';
+    const showDescription = isTaskQueueRoute && Boolean(task.description);
     item.innerHTML = `
       <div class="task-main">
         <div class="task-meta-row">
@@ -4815,7 +4801,7 @@ function renderTasks(plannerState, shellState) {
           ${schedule.shouldDisplay && task.status !== 'done' && !isDeadlinesRoute ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
-        ${task.description ? `<div class="task-note">${escapeHtml(task.description)}</div>` : ''}
+        ${showDescription ? `<div class="task-note">${escapeHtml(task.description)}</div>` : ''}
         ${footItems.length ? `<div class="task-foot">${escapeHtml(footItems.join(' | '))}</div>` : ''}
         ${alerts}
       </div>
