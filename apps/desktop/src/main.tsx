@@ -49,6 +49,7 @@ import {
 import { ENTITLEMENT_REFRESH_SCENARIOS } from './entitlementClient.js';
 import {
   DEFAULT_CURRENT_USER_EMAIL,
+  DEFAULT_CURRENT_USER_ID,
   DEFAULT_CURRENT_USER_NAME
 } from './identityDefaults.js';
 import { getTaskScheduleSummary } from './taskService.js';
@@ -1232,6 +1233,131 @@ style.textContent = `
     color: #111827;
   }
 
+  .project-timeline-surface,
+  .team-schedule-surface {
+    display: grid;
+    gap: 14px;
+  }
+
+  .project-timeline-grid,
+  .team-schedule-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .project-timeline-card,
+  .team-schedule-card {
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .project-timeline-head,
+  .team-schedule-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .project-timeline-head strong,
+  .team-schedule-head strong {
+    display: block;
+    font-size: 16px;
+    color: var(--text-strong);
+  }
+
+  .project-timeline-head p,
+  .team-schedule-head p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .project-timeline-meta,
+  .project-timeline-stages,
+  .team-schedule-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .timeline-meta-pill,
+  .timeline-stage-pill,
+  .team-schedule-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .project-timeline-section,
+  .team-schedule-section {
+    display: grid;
+    gap: 8px;
+  }
+
+  .project-timeline-section h3,
+  .team-schedule-section h3 {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .timeline-task-list,
+  .team-schedule-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .timeline-task-row,
+  .team-schedule-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  .timeline-task-copy,
+  .team-schedule-copy {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .timeline-task-title,
+  .team-schedule-title {
+    color: var(--text-strong);
+    font-size: 13px;
+  }
+
+  .timeline-task-subtitle,
+  .team-schedule-subtitle {
+    color: var(--text-soft);
+    font-size: 11px;
+  }
+
+  .timeline-task-time,
+  .team-schedule-time {
+    color: var(--text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
   .calendar-route {
     overflow: hidden;
   }
@@ -2086,13 +2212,23 @@ function isWorkspaceRouteMeta(meta) {
   return getSurfaceKind(meta) === 'workspace' || sanitizeText(meta?.id) === 'workspace';
 }
 
+function isProjectTimelinesRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'project-timelines' || sanitizeText(meta?.id) === 'view_project_timelines';
+}
+
+function isTeamScheduleRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'team-schedule' || sanitizeText(meta?.id) === 'view_team_schedule';
+}
+
 function usesDedicatedRouteHeader(meta) {
   return isCalendarRouteMeta(meta)
     || isDeadlinesRouteMeta(meta)
     || isTaskQueueRouteMeta(meta)
     || isAgendaRouteMeta(meta)
     || isInboxRouteMeta(meta)
-    || isWorkspaceRouteMeta(meta);
+    || isWorkspaceRouteMeta(meta)
+    || isProjectTimelinesRouteMeta(meta)
+    || isTeamScheduleRouteMeta(meta);
 }
 
 function getPriorityRank(priorityLevel) {
@@ -2110,6 +2246,18 @@ function getPriorityRank(priorityLevel) {
     return 3;
   }
   return 4;
+}
+
+function formatSurfaceUserLabel(userId) {
+  const id = sanitizeText(userId);
+  if (!id) {
+    return 'Unassigned';
+  }
+  if (id === DEFAULT_CURRENT_USER_ID) {
+    return 'Me';
+  }
+  const label = id.replace(/^user_/, '').replaceAll('_', ' ');
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function compareDeadlineTasks(left, right) {
@@ -2690,7 +2838,13 @@ function renderTaskForm(shellState, plannerState) {
   const isCalendarRoute = isCalendarRouteMeta(meta);
   const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
   const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
-  const isSupportRoute = isAgendaRouteMeta(meta) || isInboxRouteMeta(meta) || isWorkspaceRouteMeta(meta);
+  const isProjectTimelinesRoute = isProjectTimelinesRouteMeta(meta);
+  const isTeamScheduleRoute = isTeamScheduleRouteMeta(meta);
+  const isSupportRoute = isAgendaRouteMeta(meta)
+    || isInboxRouteMeta(meta)
+    || isWorkspaceRouteMeta(meta)
+    || isProjectTimelinesRoute
+    || isTeamScheduleRoute;
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
     ? 'Auto-scheduled'
@@ -2755,7 +2909,7 @@ function renderTaskForm(shellState, plannerState) {
 
   taskFormPanelEl.classList.toggle('composer-collapsed', (isCalendarRoute || isTaskQueueRoute) && !isTaskComposerExpanded);
 
-  if (isDeadlinesRoute) {
+  if (isDeadlinesRoute || isProjectTimelinesRoute || isTeamScheduleRoute) {
     taskFormPanelEl.hidden = true;
     taskFormPanelEl.innerHTML = '';
     return;
@@ -3600,6 +3754,8 @@ function updateSummary(plannerState, shellState) {
   const isAgendaRoute = isAgendaRouteMeta(meta);
   const isInboxRoute = isInboxRouteMeta(meta);
   const isWorkspaceRoute = isWorkspaceRouteMeta(meta);
+  const isProjectTimelinesRoute = isProjectTimelinesRouteMeta(meta);
+  const isTeamScheduleRoute = isTeamScheduleRouteMeta(meta);
   const usesDedicatedHeader = usesDedicatedRouteHeader(meta);
   const showRail = isCalendarRoute;
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
@@ -3658,6 +3814,30 @@ function updateSummary(plannerState, shellState) {
     surfaceTitleEl.textContent = 'Workspace';
     surfaceCountEl.textContent = 'Status';
     surfaceCaptionEl.textContent = 'Save state and backend health live here.';
+    return;
+  }
+
+  if (isProjectTimelinesRoute) {
+    const projectIds = new Set(
+      plannerState.visibleTasks
+        .map((task) => sanitizeText(task.projectId))
+        .filter((projectId) => projectId && projectId !== 'inbox')
+    );
+    surfaceTitleEl.textContent = 'Project Timelines';
+    surfaceCountEl.textContent = `${projectIds.size} projects`;
+    surfaceCaptionEl.textContent = 'Project progress grouped by project, stage, and next due work.';
+    return;
+  }
+
+  if (isTeamScheduleRoute) {
+    const assigneeIds = new Set(
+      plannerState.visibleTasks
+        .map((task) => sanitizeText(task.assigneeUserId))
+        .filter(Boolean)
+    );
+    surfaceTitleEl.textContent = 'Team Schedule';
+    surfaceCountEl.textContent = `${assigneeIds.size || 1} assignee${assigneeIds.size === 1 ? '' : 's'}`;
+    surfaceCaptionEl.textContent = 'Scheduled work grouped by assignee instead of a generic task stack.';
     return;
   }
 
@@ -3847,6 +4027,54 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(presentation.title)}</span>
           <span class="route-list-pill">${escapeHtml(`${sync.pendingCount} pending`)}</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isProjectTimelinesRouteMeta(meta)) {
+    const projectIds = new Set(
+      plannerState.visibleTasks
+        .map((task) => sanitizeText(task.projectId))
+        .filter((projectId) => projectId && projectId !== 'inbox')
+    );
+    const overdueCount = plannerState.visibleTasks.filter((task) => Boolean(task.isOverdue)).length;
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">Team view</div>
+          <h2>Project Timelines</h2>
+          <p>See project progress by project, current stage, and the next due work instead of a generic task feed.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(`${projectIds.size} projects`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${overdueCount} overdue tasks`)}</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isTeamScheduleRouteMeta(meta)) {
+    const assigneeIds = new Set(
+      plannerState.visibleTasks
+        .map((task) => sanitizeText(task.assigneeUserId))
+        .filter(Boolean)
+    );
+    const scheduledCount = plannerState.visibleTasks.filter((task) => parseDateValue(task.scheduledStart || task.startAt)).length;
+    const backlogCount = plannerState.visibleTasks.length - scheduledCount;
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">Team view</div>
+          <h2>Team Schedule</h2>
+          <p>Keep scheduled work grouped by assignee so the page reads like a team plan, not another personal queue.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(`${assigneeIds.size || 1} assignees`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${backlogCount} backlog`)}</span>
         </div>
       </div>
     `;
@@ -4185,6 +4413,222 @@ function renderWorkspaceStatusSurface() {
   `;
 }
 
+function renderProjectTimelinesSurface(plannerState) {
+  const compareProjectTimelineTasks = (left, right) => {
+    const leftDue = parseDateValue(left?.dueAt || left?.dueDate || left?.scheduledStart || left?.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    const rightDue = parseDateValue(right?.dueAt || right?.dueDate || right?.scheduledStart || right?.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+    if (leftDue !== rightDue) {
+      return leftDue - rightDue;
+    }
+    return sanitizeText(left?.title).localeCompare(sanitizeText(right?.title));
+  };
+  const tasksByProject = new Map<string, any[]>();
+  const projectLookup = new Map<string, any>(
+    (Array.isArray(appData.projects) ? appData.projects : []).map((project: any) => [sanitizeText(project.id), project])
+  );
+
+  plannerState.visibleTasks.forEach((task) => {
+    const projectId = sanitizeText(task.projectId);
+    if (!projectId || projectId === 'inbox') {
+      return;
+    }
+    const bucket = tasksByProject.get(projectId) || [];
+    bucket.push(task);
+    tasksByProject.set(projectId, bucket);
+  });
+
+  const cards = Array.from(tasksByProject.entries())
+    .map(([projectId, projectTasks]) => {
+      const project: any = projectLookup.get(projectId) || {};
+      const sortedTasks = projectTasks.slice().sort(compareProjectTimelineTasks);
+      const openTasks = sortedTasks.filter((task) => sanitizeText(task.status) !== 'done');
+      const overdueCount = openTasks.filter((task) => Boolean(task.isOverdue)).length;
+      const scheduledCount = openTasks.filter((task) => parseDateValue(task.scheduledStart || task.startAt)).length;
+      const activeStage = Array.isArray(project.stages)
+        ? project.stages.find((stage: any) => sanitizeText(stage.stageDefinitionId || stage.id) === sanitizeText(project.activeStageDefinitionId))
+        : null;
+      const stageNames = Array.from(
+        new Set(
+          [
+            sanitizeText(activeStage?.name),
+            ...openTasks.map((task) => sanitizeText(task.stageName))
+          ].filter(Boolean)
+        )
+      ).slice(0, 3);
+      const nextDueTask = openTasks.find((task) => parseDateValue(task.dueAt || task.dueDate || task.scheduledStart || task.startAt)) || openTasks[0] || sortedTasks[0];
+      const dueValue = project?.dueDate || nextDueTask?.dueAt || nextDueTask?.scheduledStart || nextDueTask?.startAt || null;
+
+      return {
+        projectId,
+        title: sanitizeText(project?.name, sanitizeText(projectTasks[0]?.projectName, 'Project')),
+        workspaceName: sanitizeText(projectTasks[0]?.workspaceName, 'Workspace'),
+        dueValue,
+        stageNames,
+        openCount: openTasks.length,
+        overdueCount,
+        scheduledCount,
+        previewTasks: sortedTasks.slice(0, 4)
+      };
+    })
+    .sort((left, right) => {
+      const leftDue = parseDateValue(left.dueValue)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+      const rightDue = parseDateValue(right.dueValue)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+      if (leftDue !== rightDue) {
+        return leftDue - rightDue;
+      }
+      return left.title.localeCompare(right.title);
+    });
+
+  if (!cards.length) {
+    return '<p class="muted">No project timelines are ready yet.</p>';
+  }
+
+  return `
+    <section class="project-timeline-surface">
+      <div class="project-timeline-grid">
+        ${cards.map((card) => `
+          <article class="project-timeline-card">
+            <div class="project-timeline-head">
+              <div>
+                <strong>${escapeHtml(card.title)}</strong>
+                <p>${escapeHtml(card.workspaceName)} • ${escapeHtml(card.dueValue ? `Due ${formatCompactDate(card.dueValue)}` : 'No project due date')}</p>
+              </div>
+              <span class="route-list-pill">${escapeHtml(`${card.openCount} open`)}</span>
+            </div>
+            <div class="project-timeline-meta">
+              <span class="timeline-meta-pill">${escapeHtml(`${card.scheduledCount} scheduled`)}</span>
+              <span class="timeline-meta-pill">${escapeHtml(`${card.overdueCount} overdue`)}</span>
+              <span class="timeline-meta-pill">${escapeHtml(`${card.previewTasks.length} visible tasks`)}</span>
+            </div>
+            ${card.stageNames.length ? `
+              <div class="project-timeline-section">
+                <h3>Stages</h3>
+                <div class="project-timeline-stages">
+                  ${card.stageNames.map((stageName) => `<span class="timeline-stage-pill">${escapeHtml(stageName)}</span>`).join('')}
+                </div>
+              </div>
+            ` : ''}
+            <div class="project-timeline-section">
+              <h3>Next work</h3>
+              <div class="timeline-task-list">
+                ${card.previewTasks.map((task) => `
+                  <div class="timeline-task-row">
+                    <div class="timeline-task-copy">
+                      <span class="timeline-task-title">${escapeHtml(task.title)}</span>
+                      <span class="timeline-task-subtitle">${escapeHtml(sanitizeText(task.stageName, 'No project stage'))}</span>
+                    </div>
+                    <span class="timeline-task-time">${escapeHtml(
+                      parseDateValue(task.dueAt || task.dueDate || task.scheduledStart || task.startAt)
+                        ? formatCompactDate(task.dueAt || task.dueDate || task.scheduledStart || task.startAt)
+                        : 'No date'
+                    )}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderTeamScheduleSurface(plannerState) {
+  const buckets = new Map<string, any[]>();
+  plannerState.visibleTasks.forEach((task) => {
+    const assigneeId = sanitizeText(task.assigneeUserId) || 'unassigned';
+    const bucket = buckets.get(assigneeId) || [];
+    bucket.push(task);
+    buckets.set(assigneeId, bucket);
+  });
+
+  const cards = Array.from(buckets.entries())
+    .map(([assigneeId, tasks]) => {
+      const sorted = tasks.slice().sort((left, right) => compareTaskQueueTasks(left, right));
+      const scheduled = sorted.filter((task) => parseDateValue(task.scheduledStart || task.startAt));
+      const backlog = sorted.filter((task) => !parseDateValue(task.scheduledStart || task.startAt));
+      const workspaceNames = Array.from(new Set(sorted.map((task) => sanitizeText(task.workspaceName)).filter(Boolean))).slice(0, 2);
+      return {
+        assigneeId,
+        label: formatSurfaceUserLabel(assigneeId),
+        workspaceNames,
+        scheduled,
+        backlog
+      };
+    })
+    .sort((left, right) => {
+      if (left.assigneeId === DEFAULT_CURRENT_USER_ID) {
+        return -1;
+      }
+      if (right.assigneeId === DEFAULT_CURRENT_USER_ID) {
+        return 1;
+      }
+      return left.label.localeCompare(right.label);
+    });
+
+  if (!cards.length) {
+    return '<p class="muted">No team schedule is visible right now.</p>';
+  }
+
+  return `
+    <section class="team-schedule-surface">
+      <div class="team-schedule-grid">
+        ${cards.map((card) => `
+          <article class="team-schedule-card">
+            <div class="team-schedule-head">
+              <div>
+                <strong>${escapeHtml(card.label)}</strong>
+                <p>${escapeHtml(card.workspaceNames.length ? card.workspaceNames.join(' • ') : 'No workspace context')}</p>
+              </div>
+              <span class="route-list-pill">${escapeHtml(`${card.scheduled.length} scheduled`)}</span>
+            </div>
+            <div class="team-schedule-stats">
+              <span class="team-schedule-pill">${escapeHtml(`${card.backlog.length} backlog`)}</span>
+              <span class="team-schedule-pill">${escapeHtml(`${card.scheduled.length + card.backlog.length} total`)}</span>
+            </div>
+            <div class="team-schedule-section">
+              <h3>Scheduled</h3>
+              <div class="team-schedule-list">
+                ${card.scheduled.length
+                  ? card.scheduled.slice(0, 5).map((task) => `
+                    <div class="team-schedule-row">
+                      <div class="team-schedule-copy">
+                        <span class="team-schedule-title">${escapeHtml(task.title)}</span>
+                        <span class="team-schedule-subtitle">${escapeHtml(`${sanitizeText(task.projectName, 'Inbox')} • ${sanitizeText(task.workspaceName, 'Workspace')}`)}</span>
+                      </div>
+                      <span class="team-schedule-time">${escapeHtml(formatCompactDate(task.scheduledStart || task.startAt))}</span>
+                    </div>
+                  `).join('')
+                  : '<p class="muted">No scheduled work for this assignee.</p>'}
+              </div>
+            </div>
+            <div class="team-schedule-section">
+              <h3>Backlog</h3>
+              <div class="team-schedule-list">
+                ${card.backlog.length
+                  ? card.backlog.slice(0, 3).map((task) => `
+                    <div class="team-schedule-row">
+                      <div class="team-schedule-copy">
+                        <span class="team-schedule-title">${escapeHtml(task.title)}</span>
+                        <span class="team-schedule-subtitle">${escapeHtml(sanitizeText(task.projectName, 'Inbox'))}</span>
+                      </div>
+                      <span class="team-schedule-time">${escapeHtml(
+                        parseDateValue(task.dueAt || task.dueDate)
+                          ? `Due ${formatCompactDate(task.dueAt || task.dueDate)}`
+                          : 'No date'
+                      )}</span>
+                    </div>
+                  `).join('')
+                  : '<p class="muted">No backlog is waiting here.</p>'}
+              </div>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
 function renderAgenda(shellState, plannerState) {
   if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
     renderCalendarMiniMonth(buildCalendarSurfaceState(plannerState, shellState));
@@ -4295,6 +4739,16 @@ function renderTasks(plannerState, shellState) {
 
   if (isWorkspaceRouteMeta(meta)) {
     taskListEl.innerHTML = renderWorkspaceStatusSurface();
+    return;
+  }
+
+  if (isProjectTimelinesRouteMeta(meta)) {
+    taskListEl.innerHTML = renderProjectTimelinesSurface(plannerState);
+    return;
+  }
+
+  if (isTeamScheduleRouteMeta(meta)) {
+    taskListEl.innerHTML = renderTeamScheduleSurface(plannerState);
     return;
   }
 
