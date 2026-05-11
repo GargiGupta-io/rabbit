@@ -917,6 +917,30 @@ style.textContent = `
     font: inherit;
   }
 
+  .composer-panel.overlay-active {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: start center;
+    padding: 28px 24px;
+    background: rgba(10, 13, 17, 0.62);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: auto;
+  }
+
+  .composer-dialog {
+    width: min(720px, calc(100vw - 48px));
+    margin: 8px auto 28px;
+    border: 1px solid var(--panel-border);
+    border-radius: 22px;
+    background: var(--panel-bg);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+    padding: 18px;
+  }
+
   .composer-panel.composer-collapsed {
     padding: 14px 16px;
   }
@@ -935,7 +959,7 @@ style.textContent = `
   }
 
   .task-form-advanced {
-    margin-top: 14px;
+    margin-top: 12px;
     border-top: 1px solid var(--panel-border);
     padding-top: 12px;
   }
@@ -999,7 +1023,7 @@ style.textContent = `
   }
 
   .task-form-field textarea {
-    min-height: 68px;
+    min-height: 56px;
     resize: vertical;
   }
 
@@ -2985,6 +3009,7 @@ function renderTaskForm(shellState, plannerState) {
     </option>
   `).join('');
 
+  taskFormPanelEl.classList.remove('overlay-active');
   taskFormPanelEl.classList.toggle('composer-collapsed', (isCalendarRoute || isTaskQueueRoute) && !isTaskComposerExpanded);
 
   if (isDeadlinesRoute || isProjectTimelinesRoute || isTeamScheduleRoute) {
@@ -3006,25 +3031,24 @@ function renderTaskForm(shellState, plannerState) {
   }
 
   taskFormPanelEl.hidden = false;
+  taskFormPanelEl.classList.add('overlay-active');
   taskFormPanelEl.innerHTML = `
+    <section class="composer-dialog" role="dialog" aria-modal="true" aria-labelledby="task-form-title">
     <div class="composer-header">
       <div>
-        <strong>New task</strong>
-        <p>Capture the work first. Scheduling can stay tucked away until you need it.</p>
+        <div class="view-breadcrumb">New task</div>
+        <strong id="task-form-title">Capture a task</strong>
+        <p>Start small here. Open the rest only when you need it.</p>
       </div>
       <div class="composer-head-actions">
         <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
-        ${(isCalendarRoute || isTaskQueueRoute) ? '<button type="button" id="task-form-close" class="composer-close">Close</button>' : ''}
+        <button type="button" id="task-form-close" class="composer-close">Close</button>
       </div>
     </div>
     <div class="task-form-grid">
       <label class="task-form-field span-2">
         Task name
         <input name="title" type="text" placeholder="What needs to happen?" value="${escapeHtml(taskForm.title)}" />
-      </label>
-      <label class="task-form-field span-2">
-        Description
-        <textarea name="description" placeholder="Add context, notes, or meeting details">${escapeHtml(taskForm.description)}</textarea>
       </label>
       <label class="task-form-field">
         Project
@@ -3046,10 +3070,18 @@ function renderTaskForm(shellState, plannerState) {
         Duration
         <input name="durationMinutes" type="number" min="5" max="720" step="5" value="${escapeHtml(String(taskForm.durationMinutes))}" />
       </label>
+      <label class="task-form-field">
+        Schedule mode
+        <select name="scheduleMode">${scheduleModeOptions}</select>
+      </label>
     </div>
-    <details class="task-form-advanced" ${shouldExpandAdvanced ? 'open' : ''}>
+    <details class="task-form-advanced" ${shouldExpandAdvanced || Boolean(taskForm.description) ? 'open' : ''}>
       <summary>More options</summary>
       <div class="task-form-grid task-form-advanced-grid">
+        <label class="task-form-field span-2">
+          Description
+          <textarea name="description" placeholder="Add context, notes, or meeting details">${escapeHtml(taskForm.description)}</textarea>
+        </label>
         <label class="task-form-field">
           Assignee
           <select name="assigneeUserId">${assigneeOptions}</select>
@@ -3057,10 +3089,6 @@ function renderTaskForm(shellState, plannerState) {
         <label class="task-form-field">
           Status
           <select name="statusId">${statusOptions}</select>
-        </label>
-        <label class="task-form-field">
-          Schedule mode
-          <select name="scheduleMode">${scheduleModeOptions}</select>
         </label>
         <label class="task-form-field">
           Schedule
@@ -3105,6 +3133,7 @@ function renderTaskForm(shellState, plannerState) {
         <button type="button" id="task-form-submit" class="primary" ${canMutate ? '' : 'disabled'}>Create task</button>
       </div>
     </div>
+    </section>
   `;
 }
 
@@ -5233,6 +5262,11 @@ viewHeaderEl.addEventListener('click', (event) => {
 
 taskFormPanelEl.addEventListener('click', (event) => {
   const target = event.target;
+  if (target === taskFormPanelEl) {
+    isTaskComposerExpanded = false;
+    renderAll();
+    return;
+  }
   if (!(target instanceof HTMLButtonElement)) {
     return;
   }
@@ -5593,6 +5627,13 @@ installDesktopShellBridgeHandlers();
 
 if (typeof window !== 'undefined') {
   window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isTaskComposerExpanded) {
+      event.preventDefault();
+      isTaskComposerExpanded = false;
+      renderAll();
+      return;
+    }
+
     const platformProfile = getDesktopPlatformProfileState();
     const command = getShellCommandForKeyboardEvent(platformProfile, event);
     if (!command) {
