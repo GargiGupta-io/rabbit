@@ -201,6 +201,7 @@ New priority order:
 - `learnings/rabbit-rebrand-deeplearn.md` - Rabbit product-identity rebrand notes covering metadata, persistence compatibility, seeded content, and documentation scope
 - `learnings/rabbit-windows-polish-finish-line.md` - explicit boundary for what counts as done in the Windows polish pass and what is intentionally deferred
 - `learnings/phase-10-windows-product-polish-deeplearn.md` - Windows product-polish learning write-up covering shell subtraction, density work, live QA, and phase closeout
+- `learnings/phase-11-motion-ui-refinement-deeplearn.md` - screenshot-driven UI refinement write-up covering the calendar-first route, calmer shell controls, and denser task and rail surfaces
 - `learnings/how-i-built-rabbit.md` - single narrative doc for explaining the full build process, reverse-engineering pivot, architecture, and release state
 - `learnings/steps.md` - chronological execution log and next-step handoff
 
@@ -254,6 +255,7 @@ Supporting research inside the repo:
   - reduced shell/debug clutter,
   - calmer sync and status copy,
   - tighter task, agenda, inbox, and composer surfaces,
+  - a calendar-first primary route that is closer to Motion's layout hierarchy,
   - and a verified live local task loop against the local backend.
 - Rabbit now also has a live backend runtime path for:
   - backend configuration persistence,
