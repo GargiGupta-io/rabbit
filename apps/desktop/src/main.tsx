@@ -847,14 +847,14 @@ style.textContent = `
   }
 
   .content-surface.route-calendar .view-header {
-    padding: 0 2px 2px;
+    padding: 0;
     background: transparent;
     border: 0;
     box-shadow: none;
   }
 
   .content-surface.route-calendar .toolbar-panel {
-    padding: 12px 14px;
+    display: none;
   }
 
   .composer-header p {
@@ -1065,11 +1065,95 @@ style.textContent = `
   }
 
   .content-surface.route-calendar .task-surface {
-    padding: 16px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
   }
 
   .shell-rail.route-calendar {
     gap: 12px;
+  }
+
+  .content-surface.route-calendar .surface-header {
+    display: none;
+  }
+
+  .calendar-route-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 6px 2px 2px;
+  }
+
+  .calendar-route-main {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .calendar-route-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-route-heading h2 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--text-strong);
+  }
+
+  .calendar-route-period {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .calendar-route-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-route-pill,
+  .calendar-route-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-strong);
+    font: inherit;
+  }
+
+  .calendar-route-pill {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .calendar-route-button {
+    cursor: pointer;
+  }
+
+  .calendar-route-button.primary {
+    background: #f8fafc;
+    border-color: #f8fafc;
+    color: #111827;
+  }
+
+  .content-surface.route-calendar .composer-panel {
+    border-radius: 18px;
   }
 
   .calendar-route {
@@ -1737,17 +1821,20 @@ const workspaceKickerEl = shell.querySelector('#workspace-kicker') as HTMLSpanEl
 const workspaceTitleEl = shell.querySelector('#workspace-title') as HTMLHeadingElement;
 const contentSurfaceEl = shell.querySelector('#content-surface') as HTMLElement;
 const shellRailEl = shell.querySelector('#shell-rail') as HTMLElement;
+const toolbarPanelEl = shell.querySelector('.toolbar-panel') as HTMLElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
 const filterContainer = shell.querySelector('#filter-group') as HTMLDivElement;
 const planWindowContainer = shell.querySelector('#plan-window-group') as HTMLDivElement;
 const taskFormPanelEl = shell.querySelector('#task-form-panel') as HTMLDivElement;
 const editorEl = shell.querySelector('#editor') as HTMLElement;
+const taskSurfaceEl = shell.querySelector('.task-surface') as HTMLElement;
 const taskListEl = shell.querySelector('#task-list') as HTMLDivElement;
 const entitlementStatusEl = shell.querySelector('#entitlement-status') as HTMLParagraphElement;
 const workspaceStatusPillEl = shell.querySelector('#workspace-status-pill') as HTMLSpanElement;
 const surfaceTitleEl = shell.querySelector('#surface-title') as HTMLSpanElement;
 const surfaceCountEl = shell.querySelector('#surface-count') as HTMLSpanElement;
 const surfaceCaptionEl = shell.querySelector('#surface-caption') as HTMLParagraphElement;
+const surfaceHeaderEl = surfaceTitleEl.closest('.surface-header') as HTMLElement;
 const warningEl = document.createElement('p');
 
 function escapeHtml(value: unknown) {
@@ -2493,18 +2580,12 @@ function renderTaskForm(shellState, plannerState) {
   taskFormPanelEl.classList.toggle('composer-collapsed', isCalendarRoute && !isTaskComposerExpanded);
 
   if (isCalendarRoute && !isTaskComposerExpanded) {
-    taskFormPanelEl.innerHTML = `
-      <div class="composer-collapsed-shell">
-        <div>
-          <strong>New</strong>
-          <p>Capture work only when you need it. The schedule stays in focus.</p>
-        </div>
-        <button type="button" id="task-form-open" class="primary">New task</button>
-      </div>
-    `;
+    taskFormPanelEl.hidden = true;
+    taskFormPanelEl.innerHTML = '';
     return;
   }
 
+  taskFormPanelEl.hidden = false;
   taskFormPanelEl.innerHTML = `
     <div class="composer-header">
       <div>
@@ -3321,6 +3402,9 @@ function updateSummary(plannerState, shellState) {
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
+  toolbarPanelEl.hidden = isCalendarRoute;
+  surfaceHeaderEl.hidden = isCalendarRoute;
+  taskSurfaceEl.classList.toggle('calendar-surface', isCalendarRoute);
 
   if (isCalendarRoute) {
     const referenceDate = parseDateValue(shellState?.referenceNow)
@@ -3399,19 +3483,26 @@ function renderTabStrip(shellState) {
 function renderViewHeader(shellState, plannerState) {
   const meta = plannerState.viewState.meta;
   if (isCalendarRouteMeta(meta)) {
-    const referenceDate = parseDateValue(shellState?.referenceNow)
-      || parseDateValue(appData.calendarOverlay?.refreshedAt)
-      || new Date();
-    const calendarCount = Array.isArray(appData.calendarOverlay?.calendars)
-      ? appData.calendarOverlay.calendars.length
-      : 0;
+    const calendarState = buildCalendarSurfaceState(plannerState, shellState);
+    const calendarCount = calendarState.calendars.length;
     viewHeaderEl.innerHTML = `
-      <div class="view-copy">
-        <div class="view-breadcrumb">Calendar view</div>
-        <h2>${escapeHtml(formatMonthHeading(referenceDate))}</h2>
-        <div class="view-chip-row">
-          <span class="view-chip">This week</span>
-          <span class="view-chip">${escapeHtml(String(calendarCount))} calendars</span>
+      <div class="calendar-route-bar">
+        <div class="calendar-route-main">
+          <div class="view-breadcrumb">Calendar</div>
+          <div class="calendar-route-heading">
+            <h2>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</h2>
+            <span class="calendar-route-pill">Week</span>
+          </div>
+          <div class="calendar-route-period">
+            <span>${escapeHtml(`Week of ${formatMonthDayLabel(calendarState.weekStart)}`)}</span>
+            <span>•</span>
+            <span>${escapeHtml(`${calendarCount} calendar${calendarCount === 1 ? '' : 's'} linked`)}</span>
+          </div>
+        </div>
+        <div class="calendar-route-pills">
+          <span class="calendar-route-pill">${escapeHtml(`${calendarState.totalEntries} scheduled items`)}</span>
+          <span class="calendar-route-pill">${escapeHtml(`${calendarState.unscheduledTaskCount} unscheduled tasks`)}</span>
+          <button type="button" id="task-form-open" class="calendar-route-button primary">New task</button>
         </div>
       </div>
     `;
@@ -4028,6 +4119,22 @@ taskFormPanelEl.addEventListener('change', (event) => {
   ) {
     handleTaskFormFieldChange(target);
   }
+});
+
+viewHeaderEl.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const openButton = target.closest('#task-form-open');
+  if (!(openButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  isTaskComposerExpanded = true;
+  renderAll();
+  focusTaskComposer();
 });
 
 taskFormPanelEl.addEventListener('click', (event) => {
