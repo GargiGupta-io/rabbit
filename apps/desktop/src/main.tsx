@@ -61,6 +61,7 @@ let appData = loadStoredData();
 let tasks = appData.tasks.slice();
 let activeFilter = 'all';
 let activePlanWindow = 'all';
+let deadlineSortMode = 'due';
 let search = '';
 let entitlementRefreshMode = 'active';
 let isRefreshingEntitlement = false;
@@ -1156,6 +1157,76 @@ style.textContent = `
     border-radius: 18px;
   }
 
+  .route-list-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 2px 0 2px;
+  }
+
+  .route-list-main {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .route-list-main h2 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--text-strong);
+  }
+
+  .route-list-main p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .route-list-actions,
+  .route-list-toggles {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .route-list-pill,
+  .route-list-button,
+  .route-sort-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-strong);
+    font: inherit;
+  }
+
+  .route-list-pill {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .route-list-button,
+  .route-sort-button {
+    cursor: pointer;
+  }
+
+  .route-list-button.primary,
+  .route-sort-button.active {
+    background: #f8fafc;
+    border-color: #f8fafc;
+    color: #111827;
+  }
+
   .calendar-route {
     overflow: hidden;
   }
@@ -1985,6 +2056,81 @@ function isCalendarRouteMeta(meta) {
   return sanitizeText(meta?.id) === 'calendar';
 }
 
+function getSurfaceKind(meta) {
+  return sanitizeText(meta?.surfaceKind || meta?.id);
+}
+
+function isDeadlinesRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'deadlines' || sanitizeText(meta?.id) === 'view_my_deadlines';
+}
+
+function isTaskQueueRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'tasks' || sanitizeText(meta?.id) === 'view_my_tasks';
+}
+
+function getPriorityRank(priorityLevel) {
+  const normalized = sanitizeText(priorityLevel, 'MEDIUM').toUpperCase();
+  if (normalized === 'ASAP') {
+    return 0;
+  }
+  if (normalized === 'HIGH') {
+    return 1;
+  }
+  if (normalized === 'MEDIUM') {
+    return 2;
+  }
+  if (normalized === 'LOW') {
+    return 3;
+  }
+  return 4;
+}
+
+function compareDeadlineTasks(left, right) {
+  if (deadlineSortMode === 'priority') {
+    const priorityDelta = getPriorityRank(left?.priorityLevel) - getPriorityRank(right?.priorityLevel);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+  }
+
+  const leftDue = parseDateValue(left?.dueAt || left?.dueDate)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  const rightDue = parseDateValue(right?.dueAt || right?.dueDate)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  if (leftDue !== rightDue) {
+    return leftDue - rightDue;
+  }
+
+  if (deadlineSortMode !== 'priority') {
+    const priorityDelta = getPriorityRank(left?.priorityLevel) - getPriorityRank(right?.priorityLevel);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+  }
+
+  return sanitizeText(left?.title).localeCompare(sanitizeText(right?.title));
+}
+
+function compareTaskQueueTasks(left, right) {
+  const leftDone = sanitizeText(left?.status) === 'done';
+  const rightDone = sanitizeText(right?.status) === 'done';
+  if (leftDone !== rightDone) {
+    return leftDone ? 1 : -1;
+  }
+
+  const leftScheduled = parseDateValue(left?.scheduledStart || left?.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  const rightScheduled = parseDateValue(right?.scheduledStart || right?.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  if (leftScheduled !== rightScheduled) {
+    return leftScheduled - rightScheduled;
+  }
+
+  const leftDue = parseDateValue(left?.dueAt || left?.dueDate)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  const rightDue = parseDateValue(right?.dueAt || right?.dueDate)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  if (leftDue !== rightDue) {
+    return leftDue - rightDue;
+  }
+
+  return sanitizeText(left?.title).localeCompare(sanitizeText(right?.title));
+}
+
 function getEntitlementPresentation(summary) {
   if (summary.isRevoked) {
     return {
@@ -2515,6 +2661,8 @@ function renderTaskForm(shellState, plannerState) {
     now: shellState?.referenceNow
   }).meta;
   const isCalendarRoute = isCalendarRouteMeta(meta);
+  const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
+  const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
     ? 'Auto-scheduled'
@@ -2577,9 +2725,15 @@ function renderTaskForm(shellState, plannerState) {
     </option>
   `).join('');
 
-  taskFormPanelEl.classList.toggle('composer-collapsed', isCalendarRoute && !isTaskComposerExpanded);
+  taskFormPanelEl.classList.toggle('composer-collapsed', (isCalendarRoute || isTaskQueueRoute) && !isTaskComposerExpanded);
 
-  if (isCalendarRoute && !isTaskComposerExpanded) {
+  if (isDeadlinesRoute) {
+    taskFormPanelEl.hidden = true;
+    taskFormPanelEl.innerHTML = '';
+    return;
+  }
+
+  if ((isCalendarRoute || isTaskQueueRoute) && !isTaskComposerExpanded) {
     taskFormPanelEl.hidden = true;
     taskFormPanelEl.innerHTML = '';
     return;
@@ -2594,7 +2748,7 @@ function renderTaskForm(shellState, plannerState) {
       </div>
       <div class="composer-head-actions">
         <span class="composer-mode">${escapeHtml(scheduleHint)}</span>
-        ${isCalendarRoute ? '<button type="button" id="task-form-close" class="composer-close">Close</button>' : ''}
+        ${(isCalendarRoute || isTaskQueueRoute) ? '<button type="button" id="task-form-close" class="composer-close">Close</button>' : ''}
       </div>
     </div>
     <div class="task-form-grid">
@@ -2885,6 +3039,7 @@ function buildPlannerState(shellState) {
   }, {
     now: shellState.referenceNow
   });
+  const meta = viewState.meta;
   const viewTasks = viewState.tasks;
   const filteredTasks = getTaskFilters(viewTasks, {
     statusFilter: activeFilter,
@@ -2894,14 +3049,21 @@ function buildPlannerState(shellState) {
     calendarOverlay: appData.calendarOverlay
   });
 
-  let visibleEntries = planWindow.visible;
-  if (activePlanWindow === 'today') {
-    visibleEntries = planWindow.today;
-  } else if (activePlanWindow === 'week') {
-    visibleEntries = planWindow.week;
+  let visibleTasks;
+  if (isDeadlinesRouteMeta(meta)) {
+    visibleTasks = filteredTasks.slice().sort(compareDeadlineTasks);
+  } else if (isTaskQueueRouteMeta(meta)) {
+    visibleTasks = filteredTasks.slice().sort(compareTaskQueueTasks);
+  } else {
+    let visibleEntries = planWindow.visible;
+    if (activePlanWindow === 'today') {
+      visibleEntries = planWindow.today;
+    } else if (activePlanWindow === 'week') {
+      visibleEntries = planWindow.week;
+    }
+    visibleTasks = visibleEntries.map((entry) => entry.task);
   }
 
-  const visibleTasks = visibleEntries.map((entry) => entry.task);
   const visibleTaskIds = new Set(visibleTasks.map((task) => task.id));
   const overlaps = Object.fromEntries(
     Object.entries(planWindow.overlaps)
@@ -2938,12 +3100,13 @@ function updateSyncStatus(shellState = getShellState(appData)) {
   const backend = getBackendState();
   const backendPresentation = getBackendPresentation(backend);
   const presentation = getSyncPresentation(sync);
-  const isCalendarRoute = isCalendarRouteMeta(getViewStateSummary({
+  const activeMeta = getViewStateSummary({
     ...appData,
     shell: shellState
   }, {
     now: shellState?.referenceNow
-  }).meta);
+  }).meta;
+  const isCalendarRoute = isCalendarRouteMeta(activeMeta);
   workspaceStatusPillEl.textContent = presentation.title;
   workspaceStatusPillEl.className = `workspace-pill ${presentation.badgeClass}`;
   const cacheKeysLabel = cache.displayKeys.length
@@ -3398,12 +3561,15 @@ function installDesktopShellBridgeHandlers() {
 function updateSummary(plannerState, shellState) {
   const meta = plannerState.viewState.meta;
   const isCalendarRoute = isCalendarRouteMeta(meta);
+  const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
+  const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
+  const usesDedicatedHeader = isCalendarRoute || isDeadlinesRoute || isTaskQueueRoute;
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
-  toolbarPanelEl.hidden = isCalendarRoute;
-  surfaceHeaderEl.hidden = isCalendarRoute;
+  toolbarPanelEl.hidden = usesDedicatedHeader;
+  surfaceHeaderEl.hidden = usesDedicatedHeader;
   taskSurfaceEl.classList.toggle('calendar-surface', isCalendarRoute);
 
   if (isCalendarRoute) {
@@ -3414,6 +3580,22 @@ function updateSummary(plannerState, shellState) {
     surfaceTitleEl.textContent = formatMonthHeading(referenceDate);
     surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
     surfaceCaptionEl.textContent = `Week of ${formatMonthDayLabel(weekStart)}. Calendar events and scheduled work share one surface.`;
+    return;
+  }
+
+  if (isDeadlinesRoute) {
+    surfaceTitleEl.textContent = 'Deadlines';
+    surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
+    surfaceCaptionEl.textContent = deadlineSortMode === 'priority'
+      ? 'Ordered by priority first, then due date.'
+      : 'Ordered by due date first, then priority.';
+    return;
+  }
+
+  if (isTaskQueueRoute) {
+    surfaceTitleEl.textContent = 'Task queue';
+    surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
+    surfaceCaptionEl.textContent = 'Personal work queue with compact task capture.';
     return;
   }
 
@@ -3503,6 +3685,49 @@ function renderViewHeader(shellState, plannerState) {
           <span class="calendar-route-pill">${escapeHtml(`${calendarState.totalEntries} scheduled items`)}</span>
           <span class="calendar-route-pill">${escapeHtml(`${calendarState.unscheduledTaskCount} unscheduled tasks`)}</span>
           <button type="button" id="task-form-open" class="calendar-route-button primary">New task</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isDeadlinesRouteMeta(meta)) {
+    const overdueCount = plannerState.visibleTasks.filter((task) => task.isOverdue).length;
+    const openCount = plannerState.visibleTasks.filter((task) => sanitizeText(task.status) !== 'done').length;
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">My view</div>
+          <h2>My Deadlines</h2>
+          <p>Focus on what needs to be finished and when.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${overdueCount} overdue`)}</span>
+          <div class="route-list-toggles">
+            <button type="button" class="route-sort-button ${deadlineSortMode === 'due' ? 'active' : ''}" data-deadline-sort="due">Due date</button>
+            <button type="button" class="route-sort-button ${deadlineSortMode === 'priority' ? 'active' : ''}" data-deadline-sort="priority">Priority</button>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isTaskQueueRouteMeta(meta)) {
+    const openCount = plannerState.visibleTasks.filter((task) => sanitizeText(task.status) !== 'done').length;
+    const scheduledCount = plannerState.visibleTasks.filter((task) => parseDateValue(task.scheduledStart || task.startAt)).length;
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">My view</div>
+          <h2>My Tasks</h2>
+          <p>Your personal task list. Open the full form only when you need it.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
+          <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
         </div>
       </div>
     `;
@@ -3863,18 +4088,27 @@ function renderTasks(plannerState, shellState) {
     return;
   }
 
+  const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
+  const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
+
   visibleTasks.forEach((task) => {
     const semantics = taskSemantics[task.id] || {};
     const conflictIds = semantics.overlapTaskIds?.length ? semantics.overlapTaskIds : overlaps[task.id] || [];
     const schedule = getTaskScheduleSummary(task);
     const conflictLabels = conflictIds.map((taskId) => taskTitleById.get(taskId) || taskId);
     const blockerLabels = (semantics.blockedByOpenTaskIds || []).map((taskId) => taskTitleById.get(taskId) || taskId);
-    const footItems = [
-      task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : '',
-      task.durationMinutes ? `${task.durationMinutes} min` : '',
-      task.recurrence.pattern !== 'none' ? task.recurrence.pattern : '',
-      schedule.shouldDisplay ? schedule.label : ''
-    ].filter(Boolean);
+    const footItems = isDeadlinesRoute
+      ? [
+          task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : 'No due date',
+          task.priorityLevel ? `Priority ${task.priorityLevel}` : '',
+          task.projectName && task.projectName !== 'Inbox' ? task.projectName : ''
+        ].filter(Boolean)
+      : [
+          task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : '',
+          task.durationMinutes ? `${task.durationMinutes} min` : '',
+          task.recurrence.pattern !== 'none' ? task.recurrence.pattern : '',
+          schedule.shouldDisplay ? schedule.label : ''
+        ].filter(Boolean);
     const alerts = [
       blockerLabels.length
         ? `<div class="task-alert warning">Blocked by ${escapeHtml(blockerLabels.join(', '))}</div>`
@@ -3897,9 +4131,10 @@ function renderTasks(plannerState, shellState) {
     item.innerHTML = `
       <div class="task-main">
         <div class="task-meta-row">
-          ${task.projectName && task.projectName !== 'Inbox' ? `<span class="project-chip">${escapeHtml(task.projectName)}</span>` : ''}
+          ${task.projectName && task.projectName !== 'Inbox' && !isDeadlinesRoute ? `<span class="project-chip">${escapeHtml(task.projectName)}</span>` : ''}
           ${task.status === 'done' ? '<span class="status-chip">Done</span>' : ''}
-          ${schedule.shouldDisplay && task.status !== 'done' ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
+          ${isDeadlinesRoute && task.priorityLevel ? `<span class="status-chip tone-${escapeHtml(task.priorityLevel === 'ASAP' || task.priorityLevel === 'HIGH' ? 'error' : task.priorityLevel === 'MEDIUM' ? 'on' : 'off')}">${escapeHtml(task.priorityLevel)}</span>` : ''}
+          ${schedule.shouldDisplay && task.status !== 'done' && !isDeadlinesRoute ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
         ${task.description ? `<div class="task-note">${escapeHtml(task.description)}</div>` : ''}
@@ -3907,7 +4142,7 @@ function renderTasks(plannerState, shellState) {
         ${alerts}
       </div>
       <div class="task-side">
-        <div class="task-time">${escapeHtml(formatCompactDate(task.startAt || task.dueAt))}</div>
+        <div class="task-time">${escapeHtml(formatCompactDate(isDeadlinesRoute ? (task.dueAt || task.startAt) : (task.startAt || task.dueAt)))}</div>
         <div class="task-actions">
           <button data-action="complete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
           <button data-action="delete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>Delete</button>
@@ -4127,6 +4362,16 @@ viewHeaderEl.addEventListener('click', (event) => {
     return;
   }
 
+  const sortButton = target.closest('[data-deadline-sort]');
+  if (sortButton instanceof HTMLButtonElement) {
+    const nextSort = sanitizeText(sortButton.dataset.deadlineSort, 'due');
+    if (nextSort === 'due' || nextSort === 'priority') {
+      deadlineSortMode = nextSort;
+      renderAll();
+    }
+    return;
+  }
+
   const openButton = target.closest('#task-form-open');
   if (!(openButton instanceof HTMLButtonElement)) {
     return;
@@ -4161,12 +4406,13 @@ taskFormPanelEl.addEventListener('click', (event) => {
     if (getDesktopPlatformProfileState().optionSpace.usesDedicatedWindow) {
       desktopShellBridge.send('closeOptionSpace');
     }
-    if (isCalendarRouteMeta(getViewStateSummary({
+    const activeMeta = getViewStateSummary({
       ...appData,
       shell: getShellState(appData)
     }, {
       now: getShellState(appData).referenceNow
-    }).meta)) {
+    }).meta;
+    if (isCalendarRouteMeta(activeMeta) || isTaskQueueRouteMeta(activeMeta)) {
       isTaskComposerExpanded = false;
       renderAll();
     }
@@ -4192,12 +4438,13 @@ taskFormPanelEl.addEventListener('click', (event) => {
 
   appData = applyTaskMutation(appData, result);
   tasks = appData.tasks.slice();
-  if (isCalendarRouteMeta(getViewStateSummary({
+  const activeMeta = getViewStateSummary({
     ...appData,
     shell: getShellState(appData)
   }, {
     now: getShellState(appData).referenceNow
-  }).meta)) {
+  }).meta;
+  if (isCalendarRouteMeta(activeMeta) || isTaskQueueRouteMeta(activeMeta)) {
     isTaskComposerExpanded = false;
   }
   resetTaskForm();
