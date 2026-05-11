@@ -16,6 +16,7 @@ const SHELL_VIEW_META = {
     id: 'calendar',
     title: 'Calendar',
     layout: 'schedule',
+    surfaceKind: 'calendar',
     collectionLabel: 'Full schedule',
     description: 'Everything with scheduling context appears in one timeline-oriented surface.',
     emptyState: 'Nothing is scheduled here right now.'
@@ -24,6 +25,7 @@ const SHELL_VIEW_META = {
     id: 'view_my_deadlines',
     title: 'My Deadlines',
     layout: 'kanban',
+    surfaceKind: 'deadlines',
     collectionLabel: 'Deadline pressure',
     description: 'Tasks are ordered by due date so urgent work rises to the top.',
     emptyState: 'No deadlines are pressing right now.'
@@ -32,6 +34,7 @@ const SHELL_VIEW_META = {
     id: 'view_my_tasks',
     title: 'My Tasks',
     layout: 'kanban',
+    surfaceKind: 'tasks',
     collectionLabel: 'Personal queue',
     description: 'This view keeps the current task queue visible across scheduled and unscheduled work.',
     emptyState: 'Nothing is waiting in this view.'
@@ -40,6 +43,7 @@ const SHELL_VIEW_META = {
     id: 'view_project_timelines',
     title: 'Project Timelines',
     layout: 'gantt',
+    surfaceKind: 'project-timelines',
     collectionLabel: 'Project sequence',
     description: 'Project work is ordered to emphasize timeline flow instead of the raw inbox.',
     emptyState: 'No project work is ready yet.'
@@ -48,6 +52,7 @@ const SHELL_VIEW_META = {
     id: 'view_team_schedule',
     title: 'Team Schedule',
     layout: 'kanban',
+    surfaceKind: 'team-schedule',
     collectionLabel: 'Scheduled work',
     description: 'Scheduled tasks are prioritized so the shell reads like a planning surface.',
     emptyState: 'No team work is scheduled here yet.'
@@ -573,13 +578,16 @@ export function createDefaultSavedViews() {
 export function createDefaultShellState() {
   const tabs = createDefaultTabs();
   const savedViews = createDefaultSavedViews();
+  const activeTab = tabs.find((tab) => tab.active) || tabs[0] || null;
 
   return {
     theme: createDefaultShellTheme(),
     tabs,
     savedViews,
-    activeTabId: tabs.find((tab) => tab.active)?.id || DEFAULT_TAB_ID,
-    activeViewId: DEFAULT_VIEW_ID
+    activeTabId: activeTab?.id || DEFAULT_TAB_ID,
+    activeViewId: activeTab?.itemType === 'view'
+      ? sanitizeText(activeTab.itemId, DEFAULT_VIEW_ID)
+      : sanitizeText(activeTab?.itemId, 'calendar')
   };
 }
 
@@ -1149,9 +1157,15 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
   const savedViews = normalizeSavedViews(rawShell.savedViews);
   const tabs = normalizeShellTabs(rawShell.tabs);
   const activeTab = getActiveShellTab(tabs, sanitizeText(rawShell.activeTabId, DEFAULT_TAB_ID));
-  const explicitViewId = sanitizeText(rawShell.activeViewId, activeTab?.itemType === 'view' ? activeTab.itemId : 'calendar');
-  const isCalendarScope = explicitViewId === 'calendar' && activeTab?.itemType === 'route';
-  const activeView = isCalendarScope ? null : getSavedViewById(savedViews, explicitViewId || DEFAULT_VIEW_ID);
+  const routeScopeId = activeTab?.itemType === 'route'
+    ? sanitizeText(activeTab.itemId, 'calendar')
+    : '';
+  const explicitViewId = sanitizeText(
+    rawShell.activeViewId,
+    routeScopeId || (activeTab?.itemType === 'view' ? activeTab.itemId : DEFAULT_VIEW_ID)
+  );
+  const isRouteScope = Boolean(routeScopeId) && explicitViewId === routeScopeId;
+  const activeView = isRouteScope ? null : getSavedViewById(savedViews, explicitViewId || DEFAULT_VIEW_ID);
   const theme = normalizeShellTheme(rawShell.theme);
   const referenceNow = toIsoString(options.now || rawShell.agenda?.generatedAt) || toIsoString(new Date());
   const sidebarSections = buildSidebarSections({
@@ -1171,7 +1185,7 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
     activeTabId: activeTab?.id || DEFAULT_TAB_ID,
     activeTab,
     savedViews,
-    activeViewId: isCalendarScope ? 'calendar' : activeView?.id || DEFAULT_VIEW_ID,
+    activeViewId: isRouteScope ? routeScopeId : activeView?.id || DEFAULT_VIEW_ID,
     activeView,
     referenceNow,
     sidebarSections,
@@ -1262,7 +1276,7 @@ export function activateShellTab(shell = {}, tabId = '') {
     activeTabId: activeTab?.id || DEFAULT_TAB_ID,
     activeViewId: activeTab?.itemType === 'view'
       ? sanitizeText(activeTab.itemId, DEFAULT_VIEW_ID)
-      : 'calendar'
+      : sanitizeText(activeTab?.itemId, 'calendar')
   };
 }
 
@@ -1450,7 +1464,7 @@ export function removeShellTab(shell = {}, tabId = '') {
     activeTabId: fallbackTab?.id || DEFAULT_TAB_ID,
     activeViewId: fallbackTab?.itemType === 'view'
       ? sanitizeText(fallbackTab.itemId, DEFAULT_VIEW_ID)
-      : 'calendar'
+      : sanitizeText(fallbackTab?.itemId, 'calendar')
   };
 }
 
