@@ -1,5 +1,6 @@
 import {
   addShellViewTab,
+  activateShellRoute,
   activateShellTab,
   activateShellView,
   applySyncBatchResult,
@@ -595,6 +596,10 @@ style.textContent = `
     grid-template-columns: minmax(0, 1fr) 316px;
     gap: 14px;
     min-width: 0;
+  }
+
+  .workspace-body.single-surface {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .content-surface,
@@ -1890,6 +1895,7 @@ const shellActionsEl = shell.querySelector('#shell-actions') as HTMLDivElement;
 const windowChromeEl = shell.querySelector('#window-chrome') as HTMLDivElement;
 const workspaceKickerEl = shell.querySelector('#workspace-kicker') as HTMLSpanElement;
 const workspaceTitleEl = shell.querySelector('#workspace-title') as HTMLHeadingElement;
+const workspaceBodyEl = shell.querySelector('.workspace-body') as HTMLElement;
 const contentSurfaceEl = shell.querySelector('#content-surface') as HTMLElement;
 const shellRailEl = shell.querySelector('#shell-rail') as HTMLElement;
 const toolbarPanelEl = shell.querySelector('.toolbar-panel') as HTMLElement;
@@ -2066,6 +2072,27 @@ function isDeadlinesRouteMeta(meta) {
 
 function isTaskQueueRouteMeta(meta) {
   return getSurfaceKind(meta) === 'tasks' || sanitizeText(meta?.id) === 'view_my_tasks';
+}
+
+function isAgendaRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'agenda' || sanitizeText(meta?.id) === 'agenda';
+}
+
+function isInboxRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'inbox' || sanitizeText(meta?.id) === 'inbox';
+}
+
+function isWorkspaceRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'workspace' || sanitizeText(meta?.id) === 'workspace';
+}
+
+function usesDedicatedRouteHeader(meta) {
+  return isCalendarRouteMeta(meta)
+    || isDeadlinesRouteMeta(meta)
+    || isTaskQueueRouteMeta(meta)
+    || isAgendaRouteMeta(meta)
+    || isInboxRouteMeta(meta)
+    || isWorkspaceRouteMeta(meta);
 }
 
 function getPriorityRank(priorityLevel) {
@@ -2663,6 +2690,7 @@ function renderTaskForm(shellState, plannerState) {
   const isCalendarRoute = isCalendarRouteMeta(meta);
   const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
   const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
+  const isSupportRoute = isAgendaRouteMeta(meta) || isInboxRouteMeta(meta) || isWorkspaceRouteMeta(meta);
   const options = getTaskFormOptions(appData, taskForm);
   const scheduleHint = taskForm.scheduleMode === 'auto'
     ? 'Auto-scheduled'
@@ -2728,6 +2756,12 @@ function renderTaskForm(shellState, plannerState) {
   taskFormPanelEl.classList.toggle('composer-collapsed', (isCalendarRoute || isTaskQueueRoute) && !isTaskComposerExpanded);
 
   if (isDeadlinesRoute) {
+    taskFormPanelEl.hidden = true;
+    taskFormPanelEl.innerHTML = '';
+    return;
+  }
+
+  if (isSupportRoute) {
     taskFormPanelEl.hidden = true;
     taskFormPanelEl.innerHTML = '';
     return;
@@ -3117,7 +3151,7 @@ function updateSyncStatus(shellState = getShellState(appData)) {
   const pushLabel = isBackendBusy && backendBusyAction === 'push' ? 'Pushing...' : 'Push outbox';
   const backendConfigured = hasBackendConfiguration(backend);
 
-  syncPanelEl.hidden = isCalendarRoute && !SHOW_INTERNAL_SURFACES;
+  syncPanelEl.hidden = (!isCalendarRoute || shellRailEl.hidden) && !SHOW_INTERNAL_SURFACES;
   if (syncPanelEl.hidden) {
     syncPanelEl.innerHTML = '';
     return;
@@ -3563,13 +3597,19 @@ function updateSummary(plannerState, shellState) {
   const isCalendarRoute = isCalendarRouteMeta(meta);
   const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
   const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
-  const usesDedicatedHeader = isCalendarRoute || isDeadlinesRoute || isTaskQueueRoute;
+  const isAgendaRoute = isAgendaRouteMeta(meta);
+  const isInboxRoute = isInboxRouteMeta(meta);
+  const isWorkspaceRoute = isWorkspaceRouteMeta(meta);
+  const usesDedicatedHeader = usesDedicatedRouteHeader(meta);
+  const showRail = isCalendarRoute;
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
   toolbarPanelEl.hidden = usesDedicatedHeader;
   surfaceHeaderEl.hidden = usesDedicatedHeader;
+  shellRailEl.hidden = !showRail;
+  workspaceBodyEl.classList.toggle('single-surface', !showRail);
   taskSurfaceEl.classList.toggle('calendar-surface', isCalendarRoute);
 
   if (isCalendarRoute) {
@@ -3596,6 +3636,28 @@ function updateSummary(plannerState, shellState) {
     surfaceTitleEl.textContent = 'Task queue';
     surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
     surfaceCaptionEl.textContent = 'Personal work queue with compact task capture.';
+    return;
+  }
+
+  if (isAgendaRoute) {
+    surfaceTitleEl.textContent = 'Agenda';
+    surfaceCountEl.textContent = `${shellState.agenda.counts.total} items`;
+    surfaceCaptionEl.textContent = 'What is happening now, next, and soon.';
+    return;
+  }
+
+  if (isInboxRoute) {
+    const inboxState = getInboxStateSummary(appData);
+    surfaceTitleEl.textContent = 'Inbox';
+    surfaceCountEl.textContent = `${inboxState.unreadCount} unread`;
+    surfaceCaptionEl.textContent = 'Incoming items that still need attention.';
+    return;
+  }
+
+  if (isWorkspaceRoute) {
+    surfaceTitleEl.textContent = 'Workspace';
+    surfaceCountEl.textContent = 'Status';
+    surfaceCaptionEl.textContent = 'Save state and backend health live here.';
     return;
   }
 
@@ -3628,6 +3690,7 @@ function renderSidebar(shellState) {
           class="nav-item ${isActive ? 'active' : ''}"
           data-kind="${escapeHtml(item.kind)}"
           data-route="${escapeHtml(item.route || '')}"
+          data-route-id="${escapeHtml(item.routeId || '')}"
           data-view-id="${escapeHtml(item.viewId || '')}"
         >
           <span class="nav-label">
@@ -3728,6 +3791,62 @@ function renderViewHeader(shellState, plannerState) {
           <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
           <span class="route-list-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
           <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isAgendaRouteMeta(meta)) {
+    const agenda = shellState.agenda;
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">Workspace</div>
+          <h2>Agenda</h2>
+          <p>What is happening now, next, and soon across scheduled work and meetings.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(`${agenda.counts.ongoing} ongoing`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${agenda.counts.upcoming} upcoming`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${agenda.counts.timeless} timeless`)}</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isInboxRouteMeta(meta)) {
+    const inboxState = getInboxStateSummary(appData);
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">Workspace</div>
+          <h2>Inbox</h2>
+          <p>Incoming items that still need attention live here instead of beside every route.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(`${inboxState.unreadCount} unread`)}</span>
+          <span class="route-list-pill">${escapeHtml(`${inboxState.totalCount} total`)}</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (isWorkspaceRouteMeta(meta)) {
+    const sync = getSyncStateSummary(appData);
+    const presentation = getSyncPresentation(sync);
+    viewHeaderEl.innerHTML = `
+      <div class="route-list-bar">
+        <div class="route-list-main">
+          <div class="view-breadcrumb">Workspace</div>
+          <h2>Workspace</h2>
+          <p>Connection, save state, and backend health belong here instead of living on every page.</p>
+        </div>
+        <div class="route-list-actions">
+          <span class="route-list-pill">${escapeHtml(presentation.title)}</span>
+          <span class="route-list-pill">${escapeHtml(`${sync.pendingCount} pending`)}</span>
         </div>
       </div>
     `;
@@ -3986,9 +4105,94 @@ function renderAgendaGroup(title, entries, emptyMessage) {
   `;
 }
 
+function renderAgendaSurface(shellState) {
+  const agenda = shellState.agenda;
+  return `
+    <section class="agenda-surface">
+      <div class="agenda-groups">
+        ${renderAgendaGroup('Ongoing', agenda.ongoing, 'Nothing is in progress.')}
+        ${renderAgendaGroup('Upcoming', agenda.upcoming, 'Nothing is coming up next.')}
+        ${renderAgendaGroup('Timeless', agenda.timeless, 'No unscheduled work is waiting.')}
+      </div>
+    </section>
+  `;
+}
+
+function renderInboxSurface() {
+  const inboxState = getInboxStateSummary(appData);
+  const items = inboxState.items.length
+    ? inboxState.items.map((item) => `
+        <article class="inbox-item ${item.read ? '' : 'unread'}">
+          <div class="inbox-item-head">
+            <div>
+              <div class="inbox-item-title">${escapeHtml(item.title)}</div>
+              <div class="inbox-item-subtitle">${escapeHtml(item.targetSubtitle || item.sourceLabel)}</div>
+            </div>
+            <div class="inbox-item-time">${escapeHtml(formatCompactDate(item.createdTime))}</div>
+          </div>
+          ${item.description ? `<p class="inbox-item-note">${escapeHtml(item.description)}</p>` : ''}
+          <div class="inbox-item-meta">
+            <span>${escapeHtml(item.sourceLabel)}</span>
+            <span>${escapeHtml(item.actionLabel)}</span>
+          </div>
+        </article>
+      `).join('')
+    : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`;
+
+  return `
+    <section class="inbox-surface">
+      <p class="rail-note">${escapeHtml(
+        inboxState.items.length
+          ? inboxState.needsActionCount > 0
+            ? `${inboxState.needsActionCount} ${inboxState.needsActionCount === 1 ? 'item still needs action.' : 'items still need action.'}`
+            : 'Everything in your inbox is clear.'
+          : 'No inbox follow-up is waiting right now.'
+      )}</p>
+      <div class="inbox-list">${items}</div>
+    </section>
+  `;
+}
+
+function renderWorkspaceStatusSurface() {
+  const sync = getSyncStateSummary(appData);
+  const backend = getBackendState();
+  const presentation = getSyncPresentation(sync);
+  const backendPresentation = getBackendPresentation(backend);
+
+  return `
+    <section class="workspace-status-surface">
+      <div class="sync-grid">
+        <div class="sync-stat">
+          <strong>${sync.pendingCount ? 'Changes waiting' : 'All saved'}</strong>
+          <div class="sync-value">${escapeHtml(String(sync.pendingCount || 0))}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Last saved</strong>
+          <div class="sync-value">${escapeHtml(formatSyncDate(sync.lastSyncAt))}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Sync</strong>
+          <div class="sync-value">${escapeHtml(presentation.title)}</div>
+        </div>
+        <div class="sync-stat">
+          <strong>Backend</strong>
+          <div class="sync-value">${escapeHtml(backendPresentation.title)}</div>
+        </div>
+      </div>
+      <p class="sync-note">${escapeHtml(presentation.detail)}</p>
+      <p class="sync-note">${escapeHtml(backendPresentation.detail)}</p>
+    </section>
+  `;
+}
+
 function renderAgenda(shellState, plannerState) {
   if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
     renderCalendarMiniMonth(buildCalendarSurfaceState(plannerState, shellState));
+    return;
+  }
+
+  if (shellRailEl.hidden) {
+    agendaPanelEl.innerHTML = '';
     return;
   }
 
@@ -4009,6 +4213,11 @@ function renderAgenda(shellState, plannerState) {
 function renderInboxPanel(shellState, plannerState) {
   if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
     renderCalendarSourcesPanel(buildCalendarSurfaceState(plannerState, shellState));
+    return;
+  }
+
+  if (shellRailEl.hidden) {
+    inboxPanelEl.innerHTML = '';
     return;
   }
 
@@ -4071,6 +4280,21 @@ function renderTasks(plannerState, shellState) {
     surfaceCountEl.textContent = `${calendarState.totalEntries} items`;
     surfaceCaptionEl.textContent = `Week of ${formatMonthDayLabel(calendarState.weekStart)}. ${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a schedule.`;
     taskListEl.innerHTML = renderCalendarSurface(calendarState);
+    return;
+  }
+
+  if (isAgendaRouteMeta(meta)) {
+    taskListEl.innerHTML = renderAgendaSurface(shellState);
+    return;
+  }
+
+  if (isInboxRouteMeta(meta)) {
+    taskListEl.innerHTML = renderInboxSurface();
+    return;
+  }
+
+  if (isWorkspaceRouteMeta(meta)) {
+    taskListEl.innerHTML = renderWorkspaceStatusSurface();
     return;
   }
 
@@ -4164,6 +4388,13 @@ function setActiveShellView(viewId: string) {
   appData = {
     ...appData,
     shell: activateShellView(appData.shell || {}, viewId)
+  };
+}
+
+function setActiveShellRoute(routeId: string) {
+  appData = {
+    ...appData,
+    shell: activateShellRoute(appData.shell || {}, routeId)
   };
 }
 
@@ -4503,6 +4734,7 @@ sidebarNavEl.addEventListener('click', (event) => {
   const kind = button.dataset.kind;
   const viewId = button.dataset.viewId;
   const route = button.dataset.route;
+  const routeId = button.dataset.routeId;
 
   if (kind === 'view' && viewId) {
     setActiveShellView(viewId);
@@ -4510,8 +4742,15 @@ sidebarNavEl.addEventListener('click', (event) => {
     return;
   }
 
+  if (kind === 'route' && routeId) {
+    setActiveShellRoute(routeId);
+    renderAll();
+    return;
+  }
+
   if (kind === 'route' && route === '/web/calendar') {
-    desktopShellBridge.emit('tabs:select', 'tab_calendar');
+    setActiveShellRoute('calendar');
+    renderAll();
   }
 });
 

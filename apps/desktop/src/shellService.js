@@ -21,6 +21,33 @@ const SHELL_VIEW_META = {
     description: 'Everything with scheduling context appears in one timeline-oriented surface.',
     emptyState: 'Nothing is scheduled here right now.'
   },
+  agenda: {
+    id: 'agenda',
+    title: 'Agenda',
+    layout: 'agenda',
+    surfaceKind: 'agenda',
+    collectionLabel: 'Current flow',
+    description: 'See what is happening now, next, and soon across tasks and meetings.',
+    emptyState: 'Nothing is active in the agenda right now.'
+  },
+  inbox: {
+    id: 'inbox',
+    title: 'Inbox',
+    layout: 'list',
+    surfaceKind: 'inbox',
+    collectionLabel: 'Incoming work',
+    description: 'Incoming items that still need attention live here.',
+    emptyState: 'Inbox is clear.'
+  },
+  workspace: {
+    id: 'workspace',
+    title: 'Workspace',
+    layout: 'status',
+    surfaceKind: 'workspace',
+    collectionLabel: 'Workspace status',
+    description: 'Connection, save state, and backend health belong here instead of living on every route.',
+    emptyState: 'Workspace status is ready.'
+  },
   view_my_deadlines: {
     id: 'view_my_deadlines',
     title: 'My Deadlines',
@@ -56,6 +83,41 @@ const SHELL_VIEW_META = {
     collectionLabel: 'Scheduled work',
     description: 'Scheduled tasks are prioritized so the shell reads like a planning surface.',
     emptyState: 'No team work is scheduled here yet.'
+  }
+};
+
+const SHELL_ROUTE_DEFINITIONS = {
+  calendar: {
+    id: 'calendar',
+    title: 'Calendar',
+    route: '/web/calendar',
+    tabId: 'tab_calendar',
+    closable: false,
+    section: 'workspace'
+  },
+  agenda: {
+    id: 'agenda',
+    title: 'Agenda',
+    route: '/web/agenda',
+    tabId: 'tab_agenda',
+    closable: true,
+    section: 'workspace'
+  },
+  inbox: {
+    id: 'inbox',
+    title: 'Inbox',
+    route: '/web/inbox',
+    tabId: 'tab_inbox',
+    closable: true,
+    section: 'workspace'
+  },
+  workspace: {
+    id: 'workspace',
+    title: 'Workspace',
+    route: '/web/workspace',
+    tabId: 'tab_workspace',
+    closable: true,
+    section: 'workspace'
   }
 };
 
@@ -318,12 +380,12 @@ const DEFAULT_SAVED_VIEWS = [
 function createDefaultTabs() {
   return [
     {
-      id: 'tab_calendar',
-      title: 'Calendar',
-      route: '/web/calendar',
+      id: SHELL_ROUTE_DEFINITIONS.calendar.tabId,
+      title: SHELL_ROUTE_DEFINITIONS.calendar.title,
+      route: SHELL_ROUTE_DEFINITIONS.calendar.route,
       itemType: 'route',
-      itemId: 'calendar',
-      closable: false,
+      itemId: SHELL_ROUTE_DEFINITIONS.calendar.id,
+      closable: SHELL_ROUTE_DEFINITIONS.calendar.closable,
       active: true
     },
     {
@@ -591,6 +653,11 @@ export function createDefaultShellState() {
   };
 }
 
+function getShellRouteDefinition(routeId = '') {
+  const normalizedId = sanitizeText(routeId);
+  return SHELL_ROUTE_DEFINITIONS[normalizedId] || null;
+}
+
 export function normalizeShellTheme(raw = {}) {
   const theme = isPlainObject(raw) ? raw : {};
   const mode = sanitizeText(theme.mode, DEFAULT_THEME_MODE).toLowerCase();
@@ -841,6 +908,43 @@ function resolveShellScopeId(shellState = {}) {
   return sanitizeText(shellState?.activeView?.id, sanitizeText(shellState?.activeTab?.itemId, DEFAULT_VIEW_ID));
 }
 
+function createRouteViewDefinition(scopeId = '', base = {}) {
+  const itemType = scopeId === 'workspace'
+    ? 'status'
+    : scopeId === 'inbox'
+      ? 'inbox'
+      : scopeId === 'agenda'
+        ? 'agenda'
+        : 'tasks';
+
+  return {
+    type: 'route',
+    itemType,
+    visibility: 'private',
+    layout: sanitizeText(base.layout, 'kanban'),
+    groups: [],
+    sort: [],
+    dateRange: null,
+    columns: [],
+    filters: {
+      tasks: {
+        assignee: null,
+        completed: 'include',
+        canceled: 'include',
+        archived: 'exclude',
+        isAutoScheduled: null,
+        typeIn: [],
+        dueDate: null,
+        estimatedCompletionTime: null
+      },
+      projects: {
+        completed: 'include',
+        archived: 'exclude'
+      }
+    }
+  };
+}
+
 function mapTaskToAgendaEntry(task = {}, projectsById = new Map()) {
   if (!isPlainObject(task) || task.status === 'done' || task.status === 'deleted') {
     return null;
@@ -1082,14 +1186,13 @@ export function buildSidebarSections(input = {}) {
     {
       id: 'workspace',
       title: 'Workspace',
-      items: [
-        {
-          id: 'nav_calendar',
-          label: 'Calendar',
-          kind: 'route',
-          route: '/web/calendar'
-        }
-      ]
+      items: Object.values(SHELL_ROUTE_DEFINITIONS).map((route) => ({
+        id: `nav_${route.id}`,
+        label: route.title,
+        kind: 'route',
+        route: route.route,
+        routeId: route.id
+      }))
     }
   ];
 
@@ -1199,8 +1302,13 @@ export function getShellViewMeta(shellState = {}) {
   const activeTab = shellState?.activeTab || null;
   const activeView = shellState?.activeView || null;
   const base = SHELL_VIEW_META[scopeId] || fallback;
-  const fallbackDefinition = createDefaultViewDefinition(scopeId);
-  const definition = normalizeViewDefinition(activeView?.definition, fallbackDefinition);
+  const isRouteScope = activeTab?.itemType === 'route' && !activeView;
+  const fallbackDefinition = isRouteScope
+    ? createRouteViewDefinition(scopeId, base)
+    : createDefaultViewDefinition(scopeId);
+  const definition = isRouteScope
+    ? fallbackDefinition
+    : normalizeViewDefinition(activeView?.definition, fallbackDefinition);
   const primarySort = definition.sort[0] || { field: 'estimatedCompletionTime', direction: 'asc' };
   const groups = definition.groups.map((group) => ({
     key: group.field,
@@ -1221,7 +1329,7 @@ export function getShellViewMeta(shellState = {}) {
     columns: normalizeViewColumns(definition.columns, fallbackDefinition.columns),
     definitionVersion: Number.isInteger(activeView?.definitionVersion) ? activeView.definitionVersion : 3,
     groupBy: groups,
-    filterSummary: buildViewFilterSummary(definition),
+    filterSummary: isRouteScope ? [] : buildViewFilterSummary(definition),
     sortRules: definition.sort,
     dateRange: definition.dateRange,
     filters: definition.filters,
@@ -1307,6 +1415,33 @@ function createShellTabForView(view = {}, tabs = []) {
   };
 }
 
+function createShellTabForRoute(routeId = '', tabs = []) {
+  const route = getShellRouteDefinition(routeId);
+  if (!route) {
+    return null;
+  }
+
+  const existingIds = new Set((Array.isArray(tabs) ? tabs : []).map((tab) => sanitizeText(tab.id)));
+  const baseId = sanitizeText(route.tabId, `tab_${route.id}`);
+  let nextId = baseId;
+  let suffix = 2;
+
+  while (existingIds.has(nextId)) {
+    nextId = `${baseId}_${suffix}`;
+    suffix += 1;
+  }
+
+  return {
+    id: nextId,
+    title: route.title,
+    route: route.route,
+    itemType: 'route',
+    itemId: route.id,
+    closable: route.closable,
+    active: false
+  };
+}
+
 function getShellTabCandidate(savedViews = [], tabs = [], requestedViewId = '') {
   const normalizedViews = normalizeSavedViews(savedViews);
   const normalizedTabs = normalizeShellTabs(tabs);
@@ -1346,6 +1481,39 @@ export function activateShellView(shell = {}, viewId = '') {
     savedViews,
     activeTabId: activeTab?.id || sanitizeText(shell.activeTabId, DEFAULT_TAB_ID),
     activeViewId: activeView?.id || DEFAULT_VIEW_ID
+  };
+}
+
+export function activateShellRoute(shell = {}, routeId = '') {
+  const tabs = normalizeShellTabs(shell.tabs);
+  const savedViews = normalizeSavedViews(shell.savedViews);
+  const route = getShellRouteDefinition(routeId);
+  if (!route) {
+    return {
+      ...shell,
+      theme: normalizeShellTheme(shell.theme),
+      tabs,
+      savedViews,
+      activeTabId: getActiveShellTab(tabs, shell.activeTabId)?.id || DEFAULT_TAB_ID,
+      activeViewId: sanitizeText(shell.activeViewId, DEFAULT_VIEW_ID)
+    };
+  }
+
+  const matchingTab = tabs.find((tab) => tab.itemType === 'route' && tab.itemId === route.id) || null;
+  const insertedTab = !matchingTab ? createShellTabForRoute(route.id, tabs) : null;
+  const nextTabs = (insertedTab ? tabs.concat(insertedTab) : tabs).map((tab) => ({
+    ...tab,
+    active: matchingTab ? tab.id === matchingTab.id : tab.id === insertedTab?.id
+  }));
+  const activeTab = nextTabs.find((tab) => tab.active) || matchingTab || insertedTab || tabs[0] || null;
+
+  return {
+    ...shell,
+    theme: normalizeShellTheme(shell.theme),
+    tabs: nextTabs,
+    savedViews,
+    activeTabId: activeTab?.id || DEFAULT_TAB_ID,
+    activeViewId: route.id
   };
 }
 
