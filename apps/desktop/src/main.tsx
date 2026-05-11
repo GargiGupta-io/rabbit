@@ -1306,11 +1306,11 @@ style.textContent = `
 
   .task-item {
     border: 1px solid var(--panel-border);
-    border-radius: 16px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.02);
-    padding: 14px;
+    padding: 12px;
     display: grid;
-    gap: 10px;
+    gap: 8px;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
@@ -1321,8 +1321,8 @@ style.textContent = `
   .task-meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 5px;
+    margin-bottom: 6px;
   }
 
   .project-chip,
@@ -1331,13 +1331,11 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 8px;
+    padding: 4px 7px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-muted);
     font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
   .status-chip.tone-on {
@@ -1376,20 +1374,9 @@ style.textContent = `
 
   .task-foot {
     margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: block;
     color: var(--text-soft);
     font-size: 11px;
-  }
-
-  .task-foot span {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 8px;
-    border-radius: 999px;
-    border: 1px solid var(--panel-border);
-    background: rgba(255, 255, 255, 0.03);
   }
 
   .task-side {
@@ -1503,11 +1490,11 @@ style.textContent = `
 
   .inbox-item {
     border: 1px solid var(--panel-border);
-    border-radius: 16px;
-    padding: 10px;
+    border-radius: 14px;
+    padding: 10px 11px;
     background: rgba(255, 255, 255, 0.02);
     display: grid;
-    gap: 8px;
+    gap: 6px;
   }
 
   .inbox-item.unread {
@@ -1543,22 +1530,13 @@ style.textContent = `
     margin: 0;
   }
 
-  .inbox-pill-row {
+  .inbox-item-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .inbox-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-muted);
+    gap: 10px;
+    color: var(--text-soft);
     font-size: 10px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
@@ -1642,11 +1620,11 @@ style.textContent = `
 
   .agenda-item {
     border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    padding: 10px;
+    border-radius: 12px;
+    padding: 9px 10px;
     background: rgba(255, 255, 255, 0.03);
     display: grid;
-    gap: 6px;
+    gap: 4px;
   }
 
   .agenda-head {
@@ -3676,11 +3654,10 @@ function renderAgendaGroup(title, entries, emptyMessage) {
           <div class="agenda-head">
             <div>
               <div class="agenda-title">${escapeHtml(entry.title)}</div>
-              ${entry.subtitle ? `<div class="agenda-subtitle">${escapeHtml(entry.subtitle)}</div>` : ''}
+              <div class="agenda-subtitle">${escapeHtml(entry.subtitle || entry.sourceType || 'Agenda')}</div>
             </div>
             <div class="agenda-time">${escapeHtml(formatCompactDate(entry.startAt || entry.dueAt || entry.sortAt))}</div>
           </div>
-          <span class="agenda-type">${escapeHtml(entry.sourceType)}</span>
         </article>
       `).join('')
     : `<p class="muted">${escapeHtml(emptyMessage)}</p>`;
@@ -3731,9 +3708,9 @@ function renderInboxPanel(shellState, plannerState) {
             <div class="inbox-item-time">${escapeHtml(formatCompactDate(item.createdTime))}</div>
           </div>
           ${item.description ? `<p class="inbox-item-note">${escapeHtml(item.description)}</p>` : ''}
-          <div class="inbox-pill-row">
-            <span class="inbox-pill">${escapeHtml(item.sourceLabel)}</span>
-            <span class="inbox-pill">${escapeHtml(item.actionLabel)}</span>
+          <div class="inbox-item-meta">
+            <span>${escapeHtml(item.sourceLabel)}</span>
+            <span>${escapeHtml(item.actionLabel)}</span>
           </div>
         </article>
       `).join('')
@@ -3809,16 +3786,16 @@ function renderTasks(plannerState, shellState) {
     ].filter(Boolean);
     const alerts = [
       blockerLabels.length
-        ? `<div class="task-alert warning">Blocked by open task: ${escapeHtml(blockerLabels.join(', '))}</div>`
+        ? `<div class="task-alert warning">Blocked by ${escapeHtml(blockerLabels.join(', '))}</div>`
         : '',
       conflictTaskSet.has(task.id) && conflictLabels.length
-        ? `<div class="task-alert error">Conflicts with: ${escapeHtml(conflictLabels.join(', '))}</div>`
+        ? `<div class="task-alert error">Overlaps ${escapeHtml(conflictLabels.join(', '))}</div>`
         : '',
       calendarConflictTaskSet.has(task.id)
         ? '<div class="task-alert error">Busy calendar slot.</div>'
         : '',
       pendingTaskSet.has(task.id)
-        ? '<div class="task-alert warning">Needs reschedule.</div>'
+      ? '<div class="task-alert warning">Needs reschedule.</div>'
         : '',
       unschedulableTaskSet.has(task.id)
         ? '<div class="task-alert error">Outside this planning window.</div>'
@@ -3829,13 +3806,13 @@ function renderTasks(plannerState, shellState) {
     item.innerHTML = `
       <div class="task-main">
         <div class="task-meta-row">
-          <span class="project-chip">${escapeHtml(task.projectName || 'Inbox')}</span>
+          ${task.projectName && task.projectName !== 'Inbox' ? `<span class="project-chip">${escapeHtml(task.projectName)}</span>` : ''}
           ${task.status === 'done' ? '<span class="status-chip">Done</span>' : ''}
-          ${schedule.shouldDisplay ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
+          ${schedule.shouldDisplay && task.status !== 'done' ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
         ${task.description ? `<div class="task-note">${escapeHtml(task.description)}</div>` : ''}
-        ${footItems.length ? `<div class="task-foot">${footItems.map((label) => `<span>${escapeHtml(label)}</span>`).join('')}</div>` : ''}
+        ${footItems.length ? `<div class="task-foot">${escapeHtml(footItems.join(' | '))}</div>` : ''}
         ${alerts}
       </div>
       <div class="task-side">
