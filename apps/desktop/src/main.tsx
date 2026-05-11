@@ -99,10 +99,12 @@ root.appendChild(shell);
 shell.innerHTML = `
   <aside class="shell-sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">R</div>
-      <div class="brand-copy">
-        <strong>Rabbit</strong>
-        <p>Plan the day without the noise.</p>
+      <div class="sidebar-brand-row">
+        <div class="brand-mark">R</div>
+        <div class="brand-copy">
+          <strong>Rabbit</strong>
+          <p>Private workspace</p>
+        </div>
       </div>
     </div>
 
@@ -248,7 +250,7 @@ style.textContent = `
     --sidebar-active: rgba(255, 255, 255, 0.08);
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: 296px minmax(0, 1fr);
     background: radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 28%),
       linear-gradient(180deg, #1b1f20 0%, #16191a 100%);
   }
@@ -269,26 +271,33 @@ style.textContent = `
   .shell-sidebar {
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
-    padding: 20px 14px 18px;
+    padding: 12px 12px 16px;
     display: grid;
-    gap: 16px;
+    gap: 12px;
     grid-template-rows: auto 1fr;
     border-right: 1px solid var(--sidebar-border);
   }
 
   .sidebar-brand {
+    display: grid;
+    gap: 10px;
+    padding: 8px 8px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .sidebar-brand-row {
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
   .brand-mark {
-    width: 40px;
-    height: 40px;
-    border-radius: 14px;
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 800;
     color: #ffffff;
     background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
@@ -297,50 +306,52 @@ style.textContent = `
 
   .brand-copy strong {
     display: block;
-    font-size: 15px;
+    font-size: 14px;
     letter-spacing: 0.02em;
   }
 
   .brand-copy p {
-    margin: 4px 0 0;
-    font-size: 11px;
+    margin: 2px 0 0;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--sidebar-muted);
   }
 
   .sidebar-nav {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     align-content: start;
     overflow: auto;
   }
 
   .sidebar-section {
     display: grid;
-    gap: 6px;
+    gap: 5px;
   }
 
   .sidebar-section h2 {
     margin: 0;
     font-size: 10px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--sidebar-muted);
-    padding: 0 12px;
+    padding: 0 10px;
   }
 
   .sidebar-items {
     display: grid;
-    gap: 4px;
+    gap: 2px;
   }
 
   .nav-item,
   .nav-item-passive {
     width: 100%;
     border: 1px solid transparent;
-    border-radius: 12px;
+    border-radius: 10px;
     background: transparent;
     color: inherit;
-    padding: 11px 12px;
+    padding: 9px 10px;
     text-align: left;
     display: flex;
     align-items: center;
@@ -361,9 +372,9 @@ style.textContent = `
   }
 
   .nav-item.active {
-    background: var(--sidebar-active);
-    border-color: var(--sidebar-border);
-    box-shadow: inset 2px 0 0 var(--accent);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.04);
+    box-shadow: inset 1px 0 0 var(--accent);
   }
 
   .nav-item-passive {
@@ -403,7 +414,7 @@ style.textContent = `
   }
 
   .workspace-header {
-    padding: 18px 24px 8px;
+    padding: 14px 20px 6px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -412,7 +423,7 @@ style.textContent = `
 
   .header-leading {
     display: grid;
-    gap: 12px;
+    gap: 8px;
     align-content: start;
   }
 
@@ -443,23 +454,23 @@ style.textContent = `
   }
 
   .workspace-heading h1 {
-    margin: 4px 0 0;
-    font-size: 22px;
+    margin: 2px 0 0;
+    font-size: 18px;
     letter-spacing: -0.03em;
     color: var(--text-strong);
   }
 
   .workspace-kicker {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     color: var(--text-soft);
   }
 
   .workspace-status {
     margin: 0;
-    max-width: 240px;
-    font-size: 12px;
+    max-width: 220px;
+    font-size: 11px;
     line-height: 1.5;
     color: var(--text-muted);
     text-align: right;
@@ -473,7 +484,7 @@ style.textContent = `
 
   .workspace-meta {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     justify-items: end;
   }
 
@@ -489,7 +500,7 @@ style.textContent = `
 
   .shell-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     justify-content: flex-end;
   }
@@ -508,9 +519,9 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
+    padding: 7px 9px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .shell-action:hover,
@@ -529,9 +540,10 @@ style.textContent = `
 
   .tab-strip {
     display: flex;
-    gap: 8px;
-    padding: 0 24px 10px;
+    gap: 4px;
+    padding: 0 20px 10px;
     overflow: auto;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .tab-shell {
@@ -539,18 +551,19 @@ style.textContent = `
     align-items: center;
     gap: 4px;
     min-width: 0;
-    padding: 4px;
-    border: 1px solid var(--panel-border);
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.03);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .tab-button {
     border: 0;
-    border-radius: 12px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
     background: transparent;
     color: var(--text-muted);
-    padding: 8px 12px;
+    padding: 10px 8px 9px;
     min-width: 0;
     display: inline-flex;
     align-items: center;
@@ -567,9 +580,10 @@ style.textContent = `
   }
 
   .tab-button.active {
-    background: var(--panel-bg);
+    background: transparent;
     color: var(--text-strong);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+    box-shadow: none;
+    border-bottom-color: rgba(248, 250, 252, 0.92);
   }
 
   .tab-label {
@@ -582,7 +596,7 @@ style.textContent = `
 
   .tab-close,
   .tab-add {
-    padding: 8px 10px;
+    padding: 8px 9px;
     cursor: pointer;
     flex: 0 0 auto;
   }
@@ -592,7 +606,7 @@ style.textContent = `
   }
 
   .workspace-body {
-    padding: 0 24px 24px;
+    padding: 14px 20px 20px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 316px;
     gap: 14px;
