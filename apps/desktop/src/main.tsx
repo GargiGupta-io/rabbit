@@ -116,7 +116,7 @@ shell.innerHTML = `
         </div>
         <div class="workspace-heading">
           <span class="workspace-kicker" id="workspace-kicker">Private workspace</span>
-          <h1>Rabbit</h1>
+          <h1 id="workspace-title">Rabbit</h1>
         </div>
       </div>
       <div class="workspace-meta">
@@ -130,7 +130,7 @@ shell.innerHTML = `
             <span class="key-hint" data-key-hint="search">Ctrl/Cmd K</span>
           </button>
           <button type="button" class="shell-action" data-shell-command="new-task">
-            <span>New task</span>
+            <span>New</span>
             <span class="key-hint" data-key-hint="new-task">Ctrl/Cmd Shift N</span>
           </button>
           <button type="button" class="shell-action" data-shell-command="quick-meeting">
@@ -138,7 +138,7 @@ shell.innerHTML = `
             <span class="key-hint" data-key-hint="quick-meeting">Ctrl/Cmd Shift M</span>
           </button>
           <button type="button" class="shell-action" data-shell-command="menu">
-            <span data-menu-label>Menu</span>
+            <span data-menu-label>App Menu</span>
             <span class="key-hint" data-key-hint="menu">Alt / Ctrl M</span>
           </button>
         </div>
@@ -400,11 +400,11 @@ style.textContent = `
   }
 
   .workspace-header {
-    padding: 22px 24px 10px;
+    padding: 18px 24px 8px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
   }
 
   .header-leading {
@@ -441,7 +441,7 @@ style.textContent = `
 
   .workspace-heading h1 {
     margin: 4px 0 0;
-    font-size: 26px;
+    font-size: 22px;
     letter-spacing: -0.03em;
     color: var(--text-strong);
   }
@@ -455,8 +455,8 @@ style.textContent = `
 
   .workspace-status {
     margin: 0;
-    max-width: 300px;
-    font-size: 13px;
+    max-width: 240px;
+    font-size: 12px;
     line-height: 1.5;
     color: var(--text-muted);
     text-align: right;
@@ -505,8 +505,9 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 9px 11px;
+    padding: 8px 10px;
     cursor: pointer;
+    font-size: 13px;
   }
 
   .shell-action:hover,
@@ -526,7 +527,7 @@ style.textContent = `
   .tab-strip {
     display: flex;
     gap: 8px;
-    padding: 0 24px 14px;
+    padding: 0 24px 10px;
     overflow: auto;
   }
 
@@ -619,6 +620,7 @@ style.textContent = `
     display: flex;
     align-items: flex-start;
     gap: 14px;
+    padding: 16px 18px;
   }
 
   .view-copy h2 {
@@ -733,21 +735,23 @@ style.textContent = `
 
   .toolbar-panel {
     display: grid;
-    gap: 14px;
-    grid-template-columns: 1fr;
-    align-items: start;
+    gap: 10px;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    align-items: end;
+    padding: 14px 16px;
   }
 
   .toolbar-stacks {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px 18px;
-    align-items: start;
+    gap: 10px 14px;
+    align-items: end;
+    justify-content: flex-end;
   }
 
   .toolbar-stack {
     display: grid;
-    gap: 6px;
+    gap: 5px;
   }
 
   .field-label,
@@ -840,6 +844,17 @@ style.textContent = `
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 14px;
+  }
+
+  .content-surface.route-calendar .view-header {
+    padding: 0 2px 2px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .content-surface.route-calendar .toolbar-panel {
+    padding: 12px 14px;
   }
 
   .composer-header p {
@@ -1741,6 +1756,7 @@ const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivE
 const shellActionsEl = shell.querySelector('#shell-actions') as HTMLDivElement;
 const windowChromeEl = shell.querySelector('#window-chrome') as HTMLDivElement;
 const workspaceKickerEl = shell.querySelector('#workspace-kicker') as HTMLSpanElement;
+const workspaceTitleEl = shell.querySelector('#workspace-title') as HTMLHeadingElement;
 const contentSurfaceEl = shell.querySelector('#content-surface') as HTMLElement;
 const shellRailEl = shell.querySelector('#shell-rail') as HTMLElement;
 const searchEl = shell.querySelector('#search') as HTMLInputElement;
@@ -3323,6 +3339,7 @@ function installDesktopShellBridgeHandlers() {
 function updateSummary(plannerState, shellState) {
   const meta = plannerState.viewState.meta;
   const isCalendarRoute = isCalendarRouteMeta(meta);
+  workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
@@ -3403,6 +3420,26 @@ function renderTabStrip(shellState) {
 
 function renderViewHeader(shellState, plannerState) {
   const meta = plannerState.viewState.meta;
+  if (isCalendarRouteMeta(meta)) {
+    const referenceDate = parseDateValue(shellState?.referenceNow)
+      || parseDateValue(appData.calendarOverlay?.refreshedAt)
+      || new Date();
+    const calendarCount = Array.isArray(appData.calendarOverlay?.calendars)
+      ? appData.calendarOverlay.calendars.length
+      : 0;
+    viewHeaderEl.innerHTML = `
+      <div class="view-copy">
+        <div class="view-breadcrumb">Calendar view</div>
+        <h2>${escapeHtml(formatMonthHeading(referenceDate))}</h2>
+        <div class="view-chip-row">
+          <span class="view-chip">This week</span>
+          <span class="view-chip">${escapeHtml(String(calendarCount))} calendars</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   const chips = [
     meta.collectionLabel,
     activePlanWindow === 'today'
