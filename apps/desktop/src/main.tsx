@@ -1082,7 +1082,7 @@ style.textContent = `
   }
 
   .content-surface.route-calendar {
-    gap: 12px;
+    gap: 10px;
   }
 
   .content-surface.route-calendar .task-surface {
@@ -1093,7 +1093,14 @@ style.textContent = `
   }
 
   .shell-rail.route-calendar {
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .shell-rail.route-calendar .panel {
+    padding: 14px;
+    border-radius: 18px;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .content-surface.route-calendar .surface-header {
@@ -1102,15 +1109,42 @@ style.textContent = `
 
   .calendar-route-bar {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
-    padding: 6px 2px 2px;
+    gap: 18px;
+    padding: 2px 0 4px;
+  }
+
+  .calendar-route-leading {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-route-nav-pill,
+  .calendar-route-nav-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    min-width: 34px;
+    padding: 0 11px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .calendar-route-nav-pill {
+    color: var(--text-strong);
+    font-weight: 600;
   }
 
   .calendar-route-main {
     display: grid;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
   }
 
@@ -1123,7 +1157,7 @@ style.textContent = `
 
   .calendar-route-heading h2 {
     margin: 0;
-    font-size: 34px;
+    font-size: 30px;
     line-height: 1;
     letter-spacing: -0.05em;
     color: var(--text-strong);
@@ -1132,16 +1166,17 @@ style.textContent = `
   .calendar-route-period {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .calendar-route-pills {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .calendar-route-pill,
@@ -1149,8 +1184,8 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 36px;
-    padding: 8px 12px;
+    min-height: 32px;
+    padding: 6px 10px;
     border-radius: 12px;
     border: 1px solid var(--panel-border);
     background: rgba(255, 255, 255, 0.03);
@@ -1378,8 +1413,8 @@ style.textContent = `
 
   .calendar-grid-shell {
     display: grid;
-    grid-template-columns: 54px minmax(0, 1fr);
-    gap: 10px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
     min-width: 0;
   }
 
@@ -1388,7 +1423,7 @@ style.textContent = `
     grid-template-rows: 58px repeat(14, 52px);
     gap: 0;
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .calendar-axis-spacer {
@@ -1399,8 +1434,8 @@ style.textContent = `
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
-    padding-top: 4px;
-    padding-right: 8px;
+    padding-top: 3px;
+    padding-right: 6px;
   }
 
   .calendar-days {
@@ -1409,8 +1444,9 @@ style.textContent = `
     gap: 0;
     min-width: 0;
     border: 1px solid var(--panel-border);
-    border-radius: 18px;
+    border-radius: 20px;
     overflow: hidden;
+    background: rgba(255, 255, 255, 0.01);
   }
 
   .calendar-day {
@@ -1424,13 +1460,13 @@ style.textContent = `
   }
 
   .calendar-day.today {
-    background: rgba(96, 165, 250, 0.06);
+    background: rgba(96, 165, 250, 0.045);
   }
 
   .calendar-day-head {
     display: grid;
-    gap: 4px;
-    padding: 12px 10px;
+    gap: 5px;
+    padding: 10px 10px 9px;
     border-bottom: 1px solid var(--panel-border);
     text-align: center;
   }
@@ -1443,18 +1479,30 @@ style.textContent = `
   }
 
   .calendar-day-number {
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-strong);
   }
 
+  .calendar-day-number.today {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    min-height: 30px;
+    margin: 0 auto;
+    border-radius: 10px;
+    background: #3b82f6;
+    color: #ffffff;
+  }
+
   .calendar-all-day {
-    min-height: 40px;
-    padding: 8px 8px 10px;
+    min-height: 22px;
+    padding: 6px 8px 7px;
     border-bottom: 1px solid var(--panel-border);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
 
   .calendar-all-day-pill,
@@ -1463,12 +1511,20 @@ style.textContent = `
     align-items: center;
     width: fit-content;
     max-width: 100%;
-    padding: 4px 8px;
+    min-height: 18px;
+    padding: 2px 7px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     color: var(--text-muted);
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1.3;
+  }
+
+  .calendar-all-day-empty {
+    min-height: 4px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
   }
 
   .calendar-day-grid {
@@ -1478,7 +1534,7 @@ style.textContent = `
   .calendar-slot {
     display: block;
     height: 52px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.035);
   }
 
   .calendar-entry-layer {
@@ -1489,14 +1545,14 @@ style.textContent = `
 
   .calendar-entry {
     position: absolute;
-    left: 8px;
-    right: 8px;
-    padding: 7px 8px;
+    left: 6px;
+    right: 6px;
+    padding: 6px 7px;
     border-radius: 12px;
     display: grid;
     gap: 2px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.25);
+    box-shadow: none;
     overflow: hidden;
   }
 
@@ -1509,21 +1565,23 @@ style.textContent = `
   }
 
   .calendar-entry strong {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-strong);
   }
 
   .calendar-entry span {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--text-muted);
   }
 
   .calendar-entry.task {
-    background: rgba(59, 130, 246, 0.16);
+    background: rgba(59, 130, 246, 0.18);
+    box-shadow: inset 2px 0 0 #60a5fa;
   }
 
   .calendar-entry.calendar {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 2px 0 0 rgba(226, 232, 240, 0.32);
   }
 
   .mini-calendar-weekdays,
@@ -1534,7 +1592,7 @@ style.textContent = `
   }
 
   .mini-calendar-weekdays {
-    margin-top: 10px;
+    margin-top: 8px;
     color: var(--text-soft);
     font-size: 10px;
     letter-spacing: 0.08em;
@@ -1564,7 +1622,7 @@ style.textContent = `
 
   .calendar-source-list {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     margin-top: 10px;
   }
 
@@ -1573,8 +1631,8 @@ style.textContent = `
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 12px;
-    border-radius: 14px;
+    padding: 9px 10px;
+    border-radius: 12px;
     border: 1px solid var(--panel-border);
     background: rgba(255, 255, 255, 0.03);
   }
@@ -1589,14 +1647,20 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 42px;
-    padding: 5px 8px;
+    min-width: 36px;
+    padding: 4px 7px;
     border-radius: 999px;
     background: rgba(96, 165, 250, 0.12);
     color: #bfdbfe;
-    font-size: 10px;
+    font-size: 9px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  .calendar-rail-subtitle {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 11px;
   }
 
   .task-list {
@@ -3926,6 +3990,35 @@ function renderViewHeader(shellState, plannerState) {
     const calendarCount = calendarState.calendars.length;
     viewHeaderEl.innerHTML = `
       <div class="calendar-route-bar">
+        <div class="calendar-route-leading">
+          <span class="calendar-route-nav-pill">Today</span>
+          <span class="calendar-route-nav-arrow">‹</span>
+          <span class="calendar-route-nav-arrow">›</span>
+          <div class="calendar-route-main">
+            <div class="calendar-route-heading">
+              <h2>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</h2>
+            </div>
+            <div class="calendar-route-period">
+              <span>${escapeHtml(`Week of ${formatMonthDayLabel(calendarState.weekStart)}`)}</span>
+              <span>•</span>
+              <span>${escapeHtml(`${calendarCount} calendar${calendarCount === 1 ? '' : 's'} linked`)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="calendar-route-pills">
+          <span class="calendar-route-pill">${escapeHtml(`${calendarState.totalEntries} scheduled`)}</span>
+          <span class="calendar-route-pill">${escapeHtml(`${calendarState.unscheduledTaskCount} unscheduled`)}</span>
+          <button type="button" id="task-form-open" class="calendar-route-button primary">New task</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  if (isCalendarRouteMeta(meta)) {
+    const calendarState = buildCalendarSurfaceState(plannerState, shellState);
+    const calendarCount = calendarState.calendars.length;
+    viewHeaderEl.innerHTML = `
+      <div class="calendar-route-bar">
         <div class="calendar-route-main">
           <div class="view-breadcrumb">Calendar</div>
           <div class="calendar-route-heading">
@@ -4234,6 +4327,46 @@ function renderCalendarSurface(calendarState) {
             <section class="calendar-day ${isSameCalendarDay(day, calendarState.referenceDate) ? 'today' : ''}">
               <header class="calendar-day-head">
                 <span class="calendar-weekday">${escapeHtml(formatWeekdayLabel(day))}</span>
+                <span class="calendar-day-number ${isSameCalendarDay(day, calendarState.referenceDate) ? 'today' : ''}">${escapeHtml(String(day.getDate()))}</span>
+              </header>
+              <div class="calendar-all-day">
+                ${allDay.length
+                  ? allDay.map((entry) => `
+                    <span class="calendar-all-day-pill tone-${escapeHtml(toCssToken(entry.tone))}">${escapeHtml(entry.title)}</span>
+                  `).join('')
+                  : '<span class="calendar-all-day-empty"></span>'}
+              </div>
+              <div class="calendar-day-grid" style="height: ${escapeHtml(String(CALENDAR_TOTAL_SLOTS * CALENDAR_SLOT_HEIGHT))}px">
+                ${hourLabels.map(() => '<span class="calendar-slot"></span>').join('')}
+                <div class="calendar-entry-layer">
+                  ${timed.map((entry) => `
+                    <article class="calendar-entry ${escapeHtml(entry.kind)} tone-${escapeHtml(toCssToken(entry.tone))}" style="top:${escapeHtml(String(entry.top))}px;height:${escapeHtml(String(entry.height))}px">
+                      <strong>${escapeHtml(entry.title)}</strong>
+                      <span>${escapeHtml(entry.subtitle)}</span>
+                      <span>${escapeHtml(`${formatTimeLabel(entry.start)} - ${formatTimeLabel(entry.end)}`)}</span>
+                    </article>
+                  `).join('')}
+                </div>
+              </div>
+            </section>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  return `
+    <div class="calendar-route">
+      <div class="calendar-grid-shell">
+        <div class="calendar-time-axis">
+          <div class="calendar-axis-spacer"></div>
+          ${hourLabels.map((hour) => `<span class="calendar-hour">${escapeHtml(formatHourSlotLabel(hour))}</span>`).join('')}
+        </div>
+        <div class="calendar-days">
+          ${calendarState.dayEntries.map(({ day, allDay, timed }) => `
+            <section class="calendar-day ${isSameCalendarDay(day, calendarState.referenceDate) ? 'today' : ''}">
+              <header class="calendar-day-head">
+                <span class="calendar-weekday">${escapeHtml(formatWeekdayLabel(day))}</span>
                 <span class="calendar-day-number">${escapeHtml(String(day.getDate()))}</span>
               </header>
               <div class="calendar-all-day">
@@ -4273,6 +4406,26 @@ function renderCalendarMiniMonth(calendarState) {
       <strong>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</strong>
       <span class="rail-count">Today</span>
     </div>
+    <p class="calendar-rail-subtitle">${escapeHtml(formatCompactDate(calendarState.referenceDate))}</p>
+    <div class="mini-calendar-weekdays">
+      ${['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((label) => `<span>${escapeHtml(label)}</span>`).join('')}
+    </div>
+    <div class="mini-calendar-grid">
+      ${cells.map((cell) => `
+        <span class="mini-calendar-day ${cell.getMonth() === calendarState.referenceDate.getMonth() ? '' : 'outside'} ${isSameCalendarDay(cell, calendarState.referenceDate) ? 'today' : ''}">
+          ${escapeHtml(String(cell.getDate()))}
+        </span>
+      `).join('')}
+    </div>
+    <p class="rail-note">Week of ${escapeHtml(formatMonthDayLabel(calendarState.weekStart))}</p>
+  `;
+  return;
+
+  agendaPanelEl.innerHTML = `
+    <div class="rail-header">
+      <strong>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</strong>
+      <span class="rail-count">Today</span>
+    </div>
     <div class="mini-calendar-weekdays">
       ${['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((label) => `<span>${escapeHtml(label)}</span>`).join('')}
     </div>
@@ -4299,6 +4452,17 @@ function renderCalendarSourcesPanel(calendarState) {
       </article>
     `).join('')
     : '<p class="muted">No calendars are linked yet.</p>';
+
+  inboxPanelEl.innerHTML = `
+    <div class="rail-header">
+      <strong>Calendars</strong>
+      <span class="rail-count">${escapeHtml(String(calendarState.calendars.length))} linked</span>
+    </div>
+    <button type="button" class="calendar-link-button" disabled>Link a calendar</button>
+    <div class="calendar-source-list">${calendars}</div>
+    <p class="rail-note">${escapeHtml(`${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a slot.`)}</p>
+  `;
+  return;
 
   inboxPanelEl.innerHTML = `
     <div class="rail-header">
