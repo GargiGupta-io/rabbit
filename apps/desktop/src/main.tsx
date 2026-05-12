@@ -1236,6 +1236,21 @@ style.textContent = `
     border-radius: 18px;
   }
 
+  .content-surface.route-agenda {
+    gap: 10px;
+  }
+
+  .content-surface.route-agenda .task-surface {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .content-surface.route-agenda .surface-header {
+    display: none;
+  }
+
   .route-list-bar {
     display: flex;
     align-items: flex-start;
@@ -2035,6 +2050,226 @@ style.textContent = `
     color: var(--text-muted);
   }
 
+  .agenda-doc-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .agenda-doc-page,
+  .agenda-day-rail {
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: var(--panel-shadow);
+  }
+
+  .agenda-doc-page {
+    border-radius: 24px;
+    padding: 28px 30px;
+    display: grid;
+    gap: 24px;
+  }
+
+  .agenda-doc-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .agenda-doc-kicker {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .agenda-doc-title {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: -0.06em;
+    color: var(--text-strong);
+  }
+
+  .agenda-doc-intro {
+    margin: 0;
+    max-width: 54ch;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .agenda-doc-section {
+    display: grid;
+    gap: 14px;
+  }
+
+  .agenda-doc-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .agenda-doc-section-head h3 {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .agenda-doc-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .agenda-task-list {
+    display: grid;
+    gap: 0;
+  }
+
+  .agenda-task-line {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .agenda-task-list .agenda-task-line:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .agenda-task-bullet {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(148, 163, 184, 0.8);
+    margin-top: 6px;
+  }
+
+  .agenda-task-main {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .agenda-task-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .agenda-task-title {
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.35;
+    color: var(--text-strong);
+  }
+
+  .agenda-task-time {
+    font-size: 12px;
+    color: var(--text-soft);
+    white-space: nowrap;
+  }
+
+  .agenda-task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .agenda-doc-empty {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .agenda-day-rail {
+    border-radius: 20px;
+    padding: 18px 16px;
+    display: grid;
+    gap: 14px;
+    position: sticky;
+    top: 12px;
+  }
+
+  .agenda-day-rail-head {
+    display: grid;
+    gap: 4px;
+  }
+
+  .agenda-day-rail-head strong {
+    font-size: 14px;
+    color: var(--text-strong);
+  }
+
+  .agenda-day-rail-head span {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .agenda-day-strip {
+    display: grid;
+    gap: 10px;
+  }
+
+  .agenda-day-strip-item {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .agenda-day-strip-time {
+    color: var(--text-soft);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .agenda-day-strip-title {
+    color: var(--text-strong);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .agenda-day-strip-subtitle {
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 1200px) {
+    .agenda-doc-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .agenda-day-rail {
+      position: static;
+    }
+  }
+
   .control-row {
     display: grid;
     gap: 12px;
@@ -2360,6 +2595,42 @@ function formatSurfaceUserLabel(userId) {
   }
   const label = id.replace(/^user_/, '').replaceAll('_', ' ');
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function formatDurationShort(minutes) {
+  const total = Math.max(0, Number(minutes) || 0);
+  if (!total) {
+    return '';
+  }
+  if (total >= 60 && total % 60 === 0) {
+    return `${total / 60}h`;
+  }
+  if (total >= 60) {
+    const hours = Math.floor(total / 60);
+    const remainder = total % 60;
+    return `${hours}h ${remainder}m`;
+  }
+  return `${total}m`;
+}
+
+function formatAgendaDateHeading(date: Date) {
+  return date.toLocaleDateString([], {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+function formatAgendaTimeRange(startAt: unknown, endAt: unknown) {
+  const startLabel = formatTimeLabel(startAt);
+  const endLabel = formatTimeLabel(endAt);
+  if (!startLabel && !endLabel) {
+    return '';
+  }
+  if (startLabel && endLabel) {
+    return `${startLabel} - ${endLabel}`;
+  }
+  return startLabel || endLabel;
 }
 
 function compareDeadlineTasks(left, right) {
@@ -3867,6 +4138,7 @@ function updateSummary(plannerState, shellState) {
   const showRail = isCalendarRoute;
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
+  contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
   toolbarPanelEl.hidden = usesDedicatedHeader;
@@ -4014,6 +4286,14 @@ function renderTabStrip(shellState) {
 
 function renderViewHeader(shellState, plannerState) {
   const meta = plannerState.viewState.meta;
+  viewHeaderEl.hidden = false;
+
+  if (isAgendaRouteMeta(meta)) {
+    viewHeaderEl.hidden = true;
+    viewHeaderEl.innerHTML = '';
+    return;
+  }
+
   if (isCalendarRouteMeta(meta)) {
     const calendarState = buildCalendarSurfaceState(plannerState, shellState);
     const calendarCount = calendarState.calendars.length;
@@ -4103,23 +4383,6 @@ function renderViewHeader(shellState, plannerState) {
         <div class="route-list-actions">
           <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
           <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isAgendaRouteMeta(meta)) {
-    const agenda = shellState.agenda;
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">Workspace</div>
-          <h2>Agenda</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(`${agenda.counts.ongoing} ongoing`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${agenda.counts.upcoming} upcoming`)}</span>
         </div>
       </div>
     `;
@@ -4529,13 +4792,100 @@ function renderAgendaGroup(title, entries, emptyMessage) {
 
 function renderAgendaSurface(shellState) {
   const agenda = shellState.agenda;
+  const referenceDate = parseDateValue(shellState?.referenceNow)
+    || parseDateValue(agenda.generatedAt)
+    || new Date();
+  const toSortValue = (entry) => parseDateValue(entry?.startAt || entry?.dueAt || entry?.sortAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
+  const scheduledEntries = [...agenda.ongoing, ...agenda.upcoming]
+    .filter((entry) => {
+      const anchor = parseDateValue(entry.startAt || entry.dueAt || entry.sortAt);
+      return anchor && isSameCalendarDay(anchor, referenceDate);
+    })
+    .sort((left, right) => toSortValue(left) - toSortValue(right));
+  const taskEntriesToday = scheduledEntries.filter((entry) => sanitizeText(entry.sourceType) === 'task');
+  const fallbackUpcomingTasks = agenda.upcoming
+    .filter((entry) => sanitizeText(entry.sourceType) === 'task')
+    .sort((left, right) => toSortValue(left) - toSortValue(right));
+  const visibleTaskEntries = (taskEntriesToday.length ? taskEntriesToday : fallbackUpcomingTasks).slice(0, 6);
+  const timelessTasks = agenda.timeless
+    .filter((entry) => sanitizeText(entry.sourceType) === 'task')
+    .slice(0, 4);
+  const visibleScheduleEntries = (scheduledEntries.length ? scheduledEntries : [...agenda.ongoing, ...agenda.upcoming]
+    .sort((left, right) => toSortValue(left) - toSortValue(right)))
+    .slice(0, 6);
+  const taskById = new Map(
+    appData.tasks.map((task) => [sanitizeText(task.id), task as { durationMinutes?: number; minimumDuration?: number }] as const)
+  );
+  const renderAgendaTaskLine = (entry) => {
+    const task = taskById.get(sanitizeText(entry.entityId)) as { durationMinutes?: number; minimumDuration?: number } | undefined;
+    const metaParts = [
+      sanitizeText(entry.subtitle),
+      formatAgendaTimeRange(entry.startAt, entry.endAt) || formatCompactDate(entry.dueAt || entry.sortAt),
+      formatDurationShort(task?.durationMinutes || task?.minimumDuration)
+    ].filter(Boolean);
+    return `
+      <article class="agenda-task-line">
+        <span class="agenda-task-bullet" aria-hidden="true"></span>
+        <div class="agenda-task-main">
+          <div class="agenda-task-title-row">
+            <div class="agenda-task-title">${escapeHtml(entry.title)}</div>
+            <div class="agenda-task-time">${escapeHtml(formatCompactDate(entry.dueAt || entry.startAt || entry.sortAt))}</div>
+          </div>
+          <div class="agenda-task-meta">${metaParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('')}</div>
+        </div>
+      </article>
+    `;
+  };
+  const renderScheduleLine = (entry) => `
+    <article class="agenda-day-strip-item">
+      <div class="agenda-day-strip-time">${escapeHtml(formatAgendaTimeRange(entry.startAt, entry.endAt) || formatCompactDate(entry.dueAt || entry.sortAt))}</div>
+      <div class="agenda-day-strip-title">${escapeHtml(entry.title)}</div>
+      <div class="agenda-day-strip-subtitle">${escapeHtml(entry.subtitle || (entry.sourceType === 'calendar' ? 'Calendar event' : 'Task'))}</div>
+    </article>
+  `;
+
+  const todayTasksMarkup = visibleTaskEntries.length
+    ? `<div class="agenda-task-list">${visibleTaskEntries.map(renderAgendaTaskLine).join('')}</div>`
+    : '<p class="agenda-doc-empty">Nothing is crowding today yet. Use the schedule strip to watch what is coming next.</p>';
+  const timelessMarkup = timelessTasks.length
+    ? `
+      <section class="agenda-doc-section">
+        <div class="agenda-doc-section-head">
+          <h3>Loose tasks</h3>
+          <span class="agenda-doc-count">${escapeHtml(`${timelessTasks.length} waiting`)}</span>
+        </div>
+        <div class="agenda-task-list">${timelessTasks.map(renderAgendaTaskLine).join('')}</div>
+      </section>
+    `
+    : '';
+  const scheduleMarkup = visibleScheduleEntries.length
+    ? visibleScheduleEntries.map(renderScheduleLine).join('')
+    : '<p class="agenda-doc-empty">No timed work is pinned to this day yet.</p>';
+
   return `
-    <section class="agenda-surface">
-      <div class="agenda-groups">
-        ${renderAgendaGroup('Ongoing', agenda.ongoing, 'Nothing is in progress.')}
-        ${renderAgendaGroup('Upcoming', agenda.upcoming, 'Nothing is coming up next.')}
-        ${renderAgendaGroup('Timeless', agenda.timeless, 'No unscheduled work is waiting.')}
-      </div>
+    <section class="agenda-doc-shell">
+      <article class="agenda-doc-page">
+        <header class="agenda-doc-head">
+          <div class="agenda-doc-kicker">Private Workspace / Agenda / ${escapeHtml(formatMonthDayLabel(referenceDate))}</div>
+          <h2 class="agenda-doc-title">${escapeHtml(formatAgendaDateHeading(referenceDate))}</h2>
+          <p class="agenda-doc-intro">Rabbit pulls the day into one place so you can see the tasks that matter and the schedule they sit inside without keeping Inbox, Calendar, and task management open at the same time.</p>
+        </header>
+        <section class="agenda-doc-section">
+          <div class="agenda-doc-section-head">
+            <h3>Today's tasks</h3>
+            <span class="agenda-doc-count">${escapeHtml(`${visibleTaskEntries.length} visible`)}</span>
+          </div>
+          ${todayTasksMarkup}
+        </section>
+        ${timelessMarkup}
+      </article>
+      <aside class="agenda-day-rail">
+        <div class="agenda-day-rail-head">
+          <strong>Day schedule</strong>
+          <span>${escapeHtml(`Timed work for ${formatAgendaDateHeading(referenceDate)}`)}</span>
+        </div>
+        <div class="agenda-day-strip">${scheduleMarkup}</div>
+      </aside>
     </section>
   `;
 }
