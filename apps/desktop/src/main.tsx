@@ -1266,6 +1266,21 @@ style.textContent = `
     display: none;
   }
 
+  .content-surface.route-project-timelines {
+    gap: 10px;
+  }
+
+  .content-surface.route-project-timelines .task-surface {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .content-surface.route-project-timelines .surface-header {
+    display: none;
+  }
+
   .route-list-bar {
     display: flex;
     align-items: flex-start;
@@ -2525,6 +2540,291 @@ style.textContent = `
     min-width: 76px;
   }
 
+  .project-gantt-surface {
+    display: grid;
+    gap: 16px;
+  }
+
+  .project-gantt-head {
+    display: grid;
+    gap: 12px;
+    padding: 4px 0 2px;
+  }
+
+  .project-gantt-kicker {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .project-gantt-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .project-gantt-copy {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .project-gantt-copy h2 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--text-strong);
+  }
+
+  .project-gantt-copy p {
+    margin: 0;
+    max-width: 64ch;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .project-gantt-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .project-gantt-pills,
+  .project-gantt-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .project-gantt-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .project-gantt-pill.active {
+    background: rgba(96, 165, 250, 0.14);
+    border-color: rgba(96, 165, 250, 0.24);
+    color: #bfdbfe;
+  }
+
+  .project-gantt-board {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--panel-border);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+  }
+
+  .project-gantt-scale,
+  .project-gantt-row {
+    display: grid;
+    grid-template-columns: 260px repeat(var(--timeline-columns), minmax(84px, 1fr));
+    min-width: 0;
+  }
+
+  .project-gantt-label-head,
+  .project-gantt-label {
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .project-gantt-label-head {
+    padding: 16px 18px;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .project-gantt-label-head strong {
+    font-size: 13px;
+    color: var(--text-strong);
+  }
+
+  .project-gantt-label-head span {
+    color: var(--text-soft);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .project-gantt-week-head {
+    min-height: 62px;
+    padding: 10px 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    display: grid;
+    gap: 4px;
+    align-content: end;
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .project-gantt-week-head.current {
+    background: rgba(59, 130, 246, 0.12);
+  }
+
+  .project-gantt-week-month {
+    color: var(--text-soft);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .project-gantt-week-date {
+    color: var(--text-strong);
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  .project-gantt-row + .project-gantt-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .project-gantt-label {
+    padding: 16px 18px;
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .project-gantt-label-copy {
+    display: grid;
+    gap: 4px;
+  }
+
+  .project-gantt-label-copy strong {
+    color: var(--text-strong);
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .project-gantt-label-copy p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .project-gantt-label-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .project-gantt-label-meta span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-soft);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .project-gantt-lane {
+    display: grid;
+    grid-template-columns: repeat(var(--timeline-columns), minmax(84px, 1fr));
+    grid-template-rows: repeat(3, minmax(30px, auto));
+    gap: 10px 0;
+    position: relative;
+    padding: 14px 0;
+    min-height: 126px;
+  }
+
+  .project-gantt-lane::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: calc(100% / var(--timeline-columns)) 100%;
+    pointer-events: none;
+  }
+
+  .project-gantt-today-marker {
+    grid-row: 1 / -1;
+    align-self: stretch;
+    justify-self: stretch;
+    background: rgba(59, 130, 246, 0.08);
+    border-left: 2px solid rgba(96, 165, 250, 0.7);
+    z-index: 1;
+  }
+
+  .project-gantt-bar {
+    z-index: 2;
+    min-height: 30px;
+    margin: 0 6px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    display: grid;
+    gap: 2px;
+    align-content: center;
+    overflow: hidden;
+    background: rgba(37, 99, 235, 0.22);
+    border: 1px solid rgba(96, 165, 250, 0.28);
+  }
+
+  .project-gantt-bar.attention {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .project-gantt-bar.overdue {
+    background: rgba(248, 113, 113, 0.16);
+    border-color: rgba(248, 113, 113, 0.28);
+  }
+
+  .project-gantt-bar.done {
+    background: rgba(148, 163, 184, 0.14);
+    border-color: rgba(148, 163, 184, 0.22);
+    opacity: 0.72;
+  }
+
+  .project-gantt-bar strong {
+    color: var(--text-strong);
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .project-gantt-bar span {
+    color: var(--text-soft);
+    font-size: 10px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .project-gantt-lane-empty {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: 0 18px;
+    color: var(--text-muted);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    z-index: 2;
+  }
+
   @media (max-width: 1200px) {
     .agenda-doc-shell {
       grid-template-columns: 1fr;
@@ -2537,6 +2837,11 @@ style.textContent = `
     .task-queue-summary-grid,
     .task-queue-board {
       grid-template-columns: 1fr;
+    }
+
+    .project-gantt-scale,
+    .project-gantt-row {
+      grid-template-columns: 220px repeat(var(--timeline-columns), minmax(72px, 1fr));
     }
   }
 
@@ -3502,7 +3807,7 @@ function renderTaskForm(shellState, plannerState) {
   const stageOptions = taskForm.stageOptions.length
     ? taskForm.stageOptions.map((option) => `
       <option value="${escapeHtml(option.id)}" ${option.id === taskForm.stageDefinitionId ? 'selected' : ''}>
-        ${escapeHtml(option.label)}${option.dueDate ? ` • due ${escapeHtml(option.dueDate)}` : ''}
+        ${escapeHtml(option.label)}${option.dueDate ? ` - due ${escapeHtml(option.dueDate)}` : ''}
       </option>
     `).join('')
     : '<option value="">No project stage</option>';
@@ -3667,7 +3972,7 @@ function renderTaskForm(shellState, plannerState) {
     </details>
     <div class="task-form-foot">
       <div class="task-form-summary">
-        ${escapeHtml(taskForm.workspaceName)} • ${escapeHtml(taskForm.projectName)} • ${escapeHtml(taskForm.stageName || 'No project stage')} • ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
+        ${escapeHtml(taskForm.workspaceName)} / ${escapeHtml(taskForm.projectName)} / ${escapeHtml(taskForm.stageName || 'No project stage')} / ${escapeHtml(options.assigneeOptions.find((option) => option.id === taskForm.assigneeUserId)?.label || 'Unassigned')}
       </div>
       <div class="task-form-actions">
         <button type="button" id="task-form-reset">Reset</button>
@@ -4410,6 +4715,7 @@ function updateSummary(plannerState, shellState) {
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
   contentSurfaceEl.classList.toggle('route-task-queue', isTaskQueueRoute);
+  contentSurfaceEl.classList.toggle('route-project-timelines', isProjectTimelinesRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
   toolbarPanelEl.hidden = usesDedicatedHeader;
@@ -4548,7 +4854,7 @@ function renderTabStrip(shellState) {
         <span class="tab-label">${escapeHtml(tab.title)}</span>
         <span class="tab-kind">${escapeHtml(tab.itemType)}</span>
       </button>
-      ${tab.closable ? `<button type="button" class="tab-close" aria-label="Close ${escapeHtml(tab.title)}" data-tab-close="${escapeHtml(tab.id)}">×</button>` : ''}
+      ${tab.closable ? `<button type="button" class="tab-close" aria-label="Close ${escapeHtml(tab.title)}" data-tab-close="${escapeHtml(tab.id)}">&times;</button>` : ''}
     </div>
   `).join('') + `
     <button type="button" class="tab-add" data-tab-command="add">+</button>
@@ -4571,6 +4877,12 @@ function renderViewHeader(shellState, plannerState) {
     return;
   }
 
+  if (isProjectTimelinesRouteMeta(meta)) {
+    viewHeaderEl.hidden = true;
+    viewHeaderEl.innerHTML = '';
+    return;
+  }
+
   if (isCalendarRouteMeta(meta)) {
     const calendarState = buildCalendarSurfaceState(plannerState, shellState);
     const calendarCount = calendarState.calendars.length;
@@ -4578,15 +4890,15 @@ function renderViewHeader(shellState, plannerState) {
       <div class="calendar-route-bar">
         <div class="calendar-route-leading">
           <span class="calendar-route-nav-pill">Today</span>
-          <span class="calendar-route-nav-arrow">‹</span>
-          <span class="calendar-route-nav-arrow">›</span>
+          <span class="calendar-route-nav-arrow">&lsaquo;</span>
+          <span class="calendar-route-nav-arrow">&rsaquo;</span>
           <div class="calendar-route-main">
             <div class="calendar-route-heading">
               <h2>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</h2>
             </div>
             <div class="calendar-route-period">
               <span>${escapeHtml(`Week of ${formatMonthDayLabel(calendarState.weekStart)}`)}</span>
-              <span>•</span>
+              <span>&middot;</span>
               <span>${escapeHtml(`${calendarCount} calendar${calendarCount === 1 ? '' : 's'} linked`)}</span>
             </div>
           </div>
@@ -4613,7 +4925,7 @@ function renderViewHeader(shellState, plannerState) {
           </div>
           <div class="calendar-route-period">
             <span>${escapeHtml(`Week of ${formatMonthDayLabel(calendarState.weekStart)}`)}</span>
-            <span>•</span>
+            <span>&middot;</span>
             <span>${escapeHtml(`${calendarCount} calendar${calendarCount === 1 ? '' : 's'} linked`)}</span>
           </div>
         </div>
@@ -5368,6 +5680,22 @@ function renderProjectTimelinesSurface(plannerState) {
   const projectLookup = new Map<string, any>(
     (Array.isArray(appData.projects) ? appData.projects : []).map((project: any) => [sanitizeText(project.id), project])
   );
+  const referenceDate = parseDateValue(appData.calendarOverlay?.refreshedAt) || new Date();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const weekMs = 7 * dayMs;
+  const weekCount = 12;
+  const rangeStart = startOfCalendarWeek(new Date(referenceDate.valueOf() - (2 * weekMs)));
+  const rangeEnd = new Date(rangeStart.valueOf() + weekCount * weekMs - 1);
+  const timelineWeeks = Array.from({ length: weekCount }, (_, index) => {
+    const start = new Date(rangeStart.valueOf() + index * weekMs);
+    return {
+      start,
+      monthLabel: start.toLocaleDateString([], { month: 'short' }),
+      dayLabel: formatMonthDayLabel(start),
+      isCurrent: isSameCalendarDay(startOfCalendarWeek(referenceDate), start)
+    };
+  });
+  const currentWeekIndex = timelineWeeks.findIndex((week) => week.isCurrent) + 1;
 
   plannerState.visibleTasks.forEach((task) => {
     const projectId = sanitizeText(task.projectId);
@@ -5399,6 +5727,33 @@ function renderProjectTimelinesSurface(plannerState) {
       ).slice(0, 3);
       const nextDueTask = openTasks.find((task) => parseDateValue(task.dueAt || task.dueDate || task.scheduledStart || task.startAt)) || openTasks[0] || sortedTasks[0];
       const dueValue = project?.dueDate || nextDueTask?.dueAt || nextDueTask?.scheduledStart || nextDueTask?.startAt || null;
+      const bars = (openTasks.length ? openTasks : sortedTasks)
+        .map((task) => {
+          const startValue = parseDateValue(task.scheduledStart || task.startAt || task.dueAt || task.dueDate);
+          const endValue = parseDateValue(task.dueAt || task.dueDate || task.endAt || task.scheduledStart || task.startAt) || startValue;
+          if (!startValue || !endValue) {
+            return null;
+          }
+          const start = startOfCalendarWeek(startValue);
+          const end = startOfCalendarWeek(endValue);
+          if (end.valueOf() < rangeStart.valueOf() || start.valueOf() > rangeEnd.valueOf()) {
+            return null;
+          }
+          const columnStart = Math.max(1, Math.floor((start.valueOf() - rangeStart.valueOf()) / weekMs) + 1);
+          const columnEnd = Math.min(weekCount + 1, Math.floor((end.valueOf() - rangeStart.valueOf()) / weekMs) + 2);
+          return {
+            task,
+            columnStart,
+            columnEnd,
+            tone: sanitizeText(task.status) === 'done'
+              ? 'done'
+              : task.isOverdue
+                ? 'overdue'
+                : 'default'
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 3);
 
       return {
         projectId,
@@ -5409,7 +5764,7 @@ function renderProjectTimelinesSurface(plannerState) {
         openCount: openTasks.length,
         overdueCount,
         scheduledCount,
-        previewTasks: sortedTasks.slice(0, 4)
+        bars
       };
     })
     .sort((left, right) => {
@@ -5425,51 +5780,83 @@ function renderProjectTimelinesSurface(plannerState) {
     return '<p class="muted">No project timelines are ready yet.</p>';
   }
 
+  const projectCount = cards.length;
+  const openTaskCount = cards.reduce((total, card) => total + card.openCount, 0);
+  const overdueTaskCount = cards.reduce((total, card) => total + card.overdueCount, 0);
+
   return `
-    <section class="project-timeline-surface">
-      <div class="project-timeline-grid">
+    <section class="project-gantt-surface">
+      <header class="project-gantt-head">
+        <div class="project-gantt-kicker">Private Workspace / Projects & Tasks / Project Timelines</div>
+        <div class="project-gantt-title-row">
+          <div class="project-gantt-copy">
+            <h2>Project Timelines</h2>
+            <p>Compare active projects across a quarter-style timeline so you can see start pressure, due pressure, and scheduled work without falling back to generic summary cards.</p>
+          </div>
+          <div class="project-gantt-actions">
+            <span class="project-gantt-pill active">Gantt</span>
+            <span class="project-gantt-pill">Workspace: All</span>
+            <span class="project-gantt-pill">Quarter</span>
+          </div>
+        </div>
+        <div class="project-gantt-toolbar">
+          <div class="project-gantt-pills">
+            <span class="project-gantt-pill active">${escapeHtml(`${projectCount} projects`)}</span>
+            <span class="project-gantt-pill">${escapeHtml(`${openTaskCount} open tasks`)}</span>
+            <span class="project-gantt-pill">${escapeHtml(`${overdueTaskCount} overdue`)}</span>
+          </div>
+          <div class="project-gantt-actions">
+            <span class="project-gantt-pill">${escapeHtml(`Start ${formatMonthDayLabel(rangeStart)}`)}</span>
+            <span class="project-gantt-pill">Today</span>
+          </div>
+        </div>
+      </header>
+      <section class="project-gantt-board">
+        <div class="project-gantt-scale" style="--timeline-columns:${weekCount}">
+          <div class="project-gantt-label-head">
+            <strong>Projects</strong>
+            <span>Gantt view</span>
+          </div>
+          ${timelineWeeks.map((week, index) => `
+            <div class="project-gantt-week-head ${week.isCurrent ? 'current' : ''}">
+              <span class="project-gantt-week-month">${index === 0 || timelineWeeks[index - 1].monthLabel !== week.monthLabel ? escapeHtml(week.monthLabel) : '&nbsp;'}</span>
+              <span class="project-gantt-week-date">${escapeHtml(week.dayLabel)}</span>
+            </div>
+          `).join('')}
+        </div>
         ${cards.map((card) => `
-          <article class="project-timeline-card">
-            <div class="project-timeline-head">
-              <div>
+          <article class="project-gantt-row" style="--timeline-columns:${weekCount}">
+            <div class="project-gantt-label">
+              <div class="project-gantt-label-copy">
                 <strong>${escapeHtml(card.title)}</strong>
-                <p>${escapeHtml(card.workspaceName)} • ${escapeHtml(card.dueValue ? `Due ${formatCompactDate(card.dueValue)}` : 'No project due date')}</p>
+                <p>${escapeHtml(card.workspaceName)} &middot; ${escapeHtml(card.dueValue ? `Due ${formatCompactDate(card.dueValue)}` : 'No project due date')}</p>
               </div>
-              <span class="route-list-pill">${escapeHtml(`${card.openCount} open`)}</span>
-            </div>
-            <div class="project-timeline-meta">
-              <span class="timeline-meta-pill">${escapeHtml(`${card.scheduledCount} scheduled`)}</span>
-              <span class="timeline-meta-pill">${escapeHtml(`${card.overdueCount} overdue`)}</span>
-            </div>
-            ${card.stageNames.length ? `
-              <div class="project-timeline-section">
-                <h3>Stages</h3>
-                <div class="project-timeline-stages">
-                  ${card.stageNames.map((stageName) => `<span class="timeline-stage-pill">${escapeHtml(stageName)}</span>`).join('')}
-                </div>
+              <div class="project-gantt-label-meta">
+                <span>${escapeHtml(`${card.openCount} open`)}</span>
+                <span>${escapeHtml(`${card.scheduledCount} scheduled`)}</span>
+                ${card.overdueCount ? `<span>${escapeHtml(`${card.overdueCount} overdue`)}</span>` : ''}
+                ${card.stageNames.map((stageName) => `<span>${escapeHtml(stageName)}</span>`).join('')}
               </div>
-            ` : ''}
-            <div class="project-timeline-section">
-              <h3>Next work</h3>
-              <div class="timeline-task-list">
-                ${card.previewTasks.map((task) => `
-                  <div class="timeline-task-row">
-                    <div class="timeline-task-copy">
-                      <span class="timeline-task-title">${escapeHtml(task.title)}</span>
-                      <span class="timeline-task-subtitle">${escapeHtml(sanitizeText(task.stageName, 'No project stage'))}</span>
-                    </div>
-                    <span class="timeline-task-time">${escapeHtml(
-                      parseDateValue(task.dueAt || task.dueDate || task.scheduledStart || task.startAt)
-                        ? formatCompactDate(task.dueAt || task.dueDate || task.scheduledStart || task.startAt)
-                        : 'No date'
+            </div>
+            <div class="project-gantt-lane" style="--timeline-columns:${weekCount}">
+              ${currentWeekIndex ? `<div class="project-gantt-today-marker" style="grid-column:${currentWeekIndex};"></div>` : ''}
+              ${card.bars.length
+                ? card.bars.map((bar, index) => `
+                  <div class="project-gantt-bar ${escapeHtml(bar.tone)}" style="grid-column:${bar.columnStart} / ${bar.columnEnd}; grid-row:${index + 1};">
+                    <strong>${escapeHtml(bar.task.title)}</strong>
+                    <span>${escapeHtml(
+                      sanitizeText(bar.task.stageName)
+                        || (parseDateValue(bar.task.dueAt || bar.task.dueDate)
+                          ? `Due ${formatMonthDayLabel(parseDateValue(bar.task.dueAt || bar.task.dueDate) as Date)}`
+                          : 'No stage')
                     )}</span>
                   </div>
-                `).join('')}
-              </div>
+                `).join('')
+                : '<div class="project-gantt-lane-empty">No dated work is pinned to this project yet.</div>'}
             </div>
           </article>
         `).join('')}
-      </div>
+      </section>
     </section>
   `;
 }
@@ -5519,7 +5906,7 @@ function renderTeamScheduleSurface(plannerState) {
             <div class="team-schedule-head">
               <div>
                 <strong>${escapeHtml(card.label)}</strong>
-                <p>${escapeHtml(card.workspaceNames.length ? card.workspaceNames.join(' • ') : 'No workspace context')}</p>
+                <p>${escapeHtml(card.workspaceNames.length ? card.workspaceNames.join(' / ') : 'No workspace context')}</p>
               </div>
               <span class="route-list-pill">${escapeHtml(`${card.scheduled.length} scheduled`)}</span>
             </div>
@@ -5534,7 +5921,7 @@ function renderTeamScheduleSurface(plannerState) {
                     <div class="team-schedule-row">
                       <div class="team-schedule-copy">
                         <span class="team-schedule-title">${escapeHtml(task.title)}</span>
-                        <span class="team-schedule-subtitle">${escapeHtml(`${sanitizeText(task.projectName, 'Inbox')} • ${sanitizeText(task.workspaceName, 'Workspace')}`)}</span>
+                        <span class="team-schedule-subtitle">${escapeHtml(`${sanitizeText(task.projectName, 'Inbox')} / ${sanitizeText(task.workspaceName, 'Workspace')}`)}</span>
                       </div>
                       <span class="team-schedule-time">${escapeHtml(formatCompactDate(task.scheduledStart || task.startAt))}</span>
                     </div>
@@ -6470,3 +6857,4 @@ function run() {
 }
 
 run();
+
