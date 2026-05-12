@@ -1251,6 +1251,21 @@ style.textContent = `
     display: none;
   }
 
+  .content-surface.route-task-queue {
+    gap: 10px;
+  }
+
+  .content-surface.route-task-queue .task-surface {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .content-surface.route-task-queue .surface-header {
+    display: none;
+  }
+
   .route-list-bar {
     display: flex;
     align-items: flex-start;
@@ -2260,6 +2275,256 @@ style.textContent = `
     line-height: 1.5;
   }
 
+  .task-queue-surface {
+    display: grid;
+    gap: 18px;
+  }
+
+  .task-queue-head {
+    display: grid;
+    gap: 10px;
+    padding: 4px 0 2px;
+  }
+
+  .task-queue-kicker {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .task-queue-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .task-queue-copy {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .task-queue-copy h2 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--text-strong);
+  }
+
+  .task-queue-copy p {
+    margin: 0;
+    max-width: 58ch;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .task-queue-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .task-queue-stat {
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 8px;
+  }
+
+  .task-queue-stat strong {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .task-queue-stat span {
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--text-strong);
+    font-weight: 700;
+  }
+
+  .task-queue-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .task-queue-column {
+    display: grid;
+    gap: 16px;
+  }
+
+  .task-queue-section {
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .task-queue-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .task-queue-section-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .task-queue-section-copy h3 {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.35;
+    color: var(--text-strong);
+  }
+
+  .task-queue-section-copy p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .task-queue-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .task-queue-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .task-queue-row {
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 12px 13px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .task-queue-row.attention {
+    border-color: rgba(245, 158, 11, 0.24);
+    background: rgba(245, 158, 11, 0.07);
+  }
+
+  .task-queue-row.done {
+    opacity: 0.72;
+  }
+
+  .task-queue-row-main {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .task-queue-row-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .task-queue-row-title {
+    font-size: 15px;
+    line-height: 1.35;
+    color: var(--text-strong);
+    font-weight: 650;
+  }
+
+  .task-queue-row-title.done {
+    text-decoration: line-through;
+    color: var(--text-soft);
+  }
+
+  .task-queue-row-date {
+    font-size: 12px;
+    color: var(--text-soft);
+    white-space: nowrap;
+  }
+
+  .task-queue-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .task-queue-row-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .task-queue-alerts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .task-queue-alert-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-soft);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .task-queue-alert-pill.warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+  }
+
+  .task-queue-alert-pill.error {
+    background: rgba(248, 113, 113, 0.12);
+    color: #fca5a5;
+  }
+
+  .task-queue-row-actions {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    justify-items: end;
+  }
+
+  .task-queue-row-actions button {
+    min-width: 76px;
+  }
+
   @media (max-width: 1200px) {
     .agenda-doc-shell {
       grid-template-columns: 1fr;
@@ -2267,6 +2532,11 @@ style.textContent = `
 
     .agenda-day-rail {
       position: static;
+    }
+
+    .task-queue-summary-grid,
+    .task-queue-board {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -4139,6 +4409,7 @@ function updateSummary(plannerState, shellState) {
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
+  contentSurfaceEl.classList.toggle('route-task-queue', isTaskQueueRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
   toolbarPanelEl.hidden = usesDedicatedHeader;
@@ -4294,6 +4565,12 @@ function renderViewHeader(shellState, plannerState) {
     return;
   }
 
+  if (isTaskQueueRouteMeta(meta)) {
+    viewHeaderEl.hidden = true;
+    viewHeaderEl.innerHTML = '';
+    return;
+  }
+
   if (isCalendarRouteMeta(meta)) {
     const calendarState = buildCalendarSurfaceState(plannerState, shellState);
     const calendarCount = calendarState.calendars.length;
@@ -4366,23 +4643,6 @@ function renderViewHeader(shellState, plannerState) {
             <button type="button" class="route-sort-button ${deadlineSortMode === 'due' ? 'active' : ''}" data-deadline-sort="due">Due date</button>
             <button type="button" class="route-sort-button ${deadlineSortMode === 'priority' ? 'active' : ''}" data-deadline-sort="priority">Priority</button>
           </div>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isTaskQueueRouteMeta(meta)) {
-    const openCount = plannerState.visibleTasks.filter((task) => sanitizeText(task.status) !== 'done').length;
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">My view</div>
-          <h2>My Tasks</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
-          <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
         </div>
       </div>
     `;
@@ -4890,6 +5150,144 @@ function renderAgendaSurface(shellState) {
   `;
 }
 
+function renderTaskQueueSurface(plannerState) {
+  const visibleTasks = plannerState.visibleTasks;
+  const taskSemantics = plannerState.taskSemantics || {};
+  const pendingTaskSet = new Set(plannerState.pendingTaskIds || []);
+  const conflictTaskSet = new Set(plannerState.conflictTaskIds || []);
+  const calendarConflictTaskSet = new Set(plannerState.calendarConflictTaskIds || []);
+  const unschedulableTaskSet = new Set(plannerState.unschedulableTaskIds || []);
+  const openTasks = visibleTasks.filter((task) => sanitizeText(task.status) !== 'done');
+  const scheduledOpenTasks = openTasks.filter((task) => Boolean(parseDateValue(task.scheduledStart || task.startAt)));
+  const overdueTasks = openTasks.filter((task) => Boolean(task.isOverdue));
+  const attentionTaskIds = new Set(
+    openTasks
+      .filter((task) => {
+        const semantics = taskSemantics[task.id] || {};
+        const hasConflict = conflictTaskSet.has(task.id)
+          || calendarConflictTaskSet.has(task.id)
+          || pendingTaskSet.has(task.id)
+          || unschedulableTaskSet.has(task.id)
+          || Boolean((semantics.blockedByOpenTaskIds || []).length)
+          || Boolean((semantics.overlapTaskIds || []).length);
+        return Boolean(task.isOverdue) || hasConflict;
+      })
+      .map((task) => task.id)
+  );
+  const attentionTasks = openTasks.filter((task) => attentionTaskIds.has(task.id));
+  const scheduledTasks = openTasks.filter((task) => !attentionTaskIds.has(task.id) && parseDateValue(task.scheduledStart || task.startAt));
+  const backlogTasks = openTasks.filter((task) => !attentionTaskIds.has(task.id) && !parseDateValue(task.scheduledStart || task.startAt));
+  const doneTasks = visibleTasks.filter((task) => sanitizeText(task.status) === 'done').slice(0, 4);
+  const projectCount = new Set(
+    openTasks
+      .map((task) => sanitizeText(task.projectId))
+      .filter((projectId) => projectId && projectId !== 'inbox')
+  ).size;
+
+  const renderQueueRow = (task, tone = 'default') => {
+    const semantics = taskSemantics[task.id] || {};
+    const schedule = getTaskScheduleSummary(task);
+    const alertPills = [
+      task.isOverdue ? { tone: 'error', label: 'Overdue' } : null,
+      (semantics.blockedByOpenTaskIds || []).length ? { tone: 'warning', label: 'Blocked' } : null,
+      conflictTaskSet.has(task.id) || (semantics.overlapTaskIds || []).length ? { tone: 'error', label: 'Overlap' } : null,
+      calendarConflictTaskSet.has(task.id) ? { tone: 'error', label: 'Busy slot' } : null,
+      pendingTaskSet.has(task.id) ? { tone: 'warning', label: 'Needs reschedule' } : null,
+      unschedulableTaskSet.has(task.id) ? { tone: 'warning', label: 'Outside window' } : null
+    ].filter(Boolean);
+    const metaItems = [
+      task.projectName && task.projectName !== 'Inbox' ? task.projectName : 'Inbox',
+      sanitizeText(task.stageName),
+      task.priorityLevel ? `Priority ${task.priorityLevel}` : '',
+      task.durationMinutes ? `${task.durationMinutes} min` : '',
+      schedule.shouldDisplay ? schedule.label : ''
+    ].filter(Boolean);
+    const dateLabel = parseDateValue(task.scheduledStart || task.startAt)
+      ? formatCompactDate(task.scheduledStart || task.startAt)
+      : parseDateValue(task.dueAt || task.dueDate)
+        ? `Due ${formatCompactDate(task.dueAt || task.dueDate)}`
+        : 'No date';
+
+    return `
+      <article class="task-queue-row ${escapeHtml(tone)} ${task.status === 'done' ? 'done' : ''}">
+        <div class="task-queue-row-main">
+          <div class="task-queue-row-top">
+            <div class="task-queue-row-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
+            <div class="task-queue-row-date">${escapeHtml(dateLabel)}</div>
+          </div>
+          ${metaItems.length ? `<div class="task-queue-row-meta">${metaItems.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}
+          ${task.description ? `<p class="task-queue-row-note">${escapeHtml(task.description)}</p>` : ''}
+          ${alertPills.length ? `<div class="task-queue-alerts">${alertPills.map((alert) => `<span class="task-queue-alert-pill ${escapeHtml(alert.tone)}">${escapeHtml(alert.label)}</span>`).join('')}</div>` : ''}
+        </div>
+        <div class="task-queue-row-actions">
+          <button data-action="complete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
+          <button data-action="delete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>Delete</button>
+        </div>
+      </article>
+    `;
+  };
+
+  const renderQueueSection = (title, subtitle, items, emptyMessage, tone = 'default') => `
+    <section class="task-queue-section">
+      <div class="task-queue-section-head">
+        <div class="task-queue-section-copy">
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(subtitle)}</p>
+        </div>
+        <span class="task-queue-count">${escapeHtml(`${items.length} item${items.length === 1 ? '' : 's'}`)}</span>
+      </div>
+      ${items.length
+        ? `<div class="task-queue-list">${items.map((task) => renderQueueRow(task, tone)).join('')}</div>`
+        : `<p class="agenda-doc-empty">${escapeHtml(emptyMessage)}</p>`}
+    </section>
+  `;
+
+  return `
+    <section class="task-queue-surface">
+      <header class="task-queue-head">
+        <div class="task-queue-kicker">Private Workspace / Projects & Tasks</div>
+        <div class="task-queue-title-row">
+          <div class="task-queue-copy">
+            <h2>Projects & Tasks</h2>
+            <p>Manage open work by what needs attention first, what is already on the calendar, and what still needs a slot. New task details stay tucked behind the compact overlay.</p>
+          </div>
+          <div class="route-list-actions">
+            <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
+          </div>
+        </div>
+      </header>
+      <div class="task-queue-summary-grid">
+        <div class="task-queue-stat">
+          <strong>Open work</strong>
+          <span>${escapeHtml(String(openTasks.length))}</span>
+        </div>
+        <div class="task-queue-stat">
+          <strong>Scheduled</strong>
+          <span>${escapeHtml(String(scheduledOpenTasks.length))}</span>
+        </div>
+        <div class="task-queue-stat">
+          <strong>Overdue</strong>
+          <span>${escapeHtml(String(overdueTasks.length))}</span>
+        </div>
+        <div class="task-queue-stat">
+          <strong>Projects</strong>
+          <span>${escapeHtml(String(projectCount))}</span>
+        </div>
+      </div>
+      <div class="task-queue-board">
+        <div class="task-queue-column">
+          ${renderQueueSection('Needs attention', 'Blocked, conflicting, or overdue work rises to the top here.', attentionTasks, 'Nothing urgent is fighting for attention right now.', 'attention')}
+          ${renderQueueSection('Scheduled next', 'Tasks that already have time on the calendar or planner.', scheduledTasks, 'Nothing is scheduled next yet.')}
+        </div>
+        <div class="task-queue-column">
+          ${renderQueueSection('Backlog', 'Open tasks that still need a calendar slot or timing decision.', backlogTasks, 'No loose backlog is waiting right now.')}
+          ${renderQueueSection('Recently done', 'Completed items stay visible here for quick review.', doneTasks, 'No completed tasks are visible yet.', 'done')}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderInboxSurface() {
   const inboxState = getInboxStateSummary(appData);
   const items = inboxState.items.length
@@ -5274,6 +5672,11 @@ function renderTasks(plannerState, shellState) {
     return;
   }
 
+  if (isTaskQueueRouteMeta(meta)) {
+    taskListEl.innerHTML = renderTaskQueueSurface(plannerState);
+    return;
+  }
+
   if (isInboxRouteMeta(meta)) {
     taskListEl.innerHTML = renderInboxSurface();
     return;
@@ -5309,7 +5712,6 @@ function renderTasks(plannerState, shellState) {
   }
 
   const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
-  const isTaskQueueRoute = isTaskQueueRouteMeta(meta);
 
   visibleTasks.forEach((task) => {
     const semantics = taskSemantics[task.id] || {};
@@ -5348,7 +5750,6 @@ function renderTasks(plannerState, shellState) {
     ].filter(Boolean).join('');
     const item = document.createElement('article');
     item.className = 'task-item';
-    const showDescription = isTaskQueueRoute && Boolean(task.description);
     item.innerHTML = `
       <div class="task-main">
         <div class="task-meta-row">
@@ -5358,7 +5759,6 @@ function renderTasks(plannerState, shellState) {
           ${schedule.shouldDisplay && task.status !== 'done' && !isDeadlinesRoute ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
-        ${showDescription ? `<div class="task-note">${escapeHtml(task.description)}</div>` : ''}
         ${footItems.length ? `<div class="task-foot">${escapeHtml(footItems.join(' | '))}</div>` : ''}
         ${alerts}
       </div>
