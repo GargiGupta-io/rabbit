@@ -1281,6 +1281,27 @@ style.textContent = `
     display: none;
   }
 
+  .content-surface.route-inbox,
+  .content-surface.route-workspace,
+  .content-surface.route-team-schedule {
+    gap: 10px;
+  }
+
+  .content-surface.route-inbox .task-surface,
+  .content-surface.route-workspace .task-surface,
+  .content-surface.route-team-schedule .task-surface {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .content-surface.route-inbox .surface-header,
+  .content-surface.route-workspace .surface-header,
+  .content-surface.route-team-schedule .surface-header {
+    display: none;
+  }
+
   .route-list-bar {
     display: flex;
     align-items: flex-start;
@@ -1474,6 +1495,224 @@ style.textContent = `
     color: var(--text-muted);
     font-size: 11px;
     white-space: nowrap;
+  }
+
+  .inbox-brief-surface,
+  .workspace-control-surface,
+  .team-roster-surface {
+    display: grid;
+    gap: 16px;
+  }
+
+  .inbox-brief-head,
+  .workspace-control-head,
+  .team-roster-head {
+    display: grid;
+    gap: 10px;
+    padding: 4px 0 2px;
+  }
+
+  .inbox-brief-kicker,
+  .workspace-control-kicker,
+  .team-roster-kicker {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .inbox-brief-title-row,
+  .workspace-control-title-row,
+  .team-roster-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .inbox-brief-copy,
+  .workspace-control-copy,
+  .team-roster-copy {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .inbox-brief-copy h2,
+  .workspace-control-copy h2,
+  .team-roster-copy h2 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--text-strong);
+  }
+
+  .inbox-brief-copy p,
+  .workspace-control-copy p,
+  .team-roster-copy p {
+    margin: 0;
+    max-width: 60ch;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .inbox-brief-stats,
+  .workspace-control-stats,
+  .team-roster-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .inbox-brief-pill,
+  .workspace-control-pill,
+  .team-roster-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .inbox-brief-pill.active,
+  .workspace-control-pill.active,
+  .team-roster-pill.active {
+    background: rgba(96, 165, 250, 0.14);
+    border-color: rgba(96, 165, 250, 0.24);
+    color: #bfdbfe;
+  }
+
+  .inbox-brief-grid,
+  .workspace-control-grid,
+  .team-roster-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .inbox-brief-section,
+  .workspace-control-card,
+  .team-roster-card {
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .inbox-brief-section-head,
+  .workspace-control-card-head,
+  .team-roster-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .inbox-brief-section-head h3,
+  .workspace-control-card-head h3,
+  .team-roster-card-head strong {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .inbox-brief-section-head p,
+  .workspace-control-card-head p,
+  .team-roster-card-head p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .inbox-brief-section-note,
+  .workspace-control-note,
+  .team-roster-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .workspace-control-stat-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  }
+
+  .workspace-control-stat {
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 6px;
+  }
+
+  .workspace-control-stat strong {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .workspace-control-stat span {
+    color: var(--text-strong);
+    font-size: 19px;
+    font-weight: 700;
+  }
+
+  .workspace-control-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .workspace-control-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .workspace-control-list-item strong {
+    font-size: 13px;
+    color: var(--text-strong);
+  }
+
+  .workspace-control-list-item span {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .team-roster-lanes {
+    display: grid;
+    gap: 12px;
+  }
+
+  .team-roster-lane {
+    display: grid;
+    gap: 8px;
+  }
+
+  .team-roster-lane h3 {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .calendar-route {
@@ -4715,7 +4954,10 @@ function updateSummary(plannerState, shellState) {
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
   contentSurfaceEl.classList.toggle('route-task-queue', isTaskQueueRoute);
+  contentSurfaceEl.classList.toggle('route-inbox', isInboxRoute);
+  contentSurfaceEl.classList.toggle('route-workspace', isWorkspaceRoute);
   contentSurfaceEl.classList.toggle('route-project-timelines', isProjectTimelinesRoute);
+  contentSurfaceEl.classList.toggle('route-team-schedule', isTeamScheduleRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
   taskFormPanelEl.classList.toggle('route-calendar', isCalendarRoute);
   toolbarPanelEl.hidden = usesDedicatedHeader;
@@ -4878,6 +5120,12 @@ function renderViewHeader(shellState, plannerState) {
   }
 
   if (isProjectTimelinesRouteMeta(meta)) {
+    viewHeaderEl.hidden = true;
+    viewHeaderEl.innerHTML = '';
+    return;
+  }
+
+  if (isInboxRouteMeta(meta) || isWorkspaceRouteMeta(meta) || isTeamScheduleRouteMeta(meta)) {
     viewHeaderEl.hidden = true;
     viewHeaderEl.innerHTML = '';
     return;
@@ -5602,35 +5850,75 @@ function renderTaskQueueSurface(plannerState) {
 
 function renderInboxSurface() {
   const inboxState = getInboxStateSummary(appData);
-  const items = inboxState.items.length
-    ? inboxState.items.map((item) => `
-        <article class="inbox-item ${item.read ? '' : 'unread'}">
-          <div class="inbox-item-head">
-            <div>
-              <div class="inbox-item-title">${escapeHtml(item.title)}</div>
-              <div class="inbox-item-subtitle">${escapeHtml(item.targetSubtitle || item.sourceLabel)}</div>
-            </div>
-            <div class="inbox-item-time">${escapeHtml(formatCompactDate(item.createdTime))}</div>
-          </div>
-          ${item.description ? `<p class="inbox-item-note">${escapeHtml(item.description)}</p>` : ''}
-          <div class="inbox-item-meta">
-            <span>${escapeHtml(item.sourceLabel)}</span>
-            <span>${escapeHtml(item.actionLabel)}</span>
-          </div>
-        </article>
-      `).join('')
-    : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`;
+  const unreadItems = inboxState.items.filter((item) => !item.read);
+  const readItems = inboxState.items.filter((item) => item.read);
+  const needsActionItems = (unreadItems.length ? unreadItems : inboxState.items).slice(0, 6);
+  const recentItems = (readItems.length ? readItems : inboxState.items.filter((item) => !needsActionItems.includes(item))).slice(0, 6);
+  const renderInboxCard = (item) => `
+    <article class="inbox-item ${item.read ? '' : 'unread'}">
+      <div class="inbox-item-head">
+        <div>
+          <div class="inbox-item-title">${escapeHtml(item.title)}</div>
+          <div class="inbox-item-subtitle">${escapeHtml(item.targetSubtitle || item.sourceLabel)}</div>
+        </div>
+        <div class="inbox-item-time">${escapeHtml(formatCompactDate(item.createdTime))}</div>
+      </div>
+      ${item.description ? `<p class="inbox-item-note">${escapeHtml(item.description)}</p>` : ''}
+      <div class="inbox-item-meta">
+        <span>${escapeHtml(item.sourceLabel)}</span>
+        <span>${escapeHtml(item.actionLabel)}</span>
+      </div>
+    </article>
+  `;
 
   return `
-    <section class="inbox-surface">
-      <p class="rail-note">${escapeHtml(
-        inboxState.items.length
-          ? inboxState.needsActionCount > 0
-            ? `${inboxState.needsActionCount} ${inboxState.needsActionCount === 1 ? 'item still needs action.' : 'items still need action.'}`
-            : 'Everything in your inbox is clear.'
-          : 'No inbox follow-up is waiting right now.'
-      )}</p>
-      <div class="inbox-list">${items}</div>
+    <section class="inbox-brief-surface">
+      <header class="inbox-brief-head">
+        <div class="inbox-brief-kicker">Private Workspace / Inbox</div>
+        <div class="inbox-brief-title-row">
+          <div class="inbox-brief-copy">
+            <h2>Inbox</h2>
+            <p>Keep incoming mentions, assignments, and updates in one triage page instead of leaving them pinned beside every route.</p>
+          </div>
+          <div class="inbox-brief-stats">
+            <span class="inbox-brief-pill active">${escapeHtml(`${inboxState.unreadCount} unread`)}</span>
+            <span class="inbox-brief-pill">${escapeHtml(`${inboxState.needsActionCount} need action`)}</span>
+            <span class="inbox-brief-pill">${escapeHtml(`${inboxState.items.length} total`)}</span>
+          </div>
+        </div>
+      </header>
+      <div class="inbox-brief-grid">
+        <section class="inbox-brief-section">
+          <div class="inbox-brief-section-head">
+            <div>
+              <h3>Needs attention</h3>
+              <p>Unread or still-actionable items stay at the top.</p>
+            </div>
+            <span class="inbox-brief-pill active">${escapeHtml(`${needsActionItems.length} shown`)}</span>
+          </div>
+          <div class="inbox-list">
+            ${needsActionItems.length
+              ? needsActionItems.map(renderInboxCard).join('')
+              : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`}
+          </div>
+        </section>
+        <section class="inbox-brief-section">
+          <div class="inbox-brief-section-head">
+            <div>
+              <h3>Recent updates</h3>
+              <p>Cleared or already-read activity stays visible without crowding the action queue.</p>
+            </div>
+            <span class="inbox-brief-pill">${escapeHtml(`${recentItems.length} shown`)}</span>
+          </div>
+          ${recentItems.length
+            ? `<div class="inbox-list">${recentItems.map(renderInboxCard).join('')}</div>`
+            : `<p class="inbox-brief-section-note">${escapeHtml(
+              inboxState.items.length
+                ? 'Everything in your inbox still belongs in the action queue.'
+                : 'No inbox follow-up is waiting right now.'
+            )}</p>`}
+        </section>
+      </div>
     </section>
   `;
 }
@@ -5640,29 +5928,82 @@ function renderWorkspaceStatusSurface() {
   const backend = getBackendState();
   const presentation = getSyncPresentation(sync);
   const backendPresentation = getBackendPresentation(backend);
+  const inboxState = getInboxStateSummary(appData);
+  const calendarCount = Array.isArray(appData.calendars) ? appData.calendars.length : 0;
+  const eventCount = Array.isArray(appData.calendarOverlay?.events) ? appData.calendarOverlay.events.length : 0;
+  const viewCount = Array.isArray(appData.views) ? appData.views.length : 0;
 
   return `
-    <section class="workspace-status-surface">
-      <div class="sync-grid">
-        <div class="sync-stat">
-          <strong>${sync.pendingCount ? 'Changes waiting' : 'All saved'}</strong>
-          <div class="sync-value">${escapeHtml(String(sync.pendingCount || 0))}</div>
+    <section class="workspace-control-surface">
+      <header class="workspace-control-head">
+        <div class="workspace-control-kicker">Private Workspace / Utility</div>
+        <div class="workspace-control-title-row">
+          <div class="workspace-control-copy">
+            <h2>Workspace</h2>
+            <p>This page is for save state, backend connection, and workspace health. Planning should happen in the route pages, not inside a permanent status rail.</p>
+          </div>
+          <div class="workspace-control-stats">
+            <span class="workspace-control-pill ${sync.pendingCount ? 'active' : ''}">${escapeHtml(sync.pendingCount ? `${sync.pendingCount} pending` : 'All saved')}</span>
+            <span class="workspace-control-pill ${backendPresentation.badgeClass === 'online' ? 'active' : ''}">${escapeHtml(backendPresentation.title)}</span>
+          </div>
         </div>
-        <div class="sync-stat">
-          <strong>Last saved</strong>
-          <div class="sync-value">${escapeHtml(formatSyncDate(sync.lastSyncAt))}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Sync</strong>
-          <div class="sync-value">${escapeHtml(presentation.title)}</div>
-        </div>
-        <div class="sync-stat">
-          <strong>Backend</strong>
-          <div class="sync-value">${escapeHtml(backendPresentation.title)}</div>
-        </div>
+      </header>
+      <div class="workspace-control-grid">
+        <section class="workspace-control-card">
+          <div class="workspace-control-card-head">
+            <div>
+              <h3>Workspace health</h3>
+              <p>The current save, sync, and connection state in one place.</p>
+            </div>
+          </div>
+          <div class="workspace-control-stat-grid">
+            <div class="workspace-control-stat">
+              <strong>${sync.pendingCount ? 'Changes waiting' : 'All saved'}</strong>
+              <span>${escapeHtml(String(sync.pendingCount || 0))}</span>
+            </div>
+            <div class="workspace-control-stat">
+              <strong>Last saved</strong>
+              <span>${escapeHtml(formatSyncDate(sync.lastSyncAt))}</span>
+            </div>
+            <div class="workspace-control-stat">
+              <strong>Sync</strong>
+              <span>${escapeHtml(presentation.title)}</span>
+            </div>
+            <div class="workspace-control-stat">
+              <strong>Backend</strong>
+              <span>${escapeHtml(backendPresentation.title)}</span>
+            </div>
+          </div>
+          <p class="workspace-control-note">${escapeHtml(presentation.detail)}</p>
+          <p class="workspace-control-note">${escapeHtml(backendPresentation.detail)}</p>
+        </section>
+        <section class="workspace-control-card">
+          <div class="workspace-control-card-head">
+            <div>
+              <h3>Workspace context</h3>
+              <p>The local content Rabbit is currently carrying around.</p>
+            </div>
+          </div>
+          <div class="workspace-control-list">
+            <div class="workspace-control-list-item">
+              <strong>Saved views</strong>
+              <span>${escapeHtml(`${viewCount} cached`)}</span>
+            </div>
+            <div class="workspace-control-list-item">
+              <strong>Linked calendars</strong>
+              <span>${escapeHtml(`${calendarCount} connected`)}</span>
+            </div>
+            <div class="workspace-control-list-item">
+              <strong>Calendar events</strong>
+              <span>${escapeHtml(`${eventCount} loaded`)}</span>
+            </div>
+            <div class="workspace-control-list-item">
+              <strong>Inbox follow-up</strong>
+              <span>${escapeHtml(`${inboxState.needsActionCount} waiting`)}</span>
+            </div>
+          </div>
+        </section>
       </div>
-      <p class="sync-note">${escapeHtml(presentation.detail)}</p>
-      <p class="sync-note">${escapeHtml(backendPresentation.detail)}</p>
     </section>
   `;
 }
@@ -5898,56 +6239,72 @@ function renderTeamScheduleSurface(plannerState) {
     return '<p class="muted">No team schedule is visible right now.</p>';
   }
 
+  const scheduledCount = cards.reduce((total, card) => total + card.scheduled.length, 0);
+  const backlogCount = cards.reduce((total, card) => total + card.backlog.length, 0);
+
   return `
-    <section class="team-schedule-surface">
-      <div class="team-schedule-grid">
+    <section class="team-roster-surface">
+      <header class="team-roster-head">
+        <div class="team-roster-kicker">Private Workspace / Team View</div>
+        <div class="team-roster-title-row">
+          <div class="team-roster-copy">
+            <h2>Team Schedule</h2>
+            <p>Scan each assignee's scheduled work and loose backlog without falling back to the same generic planner cards used elsewhere.</p>
+          </div>
+          <div class="team-roster-stats">
+            <span class="team-roster-pill active">${escapeHtml(`${cards.length} assignees`)}</span>
+            <span class="team-roster-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
+            <span class="team-roster-pill">${escapeHtml(`${backlogCount} backlog`)}</span>
+          </div>
+        </div>
+      </header>
+      <div class="team-roster-grid">
         ${cards.map((card) => `
-          <article class="team-schedule-card">
-            <div class="team-schedule-head">
+          <article class="team-roster-card">
+            <div class="team-roster-card-head">
               <div>
                 <strong>${escapeHtml(card.label)}</strong>
                 <p>${escapeHtml(card.workspaceNames.length ? card.workspaceNames.join(' / ') : 'No workspace context')}</p>
               </div>
-              <span class="route-list-pill">${escapeHtml(`${card.scheduled.length} scheduled`)}</span>
+              <span class="team-roster-pill ${card.scheduled.length ? 'active' : ''}">${escapeHtml(`${card.scheduled.length} scheduled`)}</span>
             </div>
-            <div class="team-schedule-stats">
-              <span class="team-schedule-pill">${escapeHtml(`${card.backlog.length} backlog`)}</span>
-            </div>
-            <div class="team-schedule-section">
-              <h3>Scheduled</h3>
-              <div class="team-schedule-list">
-                ${card.scheduled.length
-                  ? card.scheduled.slice(0, 5).map((task) => `
-                    <div class="team-schedule-row">
-                      <div class="team-schedule-copy">
-                        <span class="team-schedule-title">${escapeHtml(task.title)}</span>
-                        <span class="team-schedule-subtitle">${escapeHtml(`${sanitizeText(task.projectName, 'Inbox')} / ${sanitizeText(task.workspaceName, 'Workspace')}`)}</span>
+            <div class="team-roster-lanes">
+              <section class="team-roster-lane">
+                <h3>Scheduled</h3>
+                <div class="team-schedule-list">
+                  ${card.scheduled.length
+                    ? card.scheduled.slice(0, 5).map((task) => `
+                      <div class="team-schedule-row">
+                        <div class="team-schedule-copy">
+                          <span class="team-schedule-title">${escapeHtml(task.title)}</span>
+                          <span class="team-schedule-subtitle">${escapeHtml(`${sanitizeText(task.projectName, 'Inbox')} / ${sanitizeText(task.workspaceName, 'Workspace')}`)}</span>
+                        </div>
+                        <span class="team-schedule-time">${escapeHtml(formatCompactDate(task.scheduledStart || task.startAt))}</span>
                       </div>
-                      <span class="team-schedule-time">${escapeHtml(formatCompactDate(task.scheduledStart || task.startAt))}</span>
-                    </div>
-                  `).join('')
-                  : '<p class="muted">No scheduled work for this assignee.</p>'}
-              </div>
-            </div>
-            <div class="team-schedule-section">
-              <h3>Backlog</h3>
-              <div class="team-schedule-list">
-                ${card.backlog.length
-                  ? card.backlog.slice(0, 3).map((task) => `
-                    <div class="team-schedule-row">
-                      <div class="team-schedule-copy">
-                        <span class="team-schedule-title">${escapeHtml(task.title)}</span>
-                        <span class="team-schedule-subtitle">${escapeHtml(sanitizeText(task.projectName, 'Inbox'))}</span>
+                    `).join('')
+                    : '<p class="team-roster-note">No scheduled work is pinned to this assignee yet.</p>'}
+                </div>
+              </section>
+              <section class="team-roster-lane">
+                <h3>Backlog</h3>
+                <div class="team-schedule-list">
+                  ${card.backlog.length
+                    ? card.backlog.slice(0, 4).map((task) => `
+                      <div class="team-schedule-row">
+                        <div class="team-schedule-copy">
+                          <span class="team-schedule-title">${escapeHtml(task.title)}</span>
+                          <span class="team-schedule-subtitle">${escapeHtml(sanitizeText(task.projectName, 'Inbox'))}</span>
+                        </div>
+                        <span class="team-schedule-time">${escapeHtml(
+                          parseDateValue(task.dueAt || task.dueDate)
+                            ? `Due ${formatCompactDate(task.dueAt || task.dueDate)}`
+                            : 'No date'
+                        )}</span>
                       </div>
-                      <span class="team-schedule-time">${escapeHtml(
-                        parseDateValue(task.dueAt || task.dueDate)
-                          ? `Due ${formatCompactDate(task.dueAt || task.dueDate)}`
-                          : 'No date'
-                      )}</span>
-                    </div>
-                  `).join('')
-                  : '<p class="muted">No backlog is waiting here.</p>'}
-              </div>
+                    `).join('')
+                    : '<p class="team-roster-note">No backlog is waiting here.</p>'}
+                </div>
+              </section>
             </div>
           </article>
         `).join('')}
