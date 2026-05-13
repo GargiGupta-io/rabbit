@@ -1251,6 +1251,21 @@ style.textContent = `
     display: none;
   }
 
+  .content-surface.route-deadlines {
+    gap: 10px;
+  }
+
+  .content-surface.route-deadlines .task-surface {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .content-surface.route-deadlines .surface-header {
+    display: none;
+  }
+
   .content-surface.route-task-queue {
     gap: 10px;
   }
@@ -2779,6 +2794,258 @@ style.textContent = `
     min-width: 76px;
   }
 
+  .deadlines-surface {
+    display: grid;
+    gap: 18px;
+  }
+
+  .deadlines-head {
+    display: grid;
+    gap: 10px;
+    padding: 4px 0 2px;
+  }
+
+  .deadlines-kicker {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .deadlines-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .deadlines-copy {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .deadlines-copy h2 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--text-strong);
+  }
+
+  .deadlines-copy p {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .deadlines-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .deadlines-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .deadlines-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .deadlines-pill.active {
+    background: rgba(96, 165, 250, 0.14);
+    border-color: rgba(96, 165, 250, 0.24);
+    color: #bfdbfe;
+  }
+
+  .deadlines-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .deadlines-stat {
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    gap: 8px;
+  }
+
+  .deadlines-stat strong {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .deadlines-stat span {
+    color: var(--text-strong);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .deadlines-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .deadlines-section {
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .deadlines-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .deadlines-section-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .deadlines-section-copy h3 {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.35;
+    color: var(--text-strong);
+  }
+
+  .deadlines-section-copy p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .deadlines-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .deadlines-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .deadline-row {
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 13px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .deadline-row.overdue {
+    border-color: rgba(248, 113, 113, 0.24);
+    background: rgba(248, 113, 113, 0.07);
+  }
+
+  .deadline-row.done {
+    opacity: 0.72;
+  }
+
+  .deadline-row-main {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .deadline-row-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .deadline-row-title {
+    font-size: 15px;
+    line-height: 1.35;
+    color: var(--text-strong);
+    font-weight: 650;
+  }
+
+  .deadline-row-title.done {
+    text-decoration: line-through;
+    color: var(--text-soft);
+  }
+
+  .deadline-row-date {
+    font-size: 12px;
+    color: var(--text-soft);
+    white-space: nowrap;
+  }
+
+  .deadline-row-date.overdue {
+    color: #fca5a5;
+  }
+
+  .deadline-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .deadline-row-note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .deadline-row-actions {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    justify-items: end;
+  }
+
+  .deadline-row-actions button {
+    min-width: 76px;
+  }
+
   .project-gantt-surface {
     display: grid;
     gap: 16px;
@@ -3074,7 +3341,9 @@ style.textContent = `
     }
 
     .task-queue-summary-grid,
-    .task-queue-board {
+    .task-queue-board,
+    .deadlines-summary-grid,
+    .deadlines-layout {
       grid-template-columns: 1fr;
     }
 
@@ -4953,6 +5222,7 @@ function updateSummary(plannerState, shellState) {
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
+  contentSurfaceEl.classList.toggle('route-deadlines', isDeadlinesRoute);
   contentSurfaceEl.classList.toggle('route-task-queue', isTaskQueueRoute);
   contentSurfaceEl.classList.toggle('route-inbox', isInboxRoute);
   contentSurfaceEl.classList.toggle('route-workspace', isWorkspaceRoute);
@@ -5106,26 +5376,15 @@ function renderTabStrip(shellState) {
 function renderViewHeader(shellState, plannerState) {
   const meta = plannerState.viewState.meta;
   viewHeaderEl.hidden = false;
+  const isDedicatedRouteHeader = isAgendaRouteMeta(meta)
+    || isDeadlinesRouteMeta(meta)
+    || isTaskQueueRouteMeta(meta)
+    || isInboxRouteMeta(meta)
+    || isWorkspaceRouteMeta(meta)
+    || isProjectTimelinesRouteMeta(meta)
+    || isTeamScheduleRouteMeta(meta);
 
-  if (isAgendaRouteMeta(meta)) {
-    viewHeaderEl.hidden = true;
-    viewHeaderEl.innerHTML = '';
-    return;
-  }
-
-  if (isTaskQueueRouteMeta(meta)) {
-    viewHeaderEl.hidden = true;
-    viewHeaderEl.innerHTML = '';
-    return;
-  }
-
-  if (isProjectTimelinesRouteMeta(meta)) {
-    viewHeaderEl.hidden = true;
-    viewHeaderEl.innerHTML = '';
-    return;
-  }
-
-  if (isInboxRouteMeta(meta) || isWorkspaceRouteMeta(meta) || isTeamScheduleRouteMeta(meta)) {
+  if (isDedicatedRouteHeader) {
     viewHeaderEl.hidden = true;
     viewHeaderEl.innerHTML = '';
     return;
@@ -5155,132 +5414,6 @@ function renderViewHeader(shellState, plannerState) {
           <span class="calendar-route-pill">${escapeHtml(`${calendarState.totalEntries} scheduled`)}</span>
           <span class="calendar-route-pill">${escapeHtml(`${calendarState.unscheduledTaskCount} unscheduled`)}</span>
           <button type="button" id="task-form-open" class="calendar-route-button primary">New task</button>
-        </div>
-      </div>
-    `;
-    return;
-  }
-  if (isCalendarRouteMeta(meta)) {
-    const calendarState = buildCalendarSurfaceState(plannerState, shellState);
-    const calendarCount = calendarState.calendars.length;
-    viewHeaderEl.innerHTML = `
-      <div class="calendar-route-bar">
-        <div class="calendar-route-main">
-          <div class="view-breadcrumb">Calendar</div>
-          <div class="calendar-route-heading">
-            <h2>${escapeHtml(formatMonthHeading(calendarState.referenceDate))}</h2>
-            <span class="calendar-route-pill">Week</span>
-          </div>
-          <div class="calendar-route-period">
-            <span>${escapeHtml(`Week of ${formatMonthDayLabel(calendarState.weekStart)}`)}</span>
-            <span>&middot;</span>
-            <span>${escapeHtml(`${calendarCount} calendar${calendarCount === 1 ? '' : 's'} linked`)}</span>
-          </div>
-        </div>
-        <div class="calendar-route-pills">
-          <span class="calendar-route-pill">${escapeHtml(`${calendarState.totalEntries} scheduled items`)}</span>
-          <span class="calendar-route-pill">${escapeHtml(`${calendarState.unscheduledTaskCount} unscheduled tasks`)}</span>
-          <button type="button" id="task-form-open" class="calendar-route-button primary">New task</button>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isDeadlinesRouteMeta(meta)) {
-    const overdueCount = plannerState.visibleTasks.filter((task) => task.isOverdue).length;
-    const openCount = plannerState.visibleTasks.filter((task) => sanitizeText(task.status) !== 'done').length;
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">My view</div>
-          <h2>My Deadlines</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(`${openCount} open`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${overdueCount} overdue`)}</span>
-          <div class="route-list-toggles">
-            <button type="button" class="route-sort-button ${deadlineSortMode === 'due' ? 'active' : ''}" data-deadline-sort="due">Due date</button>
-            <button type="button" class="route-sort-button ${deadlineSortMode === 'priority' ? 'active' : ''}" data-deadline-sort="priority">Priority</button>
-          </div>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isInboxRouteMeta(meta)) {
-    const inboxState = getInboxStateSummary(appData);
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">Workspace</div>
-          <h2>Inbox</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(`${inboxState.unreadCount} unread`)}</span>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isWorkspaceRouteMeta(meta)) {
-    const sync = getSyncStateSummary(appData);
-    const presentation = getSyncPresentation(sync);
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">Workspace</div>
-          <h2>Workspace</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(presentation.title)}</span>
-          <span class="route-list-pill">${escapeHtml(`${sync.pendingCount} pending`)}</span>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isProjectTimelinesRouteMeta(meta)) {
-    const projectIds = new Set(
-      plannerState.visibleTasks
-        .map((task) => sanitizeText(task.projectId))
-        .filter((projectId) => projectId && projectId !== 'inbox')
-    );
-    const overdueCount = plannerState.visibleTasks.filter((task) => Boolean(task.isOverdue)).length;
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">Team view</div>
-          <h2>Project Timelines</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(`${projectIds.size} projects`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${overdueCount} overdue tasks`)}</span>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (isTeamScheduleRouteMeta(meta)) {
-    const assigneeIds = new Set(
-      plannerState.visibleTasks
-        .map((task) => sanitizeText(task.assigneeUserId))
-        .filter(Boolean)
-    );
-    const scheduledCount = plannerState.visibleTasks.filter((task) => parseDateValue(task.scheduledStart || task.startAt)).length;
-    viewHeaderEl.innerHTML = `
-      <div class="route-list-bar">
-        <div class="route-list-main">
-          <div class="view-breadcrumb">Team view</div>
-          <h2>Team Schedule</h2>
-        </div>
-        <div class="route-list-actions">
-          <span class="route-list-pill">${escapeHtml(`${assigneeIds.size || 1} assignees`)}</span>
-          <span class="route-list-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
         </div>
       </div>
     `;
@@ -5848,6 +5981,125 @@ function renderTaskQueueSurface(plannerState) {
   `;
 }
 
+function renderDeadlinesSurface(plannerState) {
+  const visibleTasks = plannerState.visibleTasks || [];
+  const pendingTaskIds = new Set(plannerState.pendingTaskIds || []);
+  const conflictTaskIds = new Set(plannerState.conflictTaskIds || []);
+  const calendarConflictTaskIds = new Set(plannerState.calendarConflictTaskIds || []);
+  const unschedulableTaskIds = new Set(plannerState.unschedulableTaskIds || []);
+  const taskSemantics = plannerState.taskSemantics || {};
+  const openTasks = visibleTasks.filter((task) => sanitizeText(task.status) !== 'done');
+  const doneTasks = visibleTasks.filter((task) => sanitizeText(task.status) === 'done');
+  const overdueCount = openTasks.filter((task) => Boolean(task.isOverdue)).length;
+  const scheduledCount = openTasks.filter((task) => Boolean(parseDateValue(task.scheduledStart || task.startAt))).length;
+  const unscheduledCount = Math.max(0, openTasks.length - scheduledCount);
+  const dueSoonCount = openTasks.filter((task) => !parseDateValue(task.dueAt || task.dueDate)).length;
+
+  const renderDeadlineRow = (task) => {
+    const dateLabel = parseDateValue(task.dueAt || task.dueDate)
+      ? `Due ${formatCompactDate(task.dueAt || task.dueDate)}`
+      : parseDateValue(task.scheduledStart || task.startAt)
+        ? formatCompactDate(task.scheduledStart || task.startAt)
+        : 'No due date';
+    const schedule = getTaskScheduleSummary(task);
+    const semantics = taskSemantics[task.id] || {};
+    const metaRows = [
+      sanitizeText(task.priorityLevel) ? `Priority ${sanitizeText(task.priorityLevel)}` : '',
+      task.projectName && task.projectName !== 'Inbox' ? task.projectName : '',
+      sanitizeText(task.stageName),
+      task.durationMinutes ? `${task.durationMinutes}m` : '',
+      schedule.shouldDisplay ? schedule.shortLabel : '',
+      pendingTaskIds.has(task.id) ? 'Needs reschedule' : '',
+      conflictTaskIds.has(task.id) ? 'Conflict' : '',
+      calendarConflictTaskIds.has(task.id) ? 'Busy slot' : '',
+      unschedulableTaskIds.has(task.id) ? 'Outside window' : '',
+      (semantics.blockedByOpenTaskIds || []).length ? 'Blocked' : ''
+    ].filter(Boolean);
+
+    return `
+      <article class="deadline-row">
+        <div class="deadline-row-main">
+          <div class="deadline-row-top">
+            <div class="deadline-row-title">${escapeHtml(task.title)}</div>
+            <div class="deadline-row-date">${escapeHtml(dateLabel)}</div>
+          </div>
+          ${metaRows.length ? `<div class="deadline-row-meta">${metaRows.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}
+          ${task.description ? `<p class="deadline-row-note">${escapeHtml(task.description)}</p>` : ''}
+        </div>
+        <div class="deadline-row-actions">
+          <button data-action="complete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>${sanitizeText(task.status) === 'done' ? 'Undo' : 'Done'}</button>
+          <button data-action="delete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>Delete</button>
+        </div>
+      </article>
+    `;
+  };
+
+  return `
+    <section class="deadlines-surface">
+      <header class="deadlines-head">
+        <div class="deadlines-kicker">Private Workspace / My Deadlines</div>
+        <div class="deadlines-title-row">
+          <div class="deadlines-copy">
+            <h2>My Deadlines</h2>
+            <p>Focus on what needs to be finished. Toggle sort mode to switch between deadline-first and priority-first ordering.</p>
+          </div>
+          <div class="deadlines-controls">
+            <div class="deadlines-pills">
+              <span class="deadlines-pill">${escapeHtml(`${openTasks.length} open`)}</span>
+              <span class="deadlines-pill">${escapeHtml(`${overdueCount} overdue`)}</span>
+              <span class="deadlines-pill">${escapeHtml(`${scheduledCount} scheduled`)}</span>
+              <span class="deadlines-pill">${escapeHtml(`${unscheduledCount} unscheduled`)}</span>
+              <span class="deadlines-pill">${escapeHtml(`${dueSoonCount} no due date`)}</span>
+            </div>
+            <div class="deadlines-pills">
+              <button type="button" class="deadlines-pill ${deadlineSortMode === 'due' ? 'active' : ''}" data-deadline-sort="due">Due date</button>
+              <button type="button" class="deadlines-pill ${deadlineSortMode === 'priority' ? 'active' : ''}" data-deadline-sort="priority">Priority</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="deadlines-summary-grid">
+        <div class="deadlines-stat">
+          <strong>Open deadlines</strong>
+          <span>${escapeHtml(String(openTasks.length))}</span>
+        </div>
+        <div class="deadlines-stat">
+          <strong>Overdue</strong>
+          <span>${escapeHtml(String(overdueCount))}</span>
+        </div>
+        <div class="deadlines-stat">
+          <strong>Without date</strong>
+          <span>${escapeHtml(String(dueSoonCount))}</span>
+        </div>
+      </div>
+
+      <div class="deadlines-layout">
+        <section class="deadlines-section">
+          <header class="deadlines-section-head">
+            <div class="deadlines-section-copy">
+              <h3>To finish</h3>
+              <p>${escapeHtml(openTasks.length ? `${openTasks.length} task${openTasks.length === 1 ? '' : 's'} still need completion.` : 'No open deadlines right now.')}</p>
+            </div>
+            <span class="deadlines-count">${escapeHtml(`${openTasks.length}`)}</span>
+          </header>
+          ${openTasks.length ? `<div class="deadlines-list">${openTasks.map(renderDeadlineRow).join('')}</div>` : '<p class="agenda-doc-empty">No open deadlines are visible right now.</p>'}
+        </section>
+        <section class="deadlines-section">
+          <header class="deadlines-section-head">
+            <div class="deadlines-section-copy">
+              <h3>Recently done</h3>
+              <p>Completed tasks stay visible for quick confirmation.</p>
+            </div>
+            <span class="deadlines-count">${escapeHtml(`${doneTasks.length}`)}</span>
+          </header>
+          ${doneTasks.length ? `<div class="deadlines-list">${doneTasks.slice(0, 8).map(renderDeadlineRow).join('')}</div>` : '<p class="agenda-doc-empty">Nothing is marked done yet.</p>'}
+        </section>
+      </div>
+    </section>
+  `;
+}
+
 function renderInboxSurface() {
   const inboxState = getInboxStateSummary(appData);
   const unreadItems = inboxState.items.filter((item) => !item.read);
@@ -6401,6 +6653,7 @@ function renderTasks(plannerState, shellState) {
   const unschedulableTaskSet = new Set(unschedulableTaskIds);
   const pendingTaskSet = new Set(pendingTaskIds);
   const taskTitleById = new Map(appData.tasks.map((task) => [task.id, task.title]));
+  taskListEl.dataset.routeKind = getSurfaceKind(meta) || sanitizeText(meta?.id);
 
   if (isCalendarRouteMeta(meta)) {
     const calendarState = buildCalendarSurfaceState(plannerState, shellState);
@@ -6441,6 +6694,11 @@ function renderTasks(plannerState, shellState) {
     return;
   }
 
+  if (isDeadlinesRouteMeta(meta)) {
+    taskListEl.innerHTML = renderDeadlinesSurface(plannerState);
+    return;
+  }
+
   taskListEl.innerHTML = '';
   surfaceTitleEl.textContent = meta.title || 'Tasks';
   surfaceCountEl.textContent = `${visibleTasks.length} ${meta.itemType === 'projects' ? 'records' : 'tasks'}`;
@@ -6455,26 +6713,18 @@ function renderTasks(plannerState, shellState) {
     return;
   }
 
-  const isDeadlinesRoute = isDeadlinesRouteMeta(meta);
-
   visibleTasks.forEach((task) => {
     const semantics = taskSemantics[task.id] || {};
     const conflictIds = semantics.overlapTaskIds?.length ? semantics.overlapTaskIds : overlaps[task.id] || [];
     const schedule = getTaskScheduleSummary(task);
     const conflictLabels = conflictIds.map((taskId) => taskTitleById.get(taskId) || taskId);
     const blockerLabels = (semantics.blockedByOpenTaskIds || []).map((taskId) => taskTitleById.get(taskId) || taskId);
-    const footItems = isDeadlinesRoute
-      ? [
-          task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : 'No due date',
-          task.priorityLevel ? `Priority ${task.priorityLevel}` : '',
-          task.projectName && task.projectName !== 'Inbox' ? task.projectName : ''
-        ].filter(Boolean)
-      : [
-          task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : '',
-          task.durationMinutes ? `${task.durationMinutes} min` : '',
-          task.recurrence.pattern !== 'none' ? task.recurrence.pattern : '',
-          schedule.shouldDisplay ? schedule.label : ''
-        ].filter(Boolean);
+    const footItems = [
+      task.dueAt ? `Due ${formatDisplayDateTime(task.dueAt)}` : '',
+      task.durationMinutes ? `${task.durationMinutes} min` : '',
+      task.recurrence.pattern !== 'none' ? task.recurrence.pattern : '',
+      schedule.shouldDisplay ? schedule.label : ''
+    ].filter(Boolean);
     const alerts = [
       blockerLabels.length
         ? `<div class="task-alert warning">Blocked by ${escapeHtml(blockerLabels.join(', '))}</div>`
@@ -6497,17 +6747,16 @@ function renderTasks(plannerState, shellState) {
     item.innerHTML = `
       <div class="task-main">
         <div class="task-meta-row">
-          ${task.projectName && task.projectName !== 'Inbox' && !isDeadlinesRoute ? `<span class="project-chip">${escapeHtml(task.projectName)}</span>` : ''}
+          ${task.projectName && task.projectName !== 'Inbox' ? `<span class="project-chip">${escapeHtml(task.projectName)}</span>` : ''}
           ${task.status === 'done' ? '<span class="status-chip">Done</span>' : ''}
-          ${isDeadlinesRoute && task.priorityLevel ? `<span class="status-chip tone-${escapeHtml(task.priorityLevel === 'ASAP' || task.priorityLevel === 'HIGH' ? 'error' : task.priorityLevel === 'MEDIUM' ? 'on' : 'off')}">${escapeHtml(task.priorityLevel)}</span>` : ''}
-          ${schedule.shouldDisplay && task.status !== 'done' && !isDeadlinesRoute ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
+          ${schedule.shouldDisplay && task.status !== 'done' ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
         </div>
         <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
         ${footItems.length ? `<div class="task-foot">${escapeHtml(footItems.join(' | '))}</div>` : ''}
         ${alerts}
       </div>
       <div class="task-side">
-        <div class="task-time">${escapeHtml(formatCompactDate(isDeadlinesRoute ? (task.dueAt || task.startAt) : (task.startAt || task.dueAt)))}</div>
+        <div class="task-time">${escapeHtml(formatCompactDate(task.startAt || task.dueAt))}</div>
         <div class="task-actions">
           <button data-action="complete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>${task.status === 'done' ? 'Undo' : 'Done'}</button>
           <button data-action="delete" data-id="${escapeHtml(task.id)}" ${canMutate ? '' : 'disabled'}>Delete</button>
@@ -6971,6 +7220,16 @@ taskListEl.addEventListener('click', (event) => {
   if (!(target instanceof HTMLButtonElement)) {
     return;
   }
+
+  const sortMode = target.dataset.deadlineSort;
+  if (sortMode === 'due' || sortMode === 'priority') {
+    if (deadlineSortMode !== sortMode) {
+      deadlineSortMode = sortMode;
+      renderAll();
+    }
+    return;
+  }
+
   const action = target.dataset.action;
   const id = target.dataset.id;
   if (!action || !id) {
