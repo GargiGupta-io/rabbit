@@ -2485,6 +2485,128 @@ style.textContent = `
     line-height: 1.6;
   }
 
+  .agenda-line-surface {
+    display: grid;
+    gap: 20px;
+  }
+
+  .agenda-line-kicker {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .agenda-line-title {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: -0.06em;
+    color: var(--text-strong);
+  }
+
+  .agenda-line-title + p {
+    margin: 0;
+    max-width: 56ch;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .agenda-line-surface-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .agenda-line-column {
+    display: grid;
+    gap: 10px;
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .agenda-line-column--timeline {
+    border-color: rgba(148, 163, 184, 0.2);
+    background: rgba(2, 6, 23, 0.18);
+  }
+
+  .agenda-line-column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .agenda-line-column-head h3 {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .agenda-line-column-head span {
+    color: var(--text-soft);
+    font-size: 11px;
+  }
+
+  .agenda-line-count,
+  .agenda-line-track-head .route-list-pill {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+  }
+
+  .agenda-line-track-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .agenda-line-track-head h3 {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+  }
+
+  .agenda-line-strip {
+    display: grid;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.015);
+    border-radius: 16px;
+    padding: 10px;
+  }
+
+  .agenda-line-strip-item {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .agenda-line-strip .agenda-line-strip-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .agenda-line-list {
+    display: grid;
+    gap: 10px;
+    max-height: 320px;
+    overflow: auto;
+  }
+
   .agenda-day-rail {
     border-radius: 20px;
     padding: 18px 16px;
@@ -3332,6 +3454,7 @@ style.textContent = `
   }
 
   @media (max-width: 1200px) {
+    .agenda-line-surface-grid,
     .agenda-doc-shell {
       grid-template-columns: 1fr;
     }
@@ -5623,46 +5746,6 @@ function renderCalendarSurface(calendarState) {
       </div>
     </div>
   `;
-
-  return `
-    <div class="calendar-route">
-      <div class="calendar-grid-shell">
-        <div class="calendar-time-axis">
-          <div class="calendar-axis-spacer"></div>
-          ${hourLabels.map((hour) => `<span class="calendar-hour">${escapeHtml(formatHourSlotLabel(hour))}</span>`).join('')}
-        </div>
-        <div class="calendar-days">
-          ${calendarState.dayEntries.map(({ day, allDay, timed }) => `
-            <section class="calendar-day ${isSameCalendarDay(day, calendarState.referenceDate) ? 'today' : ''}">
-              <header class="calendar-day-head">
-                <span class="calendar-weekday">${escapeHtml(formatWeekdayLabel(day))}</span>
-                <span class="calendar-day-number">${escapeHtml(String(day.getDate()))}</span>
-              </header>
-              <div class="calendar-all-day">
-                ${allDay.length
-                  ? allDay.map((entry) => `
-                    <span class="calendar-all-day-pill tone-${escapeHtml(toCssToken(entry.tone))}">${escapeHtml(entry.title)}</span>
-                  `).join('')
-                  : '<span class="calendar-all-day-empty">Open</span>'}
-              </div>
-              <div class="calendar-day-grid" style="height: ${escapeHtml(String(CALENDAR_TOTAL_SLOTS * CALENDAR_SLOT_HEIGHT))}px">
-                ${hourLabels.map(() => '<span class="calendar-slot"></span>').join('')}
-                <div class="calendar-entry-layer">
-                  ${timed.map((entry) => `
-                    <article class="calendar-entry ${escapeHtml(entry.kind)} tone-${escapeHtml(toCssToken(entry.tone))}" style="top:${escapeHtml(String(entry.top))}px;height:${escapeHtml(String(entry.height))}px">
-                      <strong>${escapeHtml(entry.title)}</strong>
-                      <span>${escapeHtml(entry.subtitle)}</span>
-                      <span>${escapeHtml(`${formatTimeLabel(entry.start)} - ${formatTimeLabel(entry.end)}`)}</span>
-                    </article>
-                  `).join('')}
-                </div>
-              </div>
-            </section>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `;
 }
 
 function renderCalendarMiniMonth(calendarState) {
@@ -5732,16 +5815,6 @@ function renderCalendarSourcesPanel(calendarState) {
     <p class="rail-note">${escapeHtml(`${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a slot.`)}</p>
   `;
   return;
-
-  inboxPanelEl.innerHTML = `
-    <div class="rail-header">
-      <strong>Calendars</strong>
-      <span class="rail-count">${escapeHtml(String(calendarState.calendars.length))} linked</span>
-    </div>
-    <button type="button" class="calendar-link-button" disabled>Link a calendar</button>
-    <div class="calendar-source-list">${calendars}</div>
-    <p class="rail-note">${escapeHtml(`${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a schedule.`)}</p>
-  `;
 }
 
 function renderAgendaGroup(title, entries, emptyMessage) {
@@ -5800,15 +5873,16 @@ function renderAgendaSurface(shellState) {
       formatAgendaTimeRange(entry.startAt, entry.endAt) || formatCompactDate(entry.dueAt || entry.sortAt),
       formatDurationShort(task?.durationMinutes || task?.minimumDuration)
     ].filter(Boolean);
+    const lineMeta = metaParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('');
     return `
-      <article class="agenda-task-line">
+      <article class="agenda-line-strip-item">
         <span class="agenda-task-bullet" aria-hidden="true"></span>
         <div class="agenda-task-main">
           <div class="agenda-task-title-row">
             <div class="agenda-task-title">${escapeHtml(entry.title)}</div>
             <div class="agenda-task-time">${escapeHtml(formatCompactDate(entry.dueAt || entry.startAt || entry.sortAt))}</div>
           </div>
-          <div class="agenda-task-meta">${metaParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('')}</div>
+          <div class="agenda-task-meta">${lineMeta}</div>
         </div>
       </article>
     `;
@@ -5822,16 +5896,16 @@ function renderAgendaSurface(shellState) {
   `;
 
   const todayTasksMarkup = visibleTaskEntries.length
-    ? `<div class="agenda-task-list">${visibleTaskEntries.map(renderAgendaTaskLine).join('')}</div>`
-    : '<p class="agenda-doc-empty">Nothing is crowding today yet. Use the schedule strip to watch what is coming next.</p>';
+    ? `<div class="agenda-line-strip">${visibleTaskEntries.map(renderAgendaTaskLine).join('')}</div>`
+    : '<p class="agenda-doc-empty">Nothing is crowded today yet. Use the schedule strip to watch what is coming next.</p>';
   const timelessMarkup = timelessTasks.length
     ? `
-      <section class="agenda-doc-section">
-        <div class="agenda-doc-section-head">
+      <section class="agenda-line-column">
+        <div class="agenda-line-column-head">
           <h3>Loose tasks</h3>
-          <span class="agenda-doc-count">${escapeHtml(`${timelessTasks.length} waiting`)}</span>
+          <span class="agenda-line-count">${escapeHtml(`${timelessTasks.length} waiting`)}</span>
         </div>
-        <div class="agenda-task-list">${timelessTasks.map(renderAgendaTaskLine).join('')}</div>
+        <div class="agenda-line-list">${timelessTasks.map(renderAgendaTaskLine).join('')}</div>
       </section>
     `
     : '';
@@ -5840,29 +5914,34 @@ function renderAgendaSurface(shellState) {
     : '<p class="agenda-doc-empty">No timed work is pinned to this day yet.</p>';
 
   return `
-    <section class="agenda-doc-shell">
-      <article class="agenda-doc-page">
-        <header class="agenda-doc-head">
-          <div class="agenda-doc-kicker">Private Workspace / Agenda / ${escapeHtml(formatMonthDayLabel(referenceDate))}</div>
-          <h2 class="agenda-doc-title">${escapeHtml(formatAgendaDateHeading(referenceDate))}</h2>
-          <p class="agenda-doc-intro">Rabbit pulls the day into one place so you can see the tasks that matter and the schedule they sit inside without keeping Inbox, Calendar, and task management open at the same time.</p>
-        </header>
-        <section class="agenda-doc-section">
-          <div class="agenda-doc-section-head">
-            <h3>Today's tasks</h3>
-            <span class="agenda-doc-count">${escapeHtml(`${visibleTaskEntries.length} visible`)}</span>
+    <section class="agenda-line-surface">
+      <header class="route-list-bar">
+        <div class="route-list-main">
+          <p class="agenda-line-kicker">Private Workspace / Agenda / ${escapeHtml(formatMonthDayLabel(referenceDate))}</p>
+          <h2 class="agenda-line-title">${escapeHtml(formatAgendaDateHeading(referenceDate))}</h2>
+          <p>Today in focus is separated from loose tasks, then synced against the day timeline.</p>
+        </div>
+        <div class="route-list-actions">
+          <button type="button" id="task-form-open" class="route-list-button primary">New task</button>
+        </div>
+      </header>
+      <section class="agenda-line-surface-grid">
+        <section class="agenda-line-column">
+          <div class="agenda-line-track-head">
+            <h3>Today in focus</h3>
+            <span class="route-list-pill">${escapeHtml(`${visibleTaskEntries.length} task${visibleTaskEntries.length === 1 ? '' : 's'}`)} today</span>
           </div>
           ${todayTasksMarkup}
         </section>
         ${timelessMarkup}
-      </article>
-      <aside class="agenda-day-rail">
-        <div class="agenda-day-rail-head">
-          <strong>Day schedule</strong>
-          <span>${escapeHtml(`Timed work for ${formatAgendaDateHeading(referenceDate)}`)}</span>
-        </div>
-        <div class="agenda-day-strip">${scheduleMarkup}</div>
-      </aside>
+        <section class="agenda-line-column agenda-line-column--timeline">
+          <div class="agenda-line-column-head">
+            <h3>Day schedule</h3>
+            <span>${escapeHtml(`for ${formatAgendaDateHeading(referenceDate)}`)}</span>
+          </div>
+          <div class="agenda-day-strip">${scheduleMarkup}</div>
+        </section>
+      </section>
     </section>
   `;
 }
