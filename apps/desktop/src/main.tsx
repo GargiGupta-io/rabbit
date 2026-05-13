@@ -3605,7 +3605,7 @@ function toCssToken(value: unknown, fallback = 'default') {
 }
 
 function isCalendarRouteMeta(meta) {
-  return sanitizeText(meta?.id) === 'calendar';
+  return sanitizeText(meta?.id) === 'calendar' || getSurfaceKind(meta) === 'calendar';
 }
 
 function getSurfaceKind(meta) {
@@ -3613,31 +3613,55 @@ function getSurfaceKind(meta) {
 }
 
 function isDeadlinesRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'deadlines' || sanitizeText(meta?.id) === 'view_my_deadlines';
+  return getSurfaceKind(meta) === 'deadlines'
+    || sanitizeText(meta?.id) === 'deadlines'
+    || sanitizeText(meta?.id) === 'view_my_deadlines'
+    || sanitizeText(meta?.id) === 'view_deadlines';
 }
 
 function isTaskQueueRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'tasks' || sanitizeText(meta?.id) === 'view_my_tasks';
+  return getSurfaceKind(meta) === 'tasks'
+    || sanitizeText(meta?.id) === 'tasks'
+    || sanitizeText(meta?.id) === 'view_my_tasks'
+    || sanitizeText(meta?.id) === 'view_tasks'
+    || sanitizeText(meta?.id) === 'my_tasks';
 }
 
 function isAgendaRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'agenda' || sanitizeText(meta?.id) === 'agenda';
+  return getSurfaceKind(meta) === 'agenda'
+    || sanitizeText(meta?.id) === 'agenda'
+    || sanitizeText(meta?.id) === 'agenda_index'
+    || sanitizeText(meta?.id) === 'my_agenda';
 }
 
 function isInboxRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'inbox' || sanitizeText(meta?.id) === 'inbox';
+  return getSurfaceKind(meta) === 'inbox'
+    || sanitizeText(meta?.id) === 'inbox'
+    || sanitizeText(meta?.id) === 'view_inbox'
+    || sanitizeText(meta?.id) === 'my_inbox';
 }
 
 function isWorkspaceRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'workspace' || sanitizeText(meta?.id) === 'workspace';
+  return getSurfaceKind(meta) === 'workspace'
+    || sanitizeText(meta?.id) === 'workspace'
+    || sanitizeText(meta?.id) === 'my_workspace'
+    || sanitizeText(meta?.id) === 'view_workspace';
 }
 
 function isProjectTimelinesRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'project-timelines' || sanitizeText(meta?.id) === 'view_project_timelines';
+  return getSurfaceKind(meta) === 'project-timelines'
+    || getSurfaceKind(meta) === 'project_timelines'
+    || sanitizeText(meta?.id) === 'project-timelines'
+    || sanitizeText(meta?.id) === 'project_timelines'
+    || sanitizeText(meta?.id) === 'view_project_timelines';
 }
 
 function isTeamScheduleRouteMeta(meta) {
-  return getSurfaceKind(meta) === 'team-schedule' || sanitizeText(meta?.id) === 'view_team_schedule';
+  return getSurfaceKind(meta) === 'team-schedule'
+    || getSurfaceKind(meta) === 'team_schedule'
+    || sanitizeText(meta?.id) === 'team-schedule'
+    || sanitizeText(meta?.id) === 'team_schedule'
+    || sanitizeText(meta?.id) === 'view_team_schedule';
 }
 
 function usesDedicatedRouteHeader(meta) {
