@@ -1320,5 +1320,42 @@ Rabbit already worked before this pass, but it still looked and talked too much 
   - task delete
   - inbox and agenda summaries after those actions
 
+--- 
+
+## Maintenance - Route-Specific Surface Differentiation (Completed)
+*Completed: 2026-05-14*
+
+**Step 1 - Route-specific surfaces**
+
+- Calendar/Agenda/My Tasks/Inbox/Workspace/Deadlines/Project Timelines/Team Schedule now resolve and render through distinct routes with route metadata.
+- Key commits:
+  - `c2ea4658b860c481d99179714beaa035ccfac1f2` - dedicated agenda/calendar-like layout for route-specific view.
+  - `07b942f` - normalize route id matching so dedicated route surfaces are selected consistently.
+
+**Step 2 - Structural uniqueness across pages**
+
+- Each surface now uses its own render path (calendar, agenda, task queue, deadlines, inbox, workspace status, project timelines, team schedule) rather than one generic list fallback.
+- Key commits:
+  - `f910a07` - dedicated deadlines surface rendering.
+  - `add0fc3` - rebuilt inbox/workspace/team route surfaces.
+  - `bec0900` - rebuilt project timelines as gantt-like structure.
+  - `044e140` - rebuilt My Tasks as a work board surface.
+  - `dfa0e48` - rebuilt agenda as a daily brief surface.
+
+**Step 3 - Route-owned page density**
+
+- Reduced shared clutter and quieted shell/context density so the active route surface carries primary focus.
+- Key commit:
+  - `b356f39` - moved task creation into an overlay/compact flow.
+
+**In plain English**
+The UI polish work is now captured in explicit route-specific surface steps:
+1) make each route unique,
+2) make each route feel structurally distinct,
+3) reduce shared clutter so the active tab owns the page.
+
+This closes the route-uniqueness polish pass as documented work, with all three items completed through granular commits.
+
 ---
-*Next: Start a new `/plan` for Mac/Tauri desktop validation, production backend hardening, or deeper product-surface expansion. The Windows polish pass is now closed.*
+
+*Next: Start a new `/plan` for Mac/Tauri desktop validation, production backend hardening, or deeper product-surface expansion.*
