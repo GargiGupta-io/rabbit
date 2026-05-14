@@ -1254,7 +1254,7 @@ Phase 9 is closed properly now instead of just ending with a few build scripts a
 *Next: No active implementation step. Start a new `/plan` for live backend integration, real Mac packaging/signing execution, or a new parity/recon pass.*
 
 ---
-## Maintenance - Rabbit Rebrand
+## ? Step 51 - Rabbit Rebrand
 *Completed: 2026-04-30*
 
 **What was built**
@@ -1273,7 +1273,10 @@ This was a real rebrand, not just a folder rename. The app now builds, stores da
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
 
 ---
-## Maintenance - Live Backend Runtime
+*Next: Step 52 starts live backend runtime wiring and validation checks.*
+
+---
+## ? Step 52 - Live Backend Runtime
 *Completed: 2026-05-03*
 
 **What was built**
@@ -1293,7 +1296,10 @@ Rabbit is no longer only a local desktop shell with backend-shaped code lying un
 - `npm.cmd --prefix C:\Users\Pumba\Documents\codex\rabbit run test`
 
 ---
-## Maintenance - Windows Product Polish and Completion
+*Next: Step 53 updates Windows polish and completion artifacts.*
+
+---
+## ? Step 53 - Windows Product Polish and Completion
 *Completed: 2026-05-05*
 
 **What was built**
@@ -1321,18 +1327,20 @@ Rabbit already worked before this pass, but it still looked and talked too much 
   - inbox and agenda summaries after those actions
 
 --- 
+*Next: Step 54 makes route-specific surfaces unique, structured, and less cluttered.*
 
-## Maintenance - Route-Specific Surface Differentiation (Completed)
+---
+## ? Step 54 - Route-Specific Surface Differentiation
 *Completed: 2026-05-14*
 
-**Step 1 - Route-specific surfaces**
+**Step 54.1 - Route-specific surfaces**
 
 - Calendar/Agenda/My Tasks/Inbox/Workspace/Deadlines/Project Timelines/Team Schedule now resolve and render through distinct routes with route metadata.
 - Key commits:
   - `c2ea4658b860c481d99179714beaa035ccfac1f2` - dedicated agenda/calendar-like layout for route-specific view.
   - `07b942f` - normalize route id matching so dedicated route surfaces are selected consistently.
 
-**Step 2 - Structural uniqueness across pages**
+**Step 54.2 - Structural uniqueness across pages**
 
 - Each surface now uses its own render path (calendar, agenda, task queue, deadlines, inbox, workspace status, project timelines, team schedule) rather than one generic list fallback.
 - Key commits:
@@ -1342,7 +1350,7 @@ Rabbit already worked before this pass, but it still looked and talked too much 
   - `044e140` - rebuilt My Tasks as a work board surface.
   - `dfa0e48` - rebuilt agenda as a daily brief surface.
 
-**Step 3 - Route-owned page density**
+**Step 54.3 - Route-owned page density**
 
 - Reduced shared clutter and quieted shell/context density so the active route surface carries primary focus.
 - Key commit:
