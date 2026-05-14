@@ -91,6 +91,7 @@ if (!root) {
 
 const SHOW_INTERNAL_SURFACES = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('debug') === '1';
+const SHOW_ROUTE_AUX_PANELS = false;
 
 const shell = document.createElement('main');
 shell.className = 'desktop-shell';
@@ -4913,7 +4914,7 @@ function updateSyncStatus(shellState = getShellState(appData)) {
   const pushLabel = isBackendBusy && backendBusyAction === 'push' ? 'Pushing...' : 'Push outbox';
   const backendConfigured = hasBackendConfiguration(backend);
 
-  syncPanelEl.hidden = (!isCalendarRoute || shellRailEl.hidden) && !SHOW_INTERNAL_SURFACES;
+  syncPanelEl.hidden = shellRailEl.hidden || !SHOW_INTERNAL_SURFACES || !SHOW_ROUTE_AUX_PANELS;
   if (syncPanelEl.hidden) {
     syncPanelEl.innerHTML = '';
     return;
@@ -5365,7 +5366,7 @@ function updateSummary(plannerState, shellState) {
   const isProjectTimelinesRoute = isProjectTimelinesRouteMeta(meta);
   const isTeamScheduleRoute = isTeamScheduleRouteMeta(meta);
   const usesDedicatedHeader = usesDedicatedRouteHeader(meta);
-  const showRail = isCalendarRoute;
+  const showRail = isCalendarRoute && SHOW_ROUTE_AUX_PANELS;
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
@@ -6669,6 +6670,11 @@ function renderTeamScheduleSurface(plannerState) {
 }
 
 function renderAgenda(shellState, plannerState) {
+  if (!SHOW_ROUTE_AUX_PANELS || !isCalendarRouteMeta(plannerState?.viewState?.meta)) {
+    agendaPanelEl.innerHTML = '';
+    return;
+  }
+
   if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
     renderCalendarMiniMonth(buildCalendarSurfaceState(plannerState, shellState));
     return;
@@ -6694,6 +6700,11 @@ function renderAgenda(shellState, plannerState) {
 }
 
 function renderInboxPanel(shellState, plannerState) {
+  if (!SHOW_ROUTE_AUX_PANELS || !isCalendarRouteMeta(plannerState?.viewState?.meta)) {
+    inboxPanelEl.innerHTML = '';
+    return;
+  }
+
   if (isCalendarRouteMeta(plannerState?.viewState?.meta)) {
     renderCalendarSourcesPanel(buildCalendarSurfaceState(plannerState, shellState));
     return;
