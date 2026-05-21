@@ -7,8 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const desktopRoot = path.resolve(__dirname, '..');
 const distRoot = path.join(desktopRoot, 'dist');
-const host = process.env.RABBIT_DESKTOP_HOST || '127.0.0.1';
-const port = Number(process.env.RABBIT_DESKTOP_PORT || 4173);
+const cliArgs = process.argv.slice(2);
 
 const MIME_TYPES = Object.freeze({
   '.html': 'text/html; charset=utf-8',
@@ -22,6 +21,89 @@ const MIME_TYPES = Object.freeze({
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8'
 });
+
+function getArgValue(name, fallback = '') {
+  const prefixed = `--${name}=`;
+  const withPrefix = cliArgs.find((arg) => arg.startsWith(prefixed));
+  if (withPrefix) {
+    return withPrefix.slice(prefixed.length);
+  }
+  const index = cliArgs.findIndex((arg) => arg === `--${name}`);
+  if (index >= 0 && cliArgs[index + 1]) {
+    return cliArgs[index + 1];
+  }
+  return fallback;
+}
+
+function sanitizeValue(rawValue = '') {
+  return String(rawValue || '').trim().toLowerCase();
+}
+
+function normalizeDesktopPlatform(value = '') {
+  const normalized = sanitizeValue(value);
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.includes('win')) {
+    return 'windows';
+  }
+
+  if (normalized.includes('mac') || normalized === 'apple' || normalized === 'darwin') {
+    return 'macos';
+  }
+
+  if (normalized.includes('linux')) {
+    return 'linux';
+  }
+
+  return normalized;
+}
+
+function normalizeDistribution(value = '') {
+  const normalized = sanitizeValue(value);
+  if (normalized === 'apple' || normalized === 'microsoft' || normalized === 'github') {
+    return normalized;
+  }
+
+  if (normalizeDesktopPlatform(normalized) === 'windows') {
+    return 'microsoft';
+  }
+
+  if (normalizeDesktopPlatform(normalized) === 'macos') {
+    return 'apple';
+  }
+
+  return '';
+}
+
+function createBootstrapMarkup(platform = '', distribution = '') {
+  const normalizedPlatform = normalizeDesktopPlatform(platform);
+  const normalizedDistribution = normalizeDistribution(distribution) || (normalizedPlatform === 'windows' ? 'microsoft' : 'apple');
+
+  if (!normalizedPlatform) {
+    return '';
+  }
+
+  const safePlatform = normalizedPlatform.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const safeDistribution = normalizedDistribution.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return `<script>window.__RABBIT_DESKTOP_PLATFORM='${safePlatform}';window.__RABBIT_DESKTOP_DISTRIBUTION='${safeDistribution}';</script>`;
+}
+
+const requestedPlatform = normalizeDesktopPlatform(
+  sanitizeValue(process.env.RABBIT_DESKTOP_PLATFORM) ||
+  sanitizeValue(cliArgs.find((arg) => arg.startsWith('--platform='))?.split('=')[1]) ||
+  ''
+);
+const requestedDistribution = normalizeDistribution(
+  sanitizeValue(process.env.RABBIT_DESKTOP_DISTRIBUTION) ||
+  sanitizeValue(cliArgs.find((arg) => arg.startsWith('--distribution='))?.split('=')[1]) ||
+  ''
+);
+const host = sanitizeValue(process.env.RABBIT_DESKTOP_HOST) || sanitizeValue(getArgValue('host', '127.0.0.1')) || '127.0.0.1';
+const port = Number.parseInt(sanitizeValue(process.env.RABBIT_DESKTOP_PORT) || getArgValue('port', '4173'), 10) || 4173;
+const bootstrappingScript = createBootstrapMarkup(requestedPlatform, requestedDistribution);
+const shouldInjectBootstrap = Boolean(bootstrappingScript);
 
 function fail(message) {
   console.error(message);
@@ -67,11 +149,17 @@ const server = http.createServer((request, response) => {
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(distRoot, 'index.html');
   }
+  const isIndexHtml = path.basename(filePath) === 'index.html';
 
   try {
     const extension = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[extension] || 'application/octet-stream';
-    const body = fs.readFileSync(filePath);
+    let body = fs.readFileSync(filePath);
+    if (isIndexHtml && shouldInjectBootstrap && contentType.includes('text/html')) {
+      body = body
+        .toString()
+        .replace('</head>', `${bootstrappingScript}</head>`);
+    }
     write(response, 200, body, contentType);
   } catch (error) {
     write(response, 500, error instanceof Error ? error.message : 'Server error');

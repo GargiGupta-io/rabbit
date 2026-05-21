@@ -1,4 +1,4 @@
-import {
+﻿import {
   addShellViewTab,
   activateShellRoute,
   activateShellTab,
@@ -73,10 +73,48 @@ let isTaskComposerExpanded = false;
 let backendBaseUrlInput = appData.backend?.baseUrl || '';
 let backendAuthTokenInput = appData.backend?.authToken || '';
 let taskForm = createProjectAwareTaskFormState();
-const DESKTOP_SHELL_APP_VERSION = 'phase-8-step-41';
+const DESKTOP_SHELL_APP_VERSION = 'phase-11';
+function getPlatformHintFromLocation() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const windowLike = window;
+  const rawPlatformFromHost = sanitizeText((windowLike as { __RABBIT_DESKTOP_PLATFORM?: string }).__RABBIT_DESKTOP_PLATFORM);
+  const rawDistributionFromHost = sanitizeText((windowLike as { __RABBIT_DESKTOP_DISTRIBUTION?: string }).__RABBIT_DESKTOP_DISTRIBUTION);
+  if (rawPlatformFromHost || rawDistributionFromHost) {
+    return {
+      preferredDistribution: rawDistributionFromHost || undefined,
+      targetPlatform: rawPlatformFromHost || undefined
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const rawPlatform = sanitizeText(params.get('platform'));
+  const normalized = rawPlatform.toLowerCase();
+  if (normalized === 'windows' || normalized === 'win' || normalized === 'microsoft') {
+    return {
+      preferredDistribution: 'microsoft',
+      targetPlatform: 'windows'
+    };
+  }
+  if (normalized === 'macos' || normalized === 'mac' || normalized === 'apple') {
+    return {
+      preferredDistribution: 'apple',
+      targetPlatform: 'macos'
+    };
+  }
+  return null;
+}
+function getDesktopPlatformConfigFromApp() {
+  const hint = getPlatformHintFromLocation();
+  return {
+    runtimePlatform: appData?.metadata?.platform,
+    preferredDistribution: hint?.preferredDistribution ?? 'apple',
+    targetPlatform: hint?.targetPlatform ?? 'macos'
+  };
+}
 const INITIAL_DESKTOP_PLATFORM = createDesktopPlatformProfile({
-  preferredDistribution: 'apple',
-  targetPlatform: 'macos'
+  ...getDesktopPlatformConfigFromApp()
 });
 const desktopShellBridge = createDesktopShellBridge({
   appVersion: DESKTOP_SHELL_APP_VERSION,
@@ -92,16 +130,27 @@ if (!root) {
 const SHOW_INTERNAL_SURFACES = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('debug') === '1';
 const SHOW_ROUTE_AUX_PANELS = false;
+const SHOW_ROUTE_FOOTER_CARDS = false;
 
 const shell = document.createElement('main');
 shell.className = 'desktop-shell';
 root.appendChild(shell);
 
-shell.innerHTML = `
+  shell.innerHTML = `
   <aside class="shell-sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand-row">
-        <div class="brand-mark">R</div>
+        <div class="brand-mark" aria-hidden="true">
+          <svg class="brand-mark-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M22.5 23.5C16.2 16.9 14.8 7.5 18.3 4.7C21.8 1.9 29.1 7.1 32.4 18.6C35.7 7.1 43 1.9 46.5 4.7C50 7.5 48.6 16.9 42.3 23.5C49.3 27 53.5 33.5 53.5 40.8C53.5 51.1 44.1 59.5 32.5 59.5C20.9 59.5 11.5 51.1 11.5 40.8C11.5 33.5 15.6 27 22.5 23.5Z"
+              stroke="currentColor"
+              stroke-width="3.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
         <div class="brand-copy">
           <strong>Rabbit</strong>
           <p>Private workspace</p>
@@ -124,6 +173,7 @@ shell.innerHTML = `
           <span class="workspace-kicker" id="workspace-kicker">Private workspace</span>
           <h1 id="workspace-title">Rabbit</h1>
         </div>
+        <div id="tab-strip" class="tab-strip"></div>
       </div>
       <div class="workspace-meta">
         <div class="workspace-status-row">
@@ -150,8 +200,6 @@ shell.innerHTML = `
         </div>
       </div>
     </header>
-
-    <div id="tab-strip" class="tab-strip"></div>
 
     <div class="workspace-body">
       <section class="content-surface" id="content-surface">
@@ -195,7 +243,7 @@ shell.innerHTML = `
               <strong id="surface-title">Tasks</strong>
               <p id="surface-caption" class="surface-caption">Your active queue.</p>
             </div>
-            <span id="surface-count" class="surface-count"></span>
+            <span id="surface-count" class="surface-count" aria-live="polite"></span>
           </div>
           <section id="task-list" class="task-list"></section>
         </section>
@@ -229,31 +277,51 @@ style.textContent = `
 
   body {
     margin: 0;
-    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-    background: #151819;
+    font-family: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    background: #121516;
     color: #f3f4f6;
+    letter-spacing: 0.01em;
   }
 
   .desktop-shell {
     --workspace-bg: #1a1d1e;
-    --panel-bg: #23282d;
+    --panel-bg: rgba(32, 38, 42, 0.9);
     --panel-border: rgba(255, 255, 255, 0.08);
-    --panel-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+    --panel-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
     --text-strong: #f8fafc;
     --text-muted: rgba(226, 232, 240, 0.8);
     --text-soft: rgba(148, 163, 184, 0.88);
     --accent: #60a5fa;
     --accent-strong: #93c5fd;
-    --sidebar-bg: #151819;
+    --sidebar-bg: rgba(18, 22, 24, 0.94);
     --sidebar-border: rgba(255, 255, 255, 0.06);
     --sidebar-text: #f8fafc;
     --sidebar-muted: rgba(203, 213, 225, 0.64);
-    --sidebar-active: rgba(255, 255, 255, 0.08);
+    --sidebar-active: rgba(255, 255, 255, 0.06);
+    --ring: 96 165 250;
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 296px minmax(0, 1fr);
-    background: radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 28%),
-      linear-gradient(180deg, #1b1f20 0%, #16191a 100%);
+    grid-template-columns: 284px minmax(0, 1fr);
+    background:
+      radial-gradient(circle at top left, rgba(249, 115, 22, 0.12), transparent 24%),
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.09), transparent 26%),
+      linear-gradient(180deg, #1a1e20 0%, #15191b 100%);
+    position: relative;
+    isolation: isolate;
+    transition: background-color 280ms ease;
+  }
+
+  .desktop-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.16;
+    background-image:
+      linear-gradient(120deg, rgba(249, 115, 22, 0.12), transparent 38%, rgba(96, 165, 250, 0.1), transparent),
+      repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 32px);
+    pointer-events: none;
+    mix-blend-mode: screen;
   }
 
   .desktop-shell.theme-light,
@@ -272,18 +340,20 @@ style.textContent = `
   .shell-sidebar {
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
-    padding: 12px 12px 16px;
+    padding: 16px 14px 18px;
     display: grid;
-    gap: 12px;
+    gap: 14px;
     grid-template-rows: auto 1fr;
     border-right: 1px solid var(--sidebar-border);
+    backdrop-filter: blur(18px);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
   }
 
   .sidebar-brand {
     display: grid;
     gap: 10px;
-    padding: 8px 8px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .sidebar-brand-row {
@@ -293,42 +363,47 @@ style.textContent = `
   }
 
   .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
     display: grid;
     place-items: center;
-    font-size: 16px;
-    font-weight: 800;
-    color: #ffffff;
-    background: linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%);
-    box-shadow: 0 12px 28px rgba(14, 165, 233, 0.28);
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+  }
+
+  .brand-mark-icon {
+    width: 28px;
+    height: 28px;
+    display: block;
   }
 
   .brand-copy strong {
     display: block;
-    font-size: 14px;
-    letter-spacing: 0.02em;
+    font-size: 15px;
+    letter-spacing: 0.01em;
   }
 
   .brand-copy p {
     margin: 2px 0 0;
     font-size: 10px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--sidebar-muted);
   }
 
   .sidebar-nav {
     display: grid;
-    gap: 10px;
+    gap: 14px;
     align-content: start;
     overflow: auto;
   }
 
   .sidebar-section {
     display: grid;
-    gap: 5px;
+    gap: 7px;
   }
 
   .sidebar-section h2 {
@@ -342,17 +417,17 @@ style.textContent = `
 
   .sidebar-items {
     display: grid;
-    gap: 2px;
+    gap: 4px;
   }
 
   .nav-item,
   .nav-item-passive {
     width: 100%;
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: 14px;
     background: transparent;
     color: inherit;
-    padding: 9px 10px;
+    padding: 10px 12px;
     text-align: left;
     display: flex;
     align-items: center;
@@ -373,9 +448,9 @@ style.textContent = `
   }
 
   .nav-item.active {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.04);
-    box-shadow: inset 1px 0 0 var(--accent);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+    border-color: rgba(255, 255, 255, 0.07);
+    box-shadow: inset 2px 0 0 var(--accent), 0 10px 24px rgba(0, 0, 0, 0.16);
   }
 
   .nav-item-passive {
@@ -415,17 +490,23 @@ style.textContent = `
   }
 
   .workspace-header {
-    padding: 14px 20px 6px;
+    padding: 20px 24px 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
   }
 
   .header-leading {
     display: grid;
-    gap: 8px;
+    gap: 12px;
     align-content: start;
+    min-width: 0;
+  }
+
+  .workspace-heading {
+    display: grid;
+    gap: 4px;
   }
 
   .window-chrome {
@@ -456,23 +537,23 @@ style.textContent = `
 
   .workspace-heading h1 {
     margin: 2px 0 0;
-    font-size: 18px;
-    letter-spacing: -0.03em;
+    font-size: 22px;
+    letter-spacing: -0.05em;
     color: var(--text-strong);
   }
 
   .workspace-kicker {
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     color: var(--text-soft);
   }
 
   .workspace-status {
     margin: 0;
-    max-width: 220px;
+    max-width: 260px;
     font-size: 11px;
-    line-height: 1.5;
+    line-height: 1.6;
     color: var(--text-muted);
     text-align: right;
   }
@@ -501,7 +582,7 @@ style.textContent = `
 
   .shell-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
   }
@@ -510,8 +591,8 @@ style.textContent = `
   .tab-add,
   .tab-close {
     border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
     color: var(--text-strong);
     font: inherit;
   }
@@ -520,9 +601,11 @@ style.textContent = `
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 9px;
+    padding: 8px 11px;
     cursor: pointer;
     font-size: 12px;
+    line-height: 1;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
   }
 
   .shell-action:hover,
@@ -541,16 +624,18 @@ style.textContent = `
 
   .tab-strip {
     display: flex;
-    gap: 4px;
-    padding: 0 20px 10px;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
     overflow: auto;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border: 0;
+    min-width: 0;
   }
 
   .tab-shell {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     min-width: 0;
     padding: 0;
     border: 0;
@@ -559,58 +644,98 @@ style.textContent = `
   }
 
   .tab-button {
-    border: 0;
-    border-radius: 0;
-    border-bottom: 2px solid transparent;
-    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.025);
     color: var(--text-muted);
-    padding: 10px 8px 9px;
-    min-width: 0;
+    padding: 0;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
     display: inline-flex;
     align-items: center;
-    gap: 0;
+    justify-content: center;
     cursor: pointer;
-    white-space: nowrap;
     font: inherit;
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+    position: relative;
   }
 
   .tab-button:hover,
   .tab-button:focus-visible {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.06);
     outline: none;
   }
 
   .tab-button.active {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.09);
     color: var(--text-strong);
-    box-shadow: none;
-    border-bottom-color: rgba(248, 250, 252, 0.92);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 -2px 0 rgba(248, 250, 252, 0.88), 0 12px 28px rgba(0, 0, 0, 0.14);
   }
 
-  .tab-label {
-    font-weight: 600;
+  .tab-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
+  .tab-button.active .tab-glyph {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-strong);
+  }
+
+  .tab-label,
   .tab-kind {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .tab-close,
   .tab-add {
-    padding: 8px 9px;
+    padding: 0;
     cursor: pointer;
     flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .tab-close {
-    border-radius: 12px;
+    border-radius: 16px;
+    opacity: 0.72;
+  }
+
+  .tab-add {
+    border-radius: 18px;
+    font-size: 20px;
+    line-height: 1;
   }
 
   .workspace-body {
-    padding: 14px 20px 20px;
+    padding: 18px 24px 24px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 316px;
-    gap: 14px;
+    gap: 18px;
     min-width: 0;
   }
 
@@ -621,7 +746,7 @@ style.textContent = `
   .content-surface,
   .shell-rail {
     display: grid;
-    gap: 14px;
+    gap: 18px;
     align-content: start;
     min-width: 0;
   }
@@ -629,9 +754,10 @@ style.textContent = `
   .panel {
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
-    border-radius: 22px;
+    border-radius: 24px;
     box-shadow: var(--panel-shadow);
-    padding: 18px;
+    padding: 20px;
+    backdrop-filter: blur(18px);
   }
 
   .panel[hidden] {
@@ -797,6 +923,8 @@ style.textContent = `
     background: rgba(255, 255, 255, 0.02);
     color: var(--text-strong);
     font: inherit;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+    min-height: 36px;
   }
 
   .btn-group {
@@ -831,6 +959,16 @@ style.textContent = `
     border-color: rgba(255, 255, 255, 0.16);
   }
 
+  .btn-group button:active,
+  .task-actions button:active,
+  .control-row button:active,
+  .tab-button:active,
+  .tab-close:active,
+  .tab-add:active,
+  .shell-action:active {
+    transform: translateY(1px);
+  }
+
   .toolbar-search input::placeholder,
   .form-row input::placeholder,
   .control-row input::placeholder {
@@ -849,6 +987,19 @@ style.textContent = `
   .nav-item:focus-visible {
     outline: 2px solid rgba(96, 165, 250, 0.55);
     outline-offset: 2px;
+  }
+
+  .toolbar-search:focus-within::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(148, 163, 184, 0.34);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .toolbar-search {
+    position: relative;
   }
 
   .desktop-shell[data-theme="light"] .btn-group button.active,
@@ -1089,7 +1240,7 @@ style.textContent = `
     margin-bottom: 12px;
   }
 
-  .surface-header p {
+  .surface-caption {
     margin: 4px 0 0;
     font-size: 12px;
     color: var(--text-muted);
@@ -1097,13 +1248,80 @@ style.textContent = `
 
   .surface-count {
     display: inline-flex;
+    gap: 8px;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
+    justify-content: flex-end;
+    padding: 7px 11px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(6px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    position: relative;
+    overflow: hidden;
     color: var(--text-muted);
     font-size: 11px;
+  }
+
+  .desktop-shell[data-route-mode="calendar"] .surface-count {
+    background: linear-gradient(180deg, rgba(96, 165, 250, 0.14), rgba(14, 165, 233, 0.05));
+  }
+
+  .desktop-shell[data-route-mode="deadlines"] .surface-count,
+  .desktop-shell[data-route-mode="task-queue"] .surface-count {
+    background: linear-gradient(180deg, rgba(248, 113, 113, 0.16), rgba(148, 163, 184, 0.04));
+  }
+
+  .surface-count-main {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    color: var(--text-soft);
+    font-weight: 600;
+  }
+
+  .surface-progress-shell {
+    --meter-bg: rgba(148, 163, 184, 0.24);
+    width: 76px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--meter-bg);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .surface-progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    background: linear-gradient(90deg, rgb(var(--ring)), #93c5fd);
+    border-radius: inherit;
+    transition: width 240ms ease;
+    opacity: 0.95;
+  }
+
+  .surface-progress-value {
+    font-size: 10px;
+    color: var(--text-soft);
+    min-width: 42px;
+    text-align: right;
+  }
+
+  .surface-progress-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.24) 50%, transparent 100%);
+    transform: translateX(-72%);
+    animation: surface-glow 5s linear infinite;
+    opacity: 0.3;
+  }
+
+  @keyframes surface-glow {
+    100% {
+      transform: translateX(72%);
+    }
   }
 
   .content-surface.route-calendar {
@@ -1334,9 +1552,9 @@ style.textContent = `
 
   .route-list-main h2 {
     margin: 0;
-    font-size: 24px;
-    line-height: 1.08;
-    letter-spacing: -0.04em;
+    font-size: 28px;
+    line-height: 1.02;
+    letter-spacing: -0.055em;
     color: var(--text-strong);
   }
 
@@ -1558,9 +1776,9 @@ style.textContent = `
   .workspace-control-copy h2,
   .team-roster-copy h2 {
     margin: 0;
-    font-size: 28px;
+    font-size: 32px;
     line-height: 1;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.055em;
     color: var(--text-strong);
   }
 
@@ -2000,6 +2218,77 @@ style.textContent = `
     display: grid;
     gap: 6px;
     grid-template-columns: minmax(0, 1fr) auto;
+    transition: transform 140ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .task-item::before {
+    content: "";
+    width: 3px;
+    border-radius: 12px 0 0 12px;
+    background: linear-gradient(180deg, rgba(96, 165, 250, 0.8), rgba(14, 165, 233, 0.06));
+    margin: -1px 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    opacity: 0.75;
+    transition: opacity 160ms ease;
+  }
+
+  .task-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(148, 163, 184, 0.44);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+  }
+
+  .task-item.done {
+    opacity: 0.9;
+    border-color: rgba(96, 165, 250, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.14);
+  }
+
+  .task-item.overdue {
+    border-color: rgba(248, 113, 113, 0.28);
+  }
+
+  .task-item.overdue::before {
+    background: linear-gradient(180deg, rgba(248, 113, 113, 0.85), rgba(248, 113, 113, 0.18));
+    opacity: 1;
+  }
+
+  .task-item.urgent::before {
+    background: linear-gradient(180deg, rgba(250, 204, 21, 0.85), rgba(250, 204, 21, 0.15));
+    opacity: 1;
+  }
+
+  .task-item .task-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .task-item .task-title::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(96, 165, 250, 0.7);
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  .task-item .task-title.done::after {
+    background: #86efac;
+  }
+
+  .task-item:hover .task-title::after {
+    opacity: 1;
+  }
+
+  .task-item:hover::before {
+    opacity: 1;
   }
 
   .task-main {
@@ -2500,7 +2789,7 @@ style.textContent = `
 
   .agenda-line-title {
     margin: 0;
-    font-size: 34px;
+    font-size: 38px;
     line-height: 1;
     letter-spacing: -0.06em;
     color: var(--text-strong);
@@ -2700,7 +2989,7 @@ style.textContent = `
 
   .task-queue-copy h2 {
     margin: 0;
-    font-size: 30px;
+    font-size: 34px;
     line-height: 1;
     letter-spacing: -0.05em;
     color: var(--text-strong);
@@ -2950,7 +3239,7 @@ style.textContent = `
 
   .deadlines-copy h2 {
     margin: 0;
-    font-size: 30px;
+    font-size: 34px;
     line-height: 1;
     letter-spacing: -0.05em;
     color: var(--text-strong);
@@ -3202,7 +3491,7 @@ style.textContent = `
 
   .project-gantt-copy h2 {
     margin: 0;
-    font-size: 30px;
+    font-size: 34px;
     line-height: 1;
     letter-spacing: -0.05em;
     color: var(--text-strong);
@@ -3510,11 +3799,16 @@ style.textContent = `
 
     .workspace-header {
       flex-direction: column;
+      align-items: stretch;
     }
 
     .workspace-status {
       max-width: none;
       text-align: left;
+    }
+
+    .workspace-meta {
+      justify-items: start;
     }
   }
 
@@ -3602,11 +3896,23 @@ function sanitizeText(value: unknown, fallback = '') {
   return normalized || fallback;
 }
 
+function buildSurfaceProgressMarkup(total = 0, completed = 0, label = 'items') {
+  const safeTotal = Math.max(0, Number(total) || 0);
+  const safeCompleted = Math.max(0, Math.min(Math.max(0, Number(completed) || 0), safeTotal));
+  const completion = safeTotal > 0 ? Math.round((safeCompleted / safeTotal) * 100) : 0;
+
+  return `
+    <span class="surface-count-main">${escapeHtml(String(safeTotal))} ${escapeHtml(label)}${safeTotal === 1 ? '' : 's'}</span>
+    <span class="surface-progress-shell" aria-hidden="true">
+      <span class="surface-progress-fill" style="width:${safeTotal ? completion : 0}%;"></span>
+    </span>
+    <span class="surface-progress-value">${escapeHtml(String(safeCompleted))}/${escapeHtml(String(safeTotal))}</span>
+  `;
+}
+
 function getDesktopPlatformProfileState() {
   return createDesktopPlatformProfile({
-    runtimePlatform: appData?.metadata?.platform,
-    preferredDistribution: 'apple',
-    targetPlatform: 'macos'
+    ...getDesktopPlatformConfigFromApp()
   });
 }
 
@@ -5367,6 +5673,7 @@ function updateSummary(plannerState, shellState) {
   const isTeamScheduleRoute = isTeamScheduleRouteMeta(meta);
   const usesDedicatedHeader = usesDedicatedRouteHeader(meta);
   const showRail = isCalendarRoute && SHOW_ROUTE_AUX_PANELS;
+  const doneTaskCount = plannerState.visibleTasks.filter((task) => sanitizeText(task.status) === 'done').length;
   workspaceTitleEl.textContent = meta.title || 'Rabbit';
   contentSurfaceEl.classList.toggle('route-calendar', isCalendarRoute);
   contentSurfaceEl.classList.toggle('route-agenda', isAgendaRoute);
@@ -5383,6 +5690,23 @@ function updateSummary(plannerState, shellState) {
   shellRailEl.hidden = !showRail;
   workspaceBodyEl.classList.toggle('single-surface', !showRail);
   taskSurfaceEl.classList.toggle('calendar-surface', isCalendarRoute);
+  shell.dataset.routeMode = isCalendarRoute
+    ? 'calendar'
+    : isTaskQueueRoute
+      ? 'task-queue'
+      : isDeadlinesRoute
+        ? 'deadlines'
+        : isInboxRoute
+          ? 'inbox'
+          : isProjectTimelinesRoute
+            ? 'project-timelines'
+            : isTeamScheduleRoute
+              ? 'team-schedule'
+              : isAgendaRoute
+                ? 'agenda'
+                : isWorkspaceRoute
+                  ? 'workspace'
+                  : 'tasks';
 
   if (isCalendarRoute) {
     const referenceDate = parseDateValue(shellState?.referenceNow)
@@ -5390,14 +5714,14 @@ function updateSummary(plannerState, shellState) {
       || new Date();
     const weekStart = startOfCalendarWeek(referenceDate);
     surfaceTitleEl.textContent = formatMonthHeading(referenceDate);
-    surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(plannerState.visibleTasks.length, doneTaskCount, 'event');
     surfaceCaptionEl.textContent = `Week of ${formatMonthDayLabel(weekStart)}. Calendar events and scheduled work share one surface.`;
     return;
   }
 
   if (isDeadlinesRoute) {
     surfaceTitleEl.textContent = 'Deadlines';
-    surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(plannerState.visibleTasks.length, doneTaskCount, 'task');
     surfaceCaptionEl.textContent = deadlineSortMode === 'priority'
       ? 'Ordered by priority first, then due date.'
       : 'Ordered by due date first, then priority.';
@@ -5406,14 +5730,14 @@ function updateSummary(plannerState, shellState) {
 
   if (isTaskQueueRoute) {
     surfaceTitleEl.textContent = 'Task queue';
-    surfaceCountEl.textContent = `${plannerState.visibleTasks.length} tasks`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(plannerState.visibleTasks.length, doneTaskCount, 'task');
     surfaceCaptionEl.textContent = 'Personal work queue with compact task capture.';
     return;
   }
 
   if (isAgendaRoute) {
     surfaceTitleEl.textContent = 'Agenda';
-    surfaceCountEl.textContent = `${shellState.agenda.counts.total} items`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(shellState.agenda.counts.total, 0, 'item');
     surfaceCaptionEl.textContent = 'What is happening now, next, and soon.';
     return;
   }
@@ -5421,14 +5745,18 @@ function updateSummary(plannerState, shellState) {
   if (isInboxRoute) {
     const inboxState = getInboxStateSummary(appData);
     surfaceTitleEl.textContent = 'Inbox';
-    surfaceCountEl.textContent = `${inboxState.unreadCount} unread`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(
+      inboxState.items.length,
+      inboxState.items.length - inboxState.unreadCount,
+      'inbox item'
+    );
     surfaceCaptionEl.textContent = 'Incoming items that still need attention.';
     return;
   }
 
   if (isWorkspaceRoute) {
     surfaceTitleEl.textContent = 'Workspace';
-    surfaceCountEl.textContent = 'Status';
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(1, 1, 'status');
     surfaceCaptionEl.textContent = 'Save state and backend health live here.';
     return;
   }
@@ -5440,7 +5768,7 @@ function updateSummary(plannerState, shellState) {
         .filter((projectId) => projectId && projectId !== 'inbox')
     );
     surfaceTitleEl.textContent = 'Project Timelines';
-    surfaceCountEl.textContent = `${projectIds.size} projects`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(projectIds.size, 0, 'project');
     surfaceCaptionEl.textContent = 'Project progress grouped by project, stage, and next due work.';
     return;
   }
@@ -5452,7 +5780,11 @@ function updateSummary(plannerState, shellState) {
         .filter(Boolean)
     );
     surfaceTitleEl.textContent = 'Team Schedule';
-    surfaceCountEl.textContent = `${assigneeIds.size || 1} assignee${assigneeIds.size === 1 ? '' : 's'}`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(
+      Math.max(1, assigneeIds.size),
+      0,
+      'assignee'
+    );
     surfaceCaptionEl.textContent = 'Scheduled work grouped by assignee instead of a generic task stack.';
     return;
   }
@@ -5507,17 +5839,67 @@ function renderSidebar(shellState) {
   }).join('');
 }
 
+function getTabGlyphLabel(tab) {
+  const source = sanitizeText([
+    tab?.routeId,
+    tab?.itemId,
+    tab?.route,
+    tab?.title
+  ].filter(Boolean).join(' ')).toLowerCase();
+
+  if (source.includes('calendar')) {
+    return 'Ca';
+  }
+  if (source.includes('task') || source.includes('my_tasks')) {
+    return 'Tk';
+  }
+  if (source.includes('deadline')) {
+    return 'Dl';
+  }
+  if (source.includes('project')) {
+    return 'Pt';
+  }
+  if (source.includes('team')) {
+    return 'Tm';
+  }
+  if (source.includes('agenda')) {
+    return 'Ag';
+  }
+  if (source.includes('inbox')) {
+    return 'In';
+  }
+  if (source.includes('workspace')) {
+    return 'Ws';
+  }
+
+  const words = sanitizeText(tab?.title, 'Tab')
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length >= 2) {
+    return `${words[0][0] || ''}${words[1][0] || ''}`;
+  }
+  return sanitizeText(tab?.title, 'Tb').slice(0, 2);
+}
+
 function renderTabStrip(shellState) {
   tabStripEl.innerHTML = shellState.tabs.map((tab, index) => `
     <div class="tab-shell">
-      <button type="button" class="tab-button ${shellState.activeTabId === tab.id ? 'active' : ''}" data-tab-id="${escapeHtml(tab.id)}" data-tab-index="${escapeHtml(String(index))}">
+      <button
+        type="button"
+        class="tab-button ${shellState.activeTabId === tab.id ? 'active' : ''}"
+        data-tab-id="${escapeHtml(tab.id)}"
+        data-tab-index="${escapeHtml(String(index))}"
+        title="${escapeHtml(tab.title)}"
+        aria-label="${escapeHtml(tab.title)}"
+      >
+        <span class="tab-glyph">${escapeHtml(getTabGlyphLabel(tab))}</span>
         <span class="tab-label">${escapeHtml(tab.title)}</span>
         <span class="tab-kind">${escapeHtml(tab.itemType)}</span>
       </button>
-      ${tab.closable ? `<button type="button" class="tab-close" aria-label="Close ${escapeHtml(tab.title)}" data-tab-close="${escapeHtml(tab.id)}">&times;</button>` : ''}
+      ${tab.closable ? `<button type="button" class="tab-close" title="Close ${escapeHtml(tab.title)}" aria-label="Close ${escapeHtml(tab.title)}" data-tab-close="${escapeHtml(tab.id)}">&times;</button>` : ''}
     </div>
   `).join('') + `
-    <button type="button" class="tab-add" data-tab-command="add">+</button>
+    <button type="button" class="tab-add" title="Open new tab" aria-label="Open new tab" data-tab-command="add">+</button>
   `;
 }
 
@@ -6076,10 +6458,12 @@ function renderTaskQueueSurface(plannerState) {
           ${renderQueueSection('Needs attention', 'Blocked, conflicting, or overdue work rises to the top here.', attentionTasks, 'Nothing urgent is fighting for attention right now.', 'attention')}
           ${renderQueueSection('Scheduled next', 'Tasks that already have time on the calendar or planner.', scheduledTasks, 'Nothing is scheduled next yet.')}
         </div>
-        <div class="task-queue-column">
-          ${renderQueueSection('Backlog', 'Open tasks that still need a calendar slot or timing decision.', backlogTasks, 'No loose backlog is waiting right now.')}
-          ${renderQueueSection('Recently done', 'Completed items stay visible here for quick review.', doneTasks, 'No completed tasks are visible yet.', 'done')}
-        </div>
+        ${SHOW_ROUTE_FOOTER_CARDS ? `
+          <div class="task-queue-column">
+            ${renderQueueSection('Backlog', 'Open tasks that still need a calendar slot or timing decision.', backlogTasks, 'No loose backlog is waiting right now.')}
+            ${renderQueueSection('Recently done', 'Completed items stay visible here for quick review.', doneTasks, 'No completed tasks are visible yet.', 'done')}
+          </div>
+        ` : ''}
       </div>
     </section>
   `;
@@ -6189,16 +6573,18 @@ function renderDeadlinesSurface(plannerState) {
           </header>
           ${openTasks.length ? `<div class="deadlines-list">${openTasks.map(renderDeadlineRow).join('')}</div>` : '<p class="agenda-doc-empty">No open deadlines are visible right now.</p>'}
         </section>
-        <section class="deadlines-section">
-          <header class="deadlines-section-head">
-            <div class="deadlines-section-copy">
-              <h3>Recently done</h3>
-              <p>Completed tasks stay visible for quick confirmation.</p>
-            </div>
-            <span class="deadlines-count">${escapeHtml(`${doneTasks.length}`)}</span>
-          </header>
-          ${doneTasks.length ? `<div class="deadlines-list">${doneTasks.slice(0, 8).map(renderDeadlineRow).join('')}</div>` : '<p class="agenda-doc-empty">Nothing is marked done yet.</p>'}
-        </section>
+        ${SHOW_ROUTE_FOOTER_CARDS ? `
+          <section class="deadlines-section">
+            <header class="deadlines-section-head">
+              <div class="deadlines-section-copy">
+                <h3>Recently done</h3>
+                <p>Completed tasks stay visible for quick confirmation.</p>
+              </div>
+              <span class="deadlines-count">${escapeHtml(`${doneTasks.length}`)}</span>
+            </header>
+            ${doneTasks.length ? `<div class="deadlines-list">${doneTasks.slice(0, 8).map(renderDeadlineRow).join('')}</div>` : '<p class="agenda-doc-empty">Nothing is marked done yet.</p>'}
+          </section>
+        ` : ''}
       </div>
     </section>
   `;
@@ -6258,22 +6644,24 @@ function renderInboxSurface() {
               : `<p class="muted">${escapeHtml(inboxState.emptyState)}</p>`}
           </div>
         </section>
-        <section class="inbox-brief-section">
-          <div class="inbox-brief-section-head">
-            <div>
-              <h3>Recent updates</h3>
-              <p>Cleared or already-read activity stays visible without crowding the action queue.</p>
+        ${SHOW_ROUTE_FOOTER_CARDS ? `
+          <section class="inbox-brief-section">
+            <div class="inbox-brief-section-head">
+              <div>
+                <h3>Recent updates</h3>
+                <p>Cleared or already-read activity stays visible without crowding the action queue.</p>
+              </div>
+              <span class="inbox-brief-pill">${escapeHtml(`${recentItems.length} shown`)}</span>
             </div>
-            <span class="inbox-brief-pill">${escapeHtml(`${recentItems.length} shown`)}</span>
-          </div>
-          ${recentItems.length
-            ? `<div class="inbox-list">${recentItems.map(renderInboxCard).join('')}</div>`
-            : `<p class="inbox-brief-section-note">${escapeHtml(
-              inboxState.items.length
-                ? 'Everything in your inbox still belongs in the action queue.'
-                : 'No inbox follow-up is waiting right now.'
-            )}</p>`}
-        </section>
+            ${recentItems.length
+              ? `<div class="inbox-list">${recentItems.map(renderInboxCard).join('')}</div>`
+              : `<p class="inbox-brief-section-note">${escapeHtml(
+                inboxState.items.length
+                  ? 'Everything in your inbox still belongs in the action queue.'
+                  : 'No inbox follow-up is waiting right now.'
+              )}</p>`}
+          </section>
+        ` : ''}
       </div>
     </section>
   `;
@@ -6333,32 +6721,34 @@ function renderWorkspaceStatusSurface() {
           <p class="workspace-control-note">${escapeHtml(presentation.detail)}</p>
           <p class="workspace-control-note">${escapeHtml(backendPresentation.detail)}</p>
         </section>
-        <section class="workspace-control-card">
-          <div class="workspace-control-card-head">
-            <div>
-              <h3>Workspace context</h3>
-              <p>The local content Rabbit is currently carrying around.</p>
+        ${SHOW_ROUTE_FOOTER_CARDS ? `
+          <section class="workspace-control-card">
+            <div class="workspace-control-card-head">
+              <div>
+                <h3>Workspace context</h3>
+                <p>The local content Rabbit is currently carrying around.</p>
+              </div>
             </div>
-          </div>
-          <div class="workspace-control-list">
-            <div class="workspace-control-list-item">
-              <strong>Saved views</strong>
-              <span>${escapeHtml(`${viewCount} cached`)}</span>
+            <div class="workspace-control-list">
+              <div class="workspace-control-list-item">
+                <strong>Saved views</strong>
+                <span>${escapeHtml(`${viewCount} cached`)}</span>
+              </div>
+              <div class="workspace-control-list-item">
+                <strong>Linked calendars</strong>
+                <span>${escapeHtml(`${calendarCount} connected`)}</span>
+              </div>
+              <div class="workspace-control-list-item">
+                <strong>Calendar events</strong>
+                <span>${escapeHtml(`${eventCount} loaded`)}</span>
+              </div>
+              <div class="workspace-control-list-item">
+                <strong>Inbox follow-up</strong>
+                <span>${escapeHtml(`${inboxState.needsActionCount} waiting`)}</span>
+              </div>
             </div>
-            <div class="workspace-control-list-item">
-              <strong>Linked calendars</strong>
-              <span>${escapeHtml(`${calendarCount} connected`)}</span>
-            </div>
-            <div class="workspace-control-list-item">
-              <strong>Calendar events</strong>
-              <span>${escapeHtml(`${eventCount} loaded`)}</span>
-            </div>
-            <div class="workspace-control-list-item">
-              <strong>Inbox follow-up</strong>
-              <span>${escapeHtml(`${inboxState.needsActionCount} waiting`)}</span>
-            </div>
-          </div>
-        </section>
+          </section>
+        ` : ''}
       </div>
     </section>
   `;
@@ -6768,11 +7158,12 @@ function renderTasks(plannerState, shellState) {
   const pendingTaskSet = new Set(pendingTaskIds);
   const taskTitleById = new Map(appData.tasks.map((task) => [task.id, task.title]));
   taskListEl.dataset.routeKind = getSurfaceKind(meta) || sanitizeText(meta?.id);
+  const doneTaskCount = visibleTasks.filter((task) => sanitizeText(task.status) === 'done').length;
 
   if (isCalendarRouteMeta(meta)) {
     const calendarState = buildCalendarSurfaceState(plannerState, shellState);
     surfaceTitleEl.textContent = formatMonthHeading(calendarState.referenceDate);
-    surfaceCountEl.textContent = `${calendarState.totalEntries} items`;
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(calendarState.totalEntries, 0, 'item');
     surfaceCaptionEl.textContent = `Week of ${formatMonthDayLabel(calendarState.weekStart)}. ${calendarState.unscheduledTaskCount} task${calendarState.unscheduledTaskCount === 1 ? '' : 's'} still need a schedule.`;
     taskListEl.innerHTML = renderCalendarSurface(calendarState);
     return;
@@ -6815,7 +7206,11 @@ function renderTasks(plannerState, shellState) {
 
   taskListEl.innerHTML = '';
   surfaceTitleEl.textContent = meta.title || 'Tasks';
-  surfaceCountEl.textContent = `${visibleTasks.length} ${meta.itemType === 'projects' ? 'records' : 'tasks'}`;
+  surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(
+    visibleTasks.length,
+    doneTaskCount,
+    meta.itemType === 'projects' ? 'record' : 'task'
+  );
   surfaceCaptionEl.textContent = activePlanWindow === 'today'
     ? 'Scheduled for today.'
     : activePlanWindow === 'week'
@@ -6830,7 +7225,11 @@ function renderTasks(plannerState, shellState) {
   visibleTasks.forEach((task) => {
     const semantics = taskSemantics[task.id] || {};
     const conflictIds = semantics.overlapTaskIds?.length ? semantics.overlapTaskIds : overlaps[task.id] || [];
+    const isDone = sanitizeText(task.status) === 'done';
+    const isHighPriority = sanitizeText(task.priority) === 'high';
     const schedule = getTaskScheduleSummary(task);
+    const scheduleTone = schedule.shouldDisplay && task.status !== 'done' ? sanitizeText(schedule.tone) : '';
+    const isOverdue = scheduleTone === 'error';
     const conflictLabels = conflictIds.map((taskId) => taskTitleById.get(taskId) || taskId);
     const blockerLabels = (semantics.blockedByOpenTaskIds || []).map((taskId) => taskTitleById.get(taskId) || taskId);
     const footItems = [
@@ -6857,15 +7256,16 @@ function renderTasks(plannerState, shellState) {
         : ''
     ].filter(Boolean).join('');
     const item = document.createElement('article');
-    item.className = 'task-item';
+    item.className = `task-item${isDone ? ' done' : ''}${isOverdue ? ' overdue' : ''}${isHighPriority ? ' urgent' : ''}`;
     item.innerHTML = `
       <div class="task-main">
         <div class="task-meta-row">
           ${task.projectName && task.projectName !== 'Inbox' ? `<span class="project-chip">${escapeHtml(task.projectName)}</span>` : ''}
-          ${task.status === 'done' ? '<span class="status-chip">Done</span>' : ''}
-          ${schedule.shouldDisplay && task.status !== 'done' ? `<span class="status-chip tone-${escapeHtml(schedule.tone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
+          ${isDone ? '<span class="status-chip tone-on">Done</span>' : ''}
+          ${schedule.shouldDisplay && task.status !== 'done' && scheduleTone ? `<span class="status-chip tone-${escapeHtml(scheduleTone)}">${escapeHtml(schedule.shortLabel)}</span>` : ''}
+          ${isHighPriority ? '<span class="status-chip tone-error">High priority</span>' : ''}
         </div>
-        <div class="task-title ${task.status === 'done' ? 'done' : ''}">${escapeHtml(task.title)}</div>
+        <div class="task-title ${isDone ? 'done' : ''}">${escapeHtml(task.title)}</div>
         ${footItems.length ? `<div class="task-foot">${escapeHtml(footItems.join(' | '))}</div>` : ''}
         ${alerts}
       </div>
@@ -7587,4 +7987,5 @@ function run() {
 }
 
 run();
+
 

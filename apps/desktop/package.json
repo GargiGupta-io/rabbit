@@ -4,9 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "serve": "node ./scripts/serve.mjs",
+    "serve:mac": "node ./scripts/serve.mjs --platform=macos --distribution=apple",
+    "serve:windows": "node ./scripts/serve.mjs --platform=windows --distribution=microsoft",
     "build:web": "node ./scripts/build.mjs",
     "build": "node ./scripts/build.mjs",
     "lint": "node ./scripts/lint.mjs",
+    "native:build:mac": "node ./scripts/native-build.mjs --platform=macos --distribution=apple",
+    "native:build:windows": "node ./scripts/native-build.mjs --platform=windows --distribution=microsoft",
     "native:preflight": "node ./scripts/native-preflight.mjs",
     "native:build": "node ./scripts/native-build.mjs"
   }

@@ -893,6 +893,10 @@ function compareByViewDefinition(left = {}, right = {}, meta = {}) {
 }
 
 function resolveShellScopeId(shellState = {}) {
+  if (shellState?.activeTab?.itemType === 'route') {
+    return sanitizeText(shellState.activeTab.itemId, 'calendar');
+  }
+
   if (sanitizeText(shellState?.activeViewId, '') === 'calendar') {
     return sanitizeText(shellState?.activeTab?.itemId, 'calendar');
   }
@@ -1263,11 +1267,13 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
   const routeScopeId = activeTab?.itemType === 'route'
     ? sanitizeText(activeTab.itemId, 'calendar')
     : '';
-  const explicitViewId = sanitizeText(
-    rawShell.activeViewId,
-    routeScopeId || (activeTab?.itemType === 'view' ? activeTab.itemId : DEFAULT_VIEW_ID)
-  );
-  const isRouteScope = Boolean(routeScopeId) && explicitViewId === routeScopeId;
+  const explicitViewId = activeTab?.itemType === 'route'
+    ? routeScopeId
+    : sanitizeText(
+      rawShell.activeViewId,
+      activeTab?.itemType === 'view' ? activeTab.itemId : DEFAULT_VIEW_ID
+    );
+  const isRouteScope = activeTab?.itemType === 'route';
   const activeView = isRouteScope ? null : getSavedViewById(savedViews, explicitViewId || DEFAULT_VIEW_ID);
   const theme = normalizeShellTheme(rawShell.theme);
   const referenceNow = toIsoString(options.now || rawShell.agenda?.generatedAt) || toIsoString(new Date());

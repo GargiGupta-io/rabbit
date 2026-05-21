@@ -13,6 +13,55 @@ const args = process.argv.slice(2);
 const strictMode = args.includes('--strict');
 const jsonMode = args.includes('--json');
 const targetValue = args.find((entry) => entry.startsWith('--target='))?.split('=')[1] || '';
+const platformValue = args.find((entry) => entry.startsWith('--platform='))?.split('=')[1] || '';
+const distributionValue = args.find((entry) => entry.startsWith('--distribution='))?.split('=')[1] || '';
+const requestedPlatform = normalizePlatformValue(platformValue) || derivePlatformFromTarget(targetValue);
+const requestedDistribution = resolveDistribution(requestedPlatform, distributionValue);
+
+function normalizePlatformValue(raw = '') {
+  const normalized = String(raw || '').trim().toLowerCase();
+  if (!normalized) {
+    return '';
+  }
+  if (normalized.includes('win')) {
+    return 'windows';
+  }
+  if (normalized.includes('mac') || normalized === 'apple' || normalized === 'darwin') {
+    return 'macos';
+  }
+  if (normalized.includes('linux')) {
+    return 'linux';
+  }
+  return '';
+}
+
+function resolveDistribution(platform, raw = '') {
+  const normalized = String(raw || '').trim().toLowerCase();
+  if (normalized === 'apple' || normalized === 'microsoft' || normalized === 'github') {
+    return normalized;
+  }
+  if (platform === 'windows') {
+    return 'microsoft';
+  }
+  if (platform === 'macos') {
+    return 'apple';
+  }
+  return 'github';
+}
+
+function derivePlatformFromTarget(value = '') {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('win')) {
+    return 'windows';
+  }
+  if (normalized.includes('darwin') || normalized.includes('mac')) {
+    return 'macos';
+  }
+  if (normalized.includes('linux')) {
+    return 'linux';
+  }
+  return '';
+}
 
 function normalizeRelative(filePath) {
   return path.relative(desktopRoot, filePath).replaceAll('\\', '/');
@@ -49,7 +98,7 @@ function checkCommand(command, commandArgs = ['--version']) {
 }
 
 function createMacPackagingAdvisory() {
-  const expectsMacPackaging = targetValue === 'macos' || process.platform !== 'darwin';
+  const expectsMacPackaging = requestedPlatform === 'macos';
   if (!expectsMacPackaging) {
     return null;
   }
@@ -66,6 +115,12 @@ function createMacPackagingAdvisory() {
 }
 
 const checks = [
+  {
+    kind: 'command',
+    label: 'platform profile',
+    ok: true,
+    detail: `platform=${requestedPlatform || 'host'}, distribution=${requestedDistribution}`
+  },
   checkFile(path.join(distRoot, 'index.html'), 'desktop dist entry html'),
   checkFile(path.join(distRoot, 'main.js'), 'desktop dist entry script'),
   checkFile(path.join(sourceRoot, 'main.tsx'), 'desktop source entry'),
@@ -95,6 +150,8 @@ if (jsonMode) {
   process.stdout.write(JSON.stringify({
     strictMode,
     target: targetValue || process.platform,
+    platform: requestedPlatform || process.platform,
+    distribution: requestedDistribution,
     readyForNativeBuild,
     checks
   }, null, 2) + '\n');

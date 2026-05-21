@@ -5,8 +5,8 @@
   "identifier": "com.rabbit.desktop",
   "build": {
     "beforeDevCommand": "",
-    "beforeBuildCommand": "npm --prefix .. run build",
-    "devUrl": "../",
+    "beforeBuildCommand": "npm --prefix . run build",
+    "devUrl": "http://127.0.0.1:4174/",
     "frontendDist": "../dist"
   },
   "app": {
