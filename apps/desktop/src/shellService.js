@@ -48,6 +48,15 @@ const SHELL_VIEW_META = {
     description: 'Connection, save state, and backend health belong here instead of living on every route.',
     emptyState: 'Workspace status is ready.'
   },
+  settings: {
+    id: 'settings',
+    title: 'Settings',
+    layout: 'settings',
+    surfaceKind: 'settings',
+    collectionLabel: 'Profile and billing',
+    description: 'Account, billing, workspace, and preference controls live here.',
+    emptyState: 'Settings are ready.'
+  },
   view_my_deadlines: {
     id: 'view_my_deadlines',
     title: 'My Deadlines',
@@ -116,6 +125,14 @@ const SHELL_ROUTE_DEFINITIONS = {
     title: 'Workspace',
     route: '/web/workspace',
     tabId: 'tab_workspace',
+    closable: true,
+    section: 'workspace'
+  },
+  settings: {
+    id: 'settings',
+    title: 'Settings',
+    route: '/web/settings',
+    tabId: 'tab_settings',
     closable: true,
     section: 'workspace'
   }
@@ -1190,13 +1207,15 @@ export function buildSidebarSections(input = {}) {
     {
       id: 'workspace',
       title: 'Workspace',
-      items: Object.values(SHELL_ROUTE_DEFINITIONS).map((route) => ({
-        id: `nav_${route.id}`,
-        label: route.title,
-        kind: 'route',
-        route: route.route,
-        routeId: route.id
-      }))
+      items: Object.values(SHELL_ROUTE_DEFINITIONS)
+        .filter((route) => route.id !== 'settings')
+        .map((route) => ({
+          id: `nav_${route.id}`,
+          label: route.title,
+          kind: 'route',
+          route: route.route,
+          routeId: route.id
+        }))
     }
   ];
 
@@ -1276,7 +1295,7 @@ export function deriveShellStateSnapshot(appData = {}, options = {}) {
   const isRouteScope = activeTab?.itemType === 'route';
   const activeView = isRouteScope ? null : getSavedViewById(savedViews, explicitViewId || DEFAULT_VIEW_ID);
   const theme = normalizeShellTheme(rawShell.theme);
-  const referenceNow = toIsoString(options.now || rawShell.agenda?.generatedAt) || toIsoString(new Date());
+  const referenceNow = toIsoString(options.now || new Date()) || toIsoString(rawShell.agenda?.generatedAt);
   const sidebarSections = buildSidebarSections({
     savedViews,
     projects: Array.isArray(appData.projects) ? appData.projects : []

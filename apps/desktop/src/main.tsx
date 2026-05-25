@@ -181,22 +181,15 @@ root.appendChild(shell);
           <p class="workspace-status" id="entitlement-status"></p>
         </div>
         <div class="shell-actions" id="shell-actions">
-          <button type="button" class="shell-action" data-shell-command="search">
-            <span>Search</span>
-            <span class="key-hint" data-key-hint="search">Ctrl/Cmd K</span>
-          </button>
-          <button type="button" class="shell-action" data-shell-command="new-task">
-            <span>New</span>
-            <span class="key-hint" data-key-hint="new-task">Ctrl/Cmd Shift N</span>
-          </button>
-          <button type="button" class="shell-action" data-shell-command="quick-meeting">
-            <span>Quick meeting</span>
-            <span class="key-hint" data-key-hint="quick-meeting">Ctrl/Cmd Shift M</span>
-          </button>
-          <button type="button" class="shell-action" data-shell-command="menu">
-            <span data-menu-label>App Menu</span>
-            <span class="key-hint" data-key-hint="menu">Alt / Ctrl M</span>
-          </button>
+          <label class="shell-search" aria-label="Search workspace">
+            <span class="shell-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="5.5"></circle>
+                <path d="M16 16L20 20"></path>
+              </svg>
+            </span>
+            <input id="shell-search-input" type="text" placeholder="Search" />
+          </label>
         </div>
       </div>
     </header>
@@ -406,6 +399,11 @@ style.textContent = `
     gap: 7px;
   }
 
+  .sidebar-section-actions {
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
   .sidebar-section h2 {
     margin: 0;
     font-size: 10px;
@@ -462,6 +460,26 @@ style.textContent = `
     align-items: center;
     gap: 9px;
     min-width: 0;
+  }
+
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(226, 232, 240, 0.78);
+    flex: 0 0 auto;
+  }
+
+  .nav-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
   }
 
   .nav-title {
@@ -566,7 +584,7 @@ style.textContent = `
 
   .workspace-meta {
     display: grid;
-    gap: 8px;
+    gap: 10px;
     justify-items: end;
   }
 
@@ -585,6 +603,7 @@ style.textContent = `
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
+    align-items: center;
   }
 
   .shell-action,
@@ -606,6 +625,76 @@ style.textContent = `
     font-size: 12px;
     line-height: 1;
     transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+  }
+
+  .shell-search {
+    min-width: 220px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+  }
+
+  .shell-search:focus-within {
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18);
+  }
+
+  .shell-search-icon,
+  .shell-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .shell-search-icon svg,
+  .shell-action-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .shell-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-strong);
+    font: inherit;
+  }
+
+  .shell-search input::placeholder {
+    color: var(--text-soft);
+  }
+
+  .shell-action.icon-only {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .shell-action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .shell-action:hover,
@@ -683,10 +772,18 @@ style.textContent = `
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.05);
     color: inherit;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .tab-glyph svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
   }
 
   .tab-button.active .tab-glyph {
@@ -1402,7 +1499,7 @@ style.textContent = `
     margin: 0;
     font-size: 30px;
     line-height: 1;
-    letter-spacing: -0.05em;
+    letter-spacing: 0;
     color: var(--text-strong);
   }
 
@@ -1517,12 +1614,14 @@ style.textContent = `
 
   .content-surface.route-inbox,
   .content-surface.route-workspace,
+  .content-surface.route-settings,
   .content-surface.route-team-schedule {
     gap: 10px;
   }
 
   .content-surface.route-inbox .task-surface,
   .content-surface.route-workspace .task-surface,
+  .content-surface.route-settings .task-surface,
   .content-surface.route-team-schedule .task-surface {
     padding: 0;
     background: transparent;
@@ -1532,6 +1631,7 @@ style.textContent = `
 
   .content-surface.route-inbox .surface-header,
   .content-surface.route-workspace .surface-header,
+  .content-surface.route-settings .surface-header,
   .content-surface.route-team-schedule .surface-header {
     display: none;
   }
@@ -1931,6 +2031,208 @@ style.textContent = `
     font-size: 12px;
   }
 
+  .settings-surface {
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+    gap: 0;
+    min-height: calc(100vh - 190px);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.015);
+    overflow: hidden;
+  }
+
+  .settings-nav {
+    border-right: 1px solid var(--panel-border);
+    background: rgba(12, 15, 18, 0.42);
+    padding: 18px 12px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 18px;
+    align-content: start;
+  }
+
+  .settings-back,
+  .settings-nav-item {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    text-decoration: none;
+    padding: 0 12px;
+    cursor: pointer;
+  }
+
+  .settings-back:hover,
+  .settings-back:focus-visible,
+  .settings-nav-item:hover,
+  .settings-nav-item:focus-visible,
+  .settings-nav-item.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-strong);
+    outline: none;
+  }
+
+  .settings-nav-list {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+  }
+
+  .settings-nav-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .settings-nav-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .settings-page {
+    max-height: calc(100vh - 190px);
+    overflow: auto;
+    padding: 72px min(12vw, 220px) 96px 96px;
+    display: grid;
+    gap: 42px;
+  }
+
+  .settings-section {
+    display: grid;
+    gap: 22px;
+  }
+
+  .settings-section-head {
+    display: grid;
+    gap: 8px;
+  }
+
+  .settings-section-head h2 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .settings-section-head p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .settings-stack {
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+    overflow: hidden;
+  }
+
+  .settings-option,
+  .settings-row,
+  .settings-toggle,
+  .settings-profile-row {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .settings-stack > :first-child {
+    border-top: 0;
+  }
+
+  .settings-option-hero {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .settings-row > div,
+  .settings-option > div,
+  .settings-toggle > span,
+  .settings-profile-row > div {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .settings-row strong,
+  .settings-option strong,
+  .settings-toggle strong,
+  .settings-profile-row strong {
+    color: var(--text-strong);
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .settings-row span,
+  .settings-option span,
+  .settings-toggle small,
+  .settings-profile-row span {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .settings-pill,
+  .settings-value,
+  .settings-select {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-strong);
+    font: inherit;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .settings-pill.active {
+    background: rgba(96, 165, 250, 0.14);
+    border-color: rgba(96, 165, 250, 0.24);
+    color: #bfdbfe;
+  }
+
+  .settings-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-strong);
+    font-weight: 800;
+    flex: 0 0 auto;
+  }
+
+  .settings-toggle input {
+    width: 38px;
+    height: 20px;
+    accent-color: #3b82f6;
+  }
+
   .team-roster-lanes {
     display: grid;
     gap: 12px;
@@ -1993,7 +2295,7 @@ style.textContent = `
 
   .calendar-day {
     min-width: 0;
-    background: rgba(255, 255, 255, 0.015);
+    background: rgba(255, 255, 255, 0.018);
     border-right: 1px solid var(--panel-border);
   }
 
@@ -2002,26 +2304,31 @@ style.textContent = `
   }
 
   .calendar-day.today {
-    background: rgba(96, 165, 250, 0.045);
+    background: rgba(96, 165, 250, 0.075);
   }
 
   .calendar-day-head {
     display: grid;
     gap: 5px;
-    padding: 10px 10px 9px;
+    padding: 12px 10px 10px;
     border-bottom: 1px solid var(--panel-border);
     text-align: center;
   }
 
+  .calendar-day.today .calendar-day-head {
+    background: rgba(96, 165, 250, 0.09);
+  }
+
   .calendar-weekday {
-    font-size: 11px;
-    letter-spacing: 0.08em;
+    font-size: 12px;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: var(--text-soft);
+    font-weight: 700;
   }
 
   .calendar-day-number {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
     color: var(--text-strong);
   }
@@ -2033,9 +2340,15 @@ style.textContent = `
     min-width: 30px;
     min-height: 30px;
     margin: 0 auto;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #3b82f6;
     color: #ffffff;
+  }
+
+  .calendar-day-subtitle {
+    color: var(--text-soft);
+    font-size: 10px;
+    min-height: 14px;
   }
 
   .calendar-all-day {
@@ -2090,7 +2403,7 @@ style.textContent = `
     left: 6px;
     right: 6px;
     padding: 6px 7px;
-    border-radius: 12px;
+    border-radius: 8px;
     display: grid;
     gap: 2px;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2107,7 +2420,7 @@ style.textContent = `
   }
 
   .calendar-entry strong {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-strong);
   }
 
@@ -3856,6 +4169,7 @@ const inboxPanelEl = shell.querySelector('#inbox-panel') as HTMLDivElement;
 const syncPanelEl = shell.querySelector('#sync-panel') as HTMLDivElement;
 const entitlementPanelEl = shell.querySelector('#entitlement-panel') as HTMLDivElement;
 const shellActionsEl = shell.querySelector('#shell-actions') as HTMLDivElement;
+const shellSearchInputEl = shell.querySelector('#shell-search-input') as HTMLInputElement;
 const windowChromeEl = shell.querySelector('#window-chrome') as HTMLDivElement;
 const workspaceKickerEl = shell.querySelector('#workspace-kicker') as HTMLSpanElement;
 const workspaceTitleEl = shell.querySelector('#workspace-title') as HTMLHeadingElement;
@@ -4001,6 +4315,13 @@ function formatMonthDayLabel(date: Date) {
   });
 }
 
+function formatShortDateLabel(date: Date) {
+  return date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
 function formatTimeLabel(value: unknown) {
   const parsed = parseDateValue(value);
   if (!parsed) {
@@ -4078,6 +4399,13 @@ function isWorkspaceRouteMeta(meta) {
     || sanitizeText(meta?.id) === 'view_workspace';
 }
 
+function isSettingsRouteMeta(meta) {
+  return getSurfaceKind(meta) === 'settings'
+    || sanitizeText(meta?.id) === 'settings'
+    || sanitizeText(meta?.id) === 'workspace_settings'
+    || sanitizeText(meta?.id) === 'view_settings';
+}
+
 function isProjectTimelinesRouteMeta(meta) {
   return getSurfaceKind(meta) === 'project-timelines'
     || getSurfaceKind(meta) === 'project_timelines'
@@ -4101,6 +4429,7 @@ function usesDedicatedRouteHeader(meta) {
     || isAgendaRouteMeta(meta)
     || isInboxRouteMeta(meta)
     || isWorkspaceRouteMeta(meta)
+    || isSettingsRouteMeta(meta)
     || isProjectTimelinesRouteMeta(meta)
     || isTeamScheduleRouteMeta(meta);
 }
@@ -4753,6 +5082,7 @@ function renderTaskForm(shellState, plannerState) {
   const isSupportRoute = isAgendaRouteMeta(meta)
     || isInboxRouteMeta(meta)
     || isWorkspaceRouteMeta(meta)
+    || isSettingsRouteMeta(meta)
     || isProjectTimelinesRoute
     || isTeamScheduleRoute;
   const options = getTaskFormOptions(appData, taskForm);
@@ -5368,6 +5698,11 @@ function renderDesktopPlatformChrome(platformProfile) {
 }
 
 function focusSearchInput() {
+  if (shellSearchInputEl) {
+    shellSearchInputEl.focus();
+    shellSearchInputEl.select();
+    return;
+  }
   searchEl.focus();
   searchEl.select();
 }
@@ -5531,6 +5866,18 @@ function requestOpenProjectManagerSurface() {
   renderAll();
 }
 
+function requestOpenWorkspaceSurface() {
+  desktopShellBridge.send('navigateInApp', '/web/views/workspace');
+  setActiveShellRoute('workspace');
+  renderAll();
+}
+
+function requestOpenSettingsSurface() {
+  desktopShellBridge.send('navigateInApp', '/web/settings');
+  setActiveShellRoute('settings');
+  renderAll();
+}
+
 function requestOpenSchedulerSurface() {
   desktopShellBridge.send('navigateInApp', '/web/views/team-schedule');
   setActiveShellView('view_team_schedule');
@@ -5669,6 +6016,7 @@ function updateSummary(plannerState, shellState) {
   const isAgendaRoute = isAgendaRouteMeta(meta);
   const isInboxRoute = isInboxRouteMeta(meta);
   const isWorkspaceRoute = isWorkspaceRouteMeta(meta);
+  const isSettingsRoute = isSettingsRouteMeta(meta);
   const isProjectTimelinesRoute = isProjectTimelinesRouteMeta(meta);
   const isTeamScheduleRoute = isTeamScheduleRouteMeta(meta);
   const usesDedicatedHeader = usesDedicatedRouteHeader(meta);
@@ -5681,6 +6029,7 @@ function updateSummary(plannerState, shellState) {
   contentSurfaceEl.classList.toggle('route-task-queue', isTaskQueueRoute);
   contentSurfaceEl.classList.toggle('route-inbox', isInboxRoute);
   contentSurfaceEl.classList.toggle('route-workspace', isWorkspaceRoute);
+  contentSurfaceEl.classList.toggle('route-settings', isSettingsRoute);
   contentSurfaceEl.classList.toggle('route-project-timelines', isProjectTimelinesRoute);
   contentSurfaceEl.classList.toggle('route-team-schedule', isTeamScheduleRoute);
   shellRailEl.classList.toggle('route-calendar', isCalendarRoute);
@@ -5704,9 +6053,11 @@ function updateSummary(plannerState, shellState) {
               ? 'team-schedule'
               : isAgendaRoute
                 ? 'agenda'
-                : isWorkspaceRoute
-                  ? 'workspace'
-                  : 'tasks';
+                : isSettingsRoute
+                  ? 'settings'
+                  : isWorkspaceRoute
+                    ? 'workspace'
+                    : 'tasks';
 
   if (isCalendarRoute) {
     const referenceDate = parseDateValue(shellState?.referenceNow)
@@ -5761,6 +6112,13 @@ function updateSummary(plannerState, shellState) {
     return;
   }
 
+  if (isSettingsRoute) {
+    surfaceTitleEl.textContent = 'Settings';
+    surfaceCountEl.innerHTML = buildSurfaceProgressMarkup(4, 4, 'section');
+    surfaceCaptionEl.textContent = 'Profile, billing, workspace, and notification controls.';
+    return;
+  }
+
   if (isProjectTimelinesRoute) {
     const projectIds = new Set(
       plannerState.visibleTasks
@@ -5793,7 +6151,29 @@ function updateSummary(plannerState, shellState) {
 }
 
 function renderSidebar(shellState) {
-  sidebarNavEl.innerHTML = shellState.sidebarSections.map((section) => {
+  const actionSection = `
+    <section class="sidebar-section sidebar-section-actions">
+      <h2>Actions</h2>
+      <div class="sidebar-items">
+        <button type="button" class="nav-item nav-action" data-kind="action" data-action-id="new-task">
+          <span class="nav-label">
+            <span class="nav-icon">${getShellRouteIconMarkup('new-task')}</span>
+            <span class="nav-title">New task</span>
+          </span>
+          <span class="nav-kind">action</span>
+        </button>
+        <button type="button" class="nav-item nav-action" data-kind="action" data-action-id="settings">
+          <span class="nav-label">
+            <span class="nav-icon">${getShellRouteIconMarkup('settings')}</span>
+            <span class="nav-title">Settings</span>
+          </span>
+          <span class="nav-kind">action</span>
+        </button>
+      </div>
+    </section>
+  `;
+
+  sidebarNavEl.innerHTML = actionSection + shellState.sidebarSections.map((section) => {
     const items = section.items.map((item) => {
       if (item.kind === 'project') {
         const color = escapeHtml(item.color || '#94a3b8');
@@ -5822,7 +6202,7 @@ function renderSidebar(shellState) {
           data-view-id="${escapeHtml(item.viewId || '')}"
         >
           <span class="nav-label">
-            <span class="nav-dot"></span>
+            <span class="nav-icon">${getSidebarGlyphMarkup(item)}</span>
             <span class="nav-title">${escapeHtml(item.label)}</span>
           </span>
           <span class="nav-kind">${escapeHtml(item.layout || item.kind)}</span>
@@ -5839,46 +6219,200 @@ function renderSidebar(shellState) {
   }).join('');
 }
 
-function getTabGlyphLabel(tab) {
-  const source = sanitizeText([
+function getShellRouteIconMarkup(source) {
+  const normalizedSource = sanitizeText(source).toLowerCase();
+
+  if (normalizedSource.includes('new-task') || normalizedSource.includes('create-task')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5V19"></path>
+        <path d="M5 12H19"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('settings')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3.25"></circle>
+        <path d="M12 3.75V6"></path>
+        <path d="M12 18V20.25"></path>
+        <path d="M4.75 12H7"></path>
+        <path d="M17 12H19.25"></path>
+        <path d="M6.8 6.8L8.4 8.4"></path>
+        <path d="M15.6 15.6L17.2 17.2"></path>
+        <path d="M15.6 8.4L17.2 6.8"></path>
+        <path d="M6.8 17.2L8.4 15.6"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('back')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 6L9 12L15 18"></path>
+        <path d="M10 12H20"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('profile')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8.5" r="3.25"></circle>
+        <path d="M5.5 19C6.7 15.75 8.85 14.25 12 14.25C15.15 14.25 17.3 15.75 18.5 19"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('billing') || normalizedSource.includes('usage')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4.5 7.5H19.5V18.5H4.5Z"></path>
+        <path d="M4.5 10.5H19.5"></path>
+        <path d="M8 15.5H10.5"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('appearance')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 3.5V5.5"></path>
+        <path d="M12 18.5V20.5"></path>
+        <path d="M3.5 12H5.5"></path>
+        <path d="M18.5 12H20.5"></path>
+        <path d="M6 6L7.4 7.4"></path>
+        <path d="M16.6 16.6L18 18"></path>
+        <path d="M16.6 7.4L18 6"></path>
+        <path d="M6 18L7.4 16.6"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('notifications')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6.5 16.5H17.5L16 14.25V10.5C16 8 14.35 6.25 12 6.25C9.65 6.25 8 8 8 10.5V14.25L6.5 16.5Z"></path>
+        <path d="M10.5 18.5C10.85 19.15 11.35 19.5 12 19.5C12.65 19.5 13.15 19.15 13.5 18.5"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('connections') || normalizedSource.includes('integrations')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="7.5" cy="7.5" r="2.5"></circle>
+        <circle cx="16.5" cy="7.5" r="2.5"></circle>
+        <circle cx="12" cy="16.5" r="2.5"></circle>
+        <path d="M9.5 8.75L14.5 8.75"></path>
+        <path d="M8.75 9.5L10.75 14.25"></path>
+        <path d="M15.25 9.5L13.25 14.25"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('calendar')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3.5" y="5.5" width="17" height="15" rx="3"></rect>
+        <path d="M7 3.75V7.25"></path>
+        <path d="M17 3.75V7.25"></path>
+        <path d="M3.5 9.5H20.5"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('task') || normalizedSource.includes('my_tasks')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8.25 6.5H19"></path>
+        <path d="M8.25 12H19"></path>
+        <path d="M8.25 17.5H15.5"></path>
+        <path d="M4.75 6.5L5.75 7.5L7.75 5.5"></path>
+        <path d="M4.75 12L5.75 13L7.75 11"></path>
+        <path d="M4.75 17.5L5.75 18.5L7.75 16.5"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('deadline')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5"></circle>
+        <path d="M12 7.75V12L15.25 13.75"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('project')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 8.5H20"></path>
+        <path d="M7 5.5H10.5L12 8.5H17"></path>
+        <path d="M5.5 8.5H18.5V18.5H5.5Z"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('team')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="9" cy="9" r="2.75"></circle>
+        <circle cx="16.5" cy="10.5" r="2.25"></circle>
+        <path d="M4.75 18.25C5.55 15.65 7.05 14.5 9 14.5C10.95 14.5 12.45 15.65 13.25 18.25"></path>
+        <path d="M14 17.5C14.55 16 15.55 15.25 16.8 15.25C18.05 15.25 19.05 16 19.6 17.5"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('agenda')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 5.5H18"></path>
+        <path d="M6 10H18"></path>
+        <path d="M6 14.5H14.5"></path>
+        <path d="M6 19H12"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('inbox')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4.5 7.5H19.5V18H4.5Z"></path>
+        <path d="M4.5 13H8.5L10.25 15H13.75L15.5 13H19.5"></path>
+      </svg>
+    `;
+  }
+  if (normalizedSource.includes('workspace')) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="4.5" width="7" height="7" rx="1.75"></rect>
+        <rect x="13" y="4.5" width="7" height="4.5" rx="1.75"></rect>
+        <rect x="13" y="11.5" width="7" height="8" rx="1.75"></rect>
+        <rect x="4" y="13.5" width="7" height="6" rx="1.75"></rect>
+      </svg>
+    `;
+  }
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M12 4.75V7"></path>
+      <path d="M12 17V19.25"></path>
+      <path d="M4.75 12H7"></path>
+      <path d="M17 12H19.25"></path>
+      <path d="M6.7 6.7L8.3 8.3"></path>
+      <path d="M15.7 15.7L17.3 17.3"></path>
+      <path d="M15.7 8.3L17.3 6.7"></path>
+      <path d="M6.7 17.3L8.3 15.7"></path>
+    </svg>
+  `;
+}
+
+function getSidebarGlyphMarkup(item) {
+  return getShellRouteIconMarkup([
+    item?.routeId,
+    item?.viewId,
+    item?.route,
+    item?.label
+  ].filter(Boolean).join(' '));
+}
+
+function getTabGlyphMarkup(tab) {
+  return getShellRouteIconMarkup([
     tab?.routeId,
     tab?.itemId,
     tab?.route,
     tab?.title
-  ].filter(Boolean).join(' ')).toLowerCase();
-
-  if (source.includes('calendar')) {
-    return 'Ca';
-  }
-  if (source.includes('task') || source.includes('my_tasks')) {
-    return 'Tk';
-  }
-  if (source.includes('deadline')) {
-    return 'Dl';
-  }
-  if (source.includes('project')) {
-    return 'Pt';
-  }
-  if (source.includes('team')) {
-    return 'Tm';
-  }
-  if (source.includes('agenda')) {
-    return 'Ag';
-  }
-  if (source.includes('inbox')) {
-    return 'In';
-  }
-  if (source.includes('workspace')) {
-    return 'Ws';
-  }
-
-  const words = sanitizeText(tab?.title, 'Tab')
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length >= 2) {
-    return `${words[0][0] || ''}${words[1][0] || ''}`;
-  }
-  return sanitizeText(tab?.title, 'Tb').slice(0, 2);
+  ].filter(Boolean).join(' '));
 }
 
 function renderTabStrip(shellState) {
@@ -5892,7 +6426,7 @@ function renderTabStrip(shellState) {
         title="${escapeHtml(tab.title)}"
         aria-label="${escapeHtml(tab.title)}"
       >
-        <span class="tab-glyph">${escapeHtml(getTabGlyphLabel(tab))}</span>
+        <span class="tab-glyph">${getTabGlyphMarkup(tab)}</span>
         <span class="tab-label">${escapeHtml(tab.title)}</span>
         <span class="tab-kind">${escapeHtml(tab.itemType)}</span>
       </button>
@@ -5911,6 +6445,7 @@ function renderViewHeader(shellState, plannerState) {
     || isTaskQueueRouteMeta(meta)
     || isInboxRouteMeta(meta)
     || isWorkspaceRouteMeta(meta)
+    || isSettingsRouteMeta(meta)
     || isProjectTimelinesRouteMeta(meta)
     || isTeamScheduleRouteMeta(meta);
 
@@ -6103,6 +6638,7 @@ function renderCalendarSurface(calendarState) {
               <header class="calendar-day-head">
                 <span class="calendar-weekday">${escapeHtml(formatWeekdayLabel(day))}</span>
                 <span class="calendar-day-number ${isSameCalendarDay(day, calendarState.referenceDate) ? 'today' : ''}">${escapeHtml(String(day.getDate()))}</span>
+                <span class="calendar-day-subtitle">${escapeHtml(isSameCalendarDay(day, calendarState.referenceDate) ? 'Today' : formatShortDateLabel(day))}</span>
               </header>
               <div class="calendar-all-day">
                 ${allDay.length
@@ -6754,6 +7290,239 @@ function renderWorkspaceStatusSurface() {
   `;
 }
 
+function renderSettingsSurface() {
+  const sync = getSyncStateSummary(appData);
+  const backend = getBackendState();
+  const backendPresentation = getBackendPresentation(backend);
+  const profileEmail = sanitizeText(appData.currentUser?.email, DEFAULT_CURRENT_USER_EMAIL);
+  const profileName = sanitizeText(appData.currentUser?.name, DEFAULT_CURRENT_USER_NAME);
+  const workspaceName = sanitizeText(appData.workspaces?.[0]?.name, 'Private workspace');
+
+  return `
+    <section class="settings-surface">
+      <aside class="settings-nav" aria-label="Settings sections">
+        <button type="button" class="settings-back" data-settings-action="back">
+          <span class="settings-nav-icon">${getShellRouteIconMarkup('back')}</span>
+          <span>Back to app</span>
+        </button>
+        <nav class="settings-nav-list">
+          <a class="settings-nav-item active" href="#settings-general">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('settings')}</span>
+            <span>General</span>
+          </a>
+          <a class="settings-nav-item" href="#settings-profile">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('profile')}</span>
+            <span>Profile</span>
+          </a>
+          <a class="settings-nav-item" href="#settings-billing">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('billing')}</span>
+            <span>Usage & billing</span>
+          </a>
+          <a class="settings-nav-item" href="#settings-appearance">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('appearance')}</span>
+            <span>Appearance</span>
+          </a>
+          <a class="settings-nav-item" href="#settings-calendar">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('calendar')}</span>
+            <span>Calendars</span>
+          </a>
+          <a class="settings-nav-item" href="#settings-notifications">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('notifications')}</span>
+            <span>Notifications</span>
+          </a>
+          <a class="settings-nav-item" href="#settings-integrations">
+            <span class="settings-nav-icon">${getShellRouteIconMarkup('connections')}</span>
+            <span>Integrations</span>
+          </a>
+        </nav>
+      </aside>
+      <div class="settings-page">
+        <section class="settings-section" id="settings-general">
+          <header class="settings-section-head">
+            <h2>General</h2>
+            <p>Control how Rabbit opens, saves, and plans by default.</p>
+          </header>
+          <div class="settings-stack">
+            <div class="settings-option settings-option-hero">
+              <div>
+                <strong>Work mode</strong>
+                <span>Use Rabbit for focused planning and task execution.</span>
+              </div>
+              <span class="settings-pill active">Planning</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Default open destination</strong>
+                <span>Choose which page Rabbit opens first.</span>
+              </div>
+              <button type="button" class="settings-select" disabled>Calendar</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Save status</strong>
+                <span>Local and backend save state.</span>
+              </div>
+              <span class="settings-value">${escapeHtml(sync.pendingCount ? `${sync.pendingCount} pending` : 'All saved')}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section" id="settings-profile">
+          <header class="settings-section-head">
+            <h2>Profile</h2>
+            <p>Account identity shown across the workspace.</p>
+          </header>
+          <div class="settings-stack">
+            <div class="settings-profile-row">
+              <span class="settings-avatar">${escapeHtml(profileName.slice(0, 1).toUpperCase())}</span>
+              <div>
+                <strong>${escapeHtml(profileName)}</strong>
+                <span>${escapeHtml(profileEmail)}</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Name</strong>
+                <span>Your visible account name.</span>
+              </div>
+              <span class="settings-value">${escapeHtml(profileName)}</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Email</strong>
+                <span>Used for reminders and workspace access.</span>
+              </div>
+              <span class="settings-value">${escapeHtml(profileEmail)}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section" id="settings-billing">
+          <header class="settings-section-head">
+            <h2>Usage & billing</h2>
+            <p>Plan, seats, renewal, and usage status.</p>
+          </header>
+          <div class="settings-stack">
+            <div class="settings-row">
+              <div>
+                <strong>Current plan</strong>
+                <span>Workspace subscription tier.</span>
+              </div>
+              <span class="settings-pill active">Rabbit Pro</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Seats</strong>
+                <span>People with access to this workspace.</span>
+              </div>
+              <span class="settings-value">1 active</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Renewal</strong>
+                <span>Billing cadence.</span>
+              </div>
+              <span class="settings-value">Monthly</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section" id="settings-appearance">
+          <header class="settings-section-head">
+            <h2>Appearance</h2>
+            <p>Theme and density preferences for the desktop shell.</p>
+          </header>
+          <div class="settings-stack">
+            <div class="settings-row">
+              <div>
+                <strong>Theme</strong>
+                <span>Current shell color mode.</span>
+              </div>
+              <button type="button" class="settings-select" disabled>Dark</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Density</strong>
+                <span>Spacing used by task and calendar views.</span>
+              </div>
+              <button type="button" class="settings-select" disabled>Comfortable</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section" id="settings-calendar">
+          <header class="settings-section-head">
+            <h2>Calendars</h2>
+            <p>Calendar sync and conflict handling.</p>
+          </header>
+          <div class="settings-stack">
+            <div class="settings-row">
+              <div>
+                <strong>Linked calendars</strong>
+                <span>Connected calendar sources.</span>
+              </div>
+              <span class="settings-value">${escapeHtml(String(appData.calendarOverlay?.calendars?.length || 0))} linked</span>
+            </div>
+            <label class="settings-toggle">
+              <span>
+                <strong>Conflict warnings</strong>
+                <small>Show busy-slot warnings in task views.</small>
+              </span>
+              <input type="checkbox" checked disabled />
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-section" id="settings-notifications">
+          <header class="settings-section-head">
+            <h2>Notifications</h2>
+            <p>Desktop reminders and planning alerts.</p>
+          </header>
+          <div class="settings-stack">
+            <label class="settings-toggle">
+              <span>
+                <strong>Desktop notifications</strong>
+                <small>Notify when scheduled work is coming up.</small>
+              </span>
+              <input type="checkbox" checked disabled />
+            </label>
+            <label class="settings-toggle">
+              <span>
+                <strong>Daily agenda</strong>
+                <small>Surface a focused plan for the day.</small>
+              </span>
+              <input type="checkbox" checked disabled />
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-section" id="settings-integrations">
+          <header class="settings-section-head">
+            <h2>Integrations</h2>
+            <p>Backend and connected workspace services.</p>
+          </header>
+          <div class="settings-stack">
+            <div class="settings-row">
+              <div>
+                <strong>Backend</strong>
+                <span>${escapeHtml(backendPresentation.detail)}</span>
+              </div>
+              <span class="settings-pill ${backendPresentation.badgeClass === 'healthy' ? 'active' : ''}">${escapeHtml(backendPresentation.title)}</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Workspace</strong>
+                <span>Default planning workspace.</span>
+              </div>
+              <span class="settings-value">${escapeHtml(workspaceName)}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  `;
+}
+
 function renderProjectTimelinesSurface(plannerState) {
   const compareProjectTimelineTasks = (left, right) => {
     const leftDue = parseDateValue(left?.dueAt || left?.dueDate || left?.scheduledStart || left?.startAt)?.valueOf() ?? Number.MAX_SAFE_INTEGER;
@@ -7189,6 +7958,11 @@ function renderTasks(plannerState, shellState) {
     return;
   }
 
+  if (isSettingsRouteMeta(meta)) {
+    taskListEl.innerHTML = renderSettingsSurface();
+    return;
+  }
+
   if (isProjectTimelinesRouteMeta(meta)) {
     taskListEl.innerHTML = renderProjectTimelinesSurface(plannerState);
     return;
@@ -7451,6 +8225,7 @@ function renderWorkspace() {
   shell.dataset.theme = shellState.theme.dataTheme;
   renderDesktopPlatformChrome(platformProfile);
   searchEl.value = search;
+  shellSearchInputEl.value = search;
   renderSidebar(shellState);
   renderTabStrip(shellState);
   renderViewHeader(shellState, plannerState);
@@ -7603,6 +8378,14 @@ searchEl.addEventListener('input', (event) => {
   }
 });
 
+shellSearchInputEl.addEventListener('input', (event) => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement) {
+    search = target.value.trim();
+    renderWorkspace();
+  }
+});
+
 filterContainer.addEventListener('click', (event) => {
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
@@ -7641,9 +8424,20 @@ sidebarNavEl.addEventListener('click', (event) => {
   }
 
   const kind = button.dataset.kind;
+  const actionId = button.dataset.actionId;
   const viewId = button.dataset.viewId;
   const route = button.dataset.route;
   const routeId = button.dataset.routeId;
+
+  if (kind === 'action' && actionId === 'new-task') {
+    requestShellNewTask();
+    return;
+  }
+
+  if (kind === 'action' && actionId === 'settings') {
+    requestOpenSettingsSurface();
+    return;
+  }
 
   if (kind === 'view' && viewId) {
     setActiveShellView(viewId);
@@ -7709,18 +8503,13 @@ shellActionsEl.addEventListener('click', (event) => {
   }
 
   const command = button.dataset.shellCommand;
-  if (command === 'search') {
-    requestShellSearch();
-    return;
-  }
-
   if (command === 'new-task') {
     requestShellNewTask();
     return;
   }
 
-  if (command === 'quick-meeting') {
-    requestQuickMeeting();
+  if (command === 'settings') {
+    requestOpenWorkspaceSurface();
     return;
   }
 
@@ -7732,6 +8521,13 @@ shellActionsEl.addEventListener('click', (event) => {
 taskListEl.addEventListener('click', (event) => {
   const target = event.target;
   if (!(target instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const settingsAction = target.dataset.settingsAction;
+  if (settingsAction === 'back') {
+    setActiveShellRoute('calendar');
+    renderAll();
     return;
   }
 
