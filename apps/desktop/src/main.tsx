@@ -70,6 +70,8 @@ let isRefreshingEntitlement = false;
 let isBackendBusy = false;
 let backendBusyAction = '';
 let isTaskComposerExpanded = false;
+let isSettingsMode = false;
+let settingsReturnTabId = '';
 let backendBaseUrlInput = appData.backend?.baseUrl || '';
 let backendAuthTokenInput = appData.backend?.authToken || '';
 let taskForm = createProjectAwareTaskFormState();
@@ -342,6 +344,43 @@ style.textContent = `
     box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
   }
 
+  .desktop-shell.settings-mode {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .desktop-shell.settings-mode .shell-sidebar,
+  .desktop-shell.settings-mode .workspace-header,
+  .desktop-shell.settings-mode .toolbar-panel,
+  .desktop-shell.settings-mode .composer-panel,
+  .desktop-shell.settings-mode .editor-panel,
+  .desktop-shell.settings-mode .shell-rail {
+    display: none !important;
+  }
+
+  .desktop-shell.settings-mode .shell-workspace {
+    min-height: 100vh;
+  }
+
+  .desktop-shell.settings-mode .workspace-body {
+    min-height: 100vh;
+    padding: 0;
+    display: block;
+  }
+
+  .desktop-shell.settings-mode .content-surface {
+    min-height: 100vh;
+    gap: 0;
+  }
+
+  .desktop-shell.settings-mode .task-surface {
+    min-height: 100vh;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
   .sidebar-brand {
     display: grid;
     gap: 10px;
@@ -388,9 +427,9 @@ style.textContent = `
   }
 
   .sidebar-nav {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 14px;
-    align-content: start;
     overflow: auto;
   }
 
@@ -400,8 +439,9 @@ style.textContent = `
   }
 
   .sidebar-section-actions {
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .sidebar-section h2 {
@@ -2040,6 +2080,16 @@ style.textContent = `
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.015);
     overflow: hidden;
+  }
+
+  .desktop-shell.settings-mode .settings-surface {
+    min-height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .desktop-shell.settings-mode .settings-page {
+    max-height: 100vh;
   }
 
   .settings-nav {
@@ -5874,7 +5924,22 @@ function requestOpenWorkspaceSurface() {
 
 function requestOpenSettingsSurface() {
   desktopShellBridge.send('navigateInApp', '/web/settings');
-  setActiveShellRoute('settings');
+  const activeTab = getActiveDesktopTab();
+  settingsReturnTabId = activeTab?.itemId === 'settings'
+    ? 'tab_calendar'
+    : activeTab?.id || 'tab_calendar';
+  isSettingsMode = true;
+  renderAll();
+}
+
+function closeSettingsSurface() {
+  isSettingsMode = false;
+  if (settingsReturnTabId) {
+    setActiveShellTab(settingsReturnTabId);
+  } else {
+    setActiveShellRoute('calendar');
+  }
+  settingsReturnTabId = '';
   renderAll();
 }
 
@@ -6173,7 +6238,7 @@ function renderSidebar(shellState) {
     </section>
   `;
 
-  sidebarNavEl.innerHTML = actionSection + shellState.sidebarSections.map((section) => {
+  const sectionMarkup = shellState.sidebarSections.map((section) => {
     const items = section.items.map((item) => {
       if (item.kind === 'project') {
         const color = escapeHtml(item.color || '#94a3b8');
@@ -6217,6 +6282,8 @@ function renderSidebar(shellState) {
       </section>
     `;
   }).join('');
+
+  sidebarNavEl.innerHTML = sectionMarkup + actionSection;
 }
 
 function getShellRouteIconMarkup(source) {
@@ -6416,7 +6483,8 @@ function getTabGlyphMarkup(tab) {
 }
 
 function renderTabStrip(shellState) {
-  tabStripEl.innerHTML = shellState.tabs.map((tab, index) => `
+  const visibleTabs = shellState.tabs.filter((tab) => !(tab.itemType === 'route' && tab.itemId === 'settings'));
+  tabStripEl.innerHTML = visibleTabs.map((tab, index) => `
     <div class="tab-shell">
       <button
         type="button"
@@ -8215,17 +8283,48 @@ function persistAppData() {
   }
 }
 
+function renderSettingsMode(shellState) {
+  contentSurfaceEl.className = 'content-surface route-settings';
+  workspaceBodyEl.classList.add('single-surface');
+  toolbarPanelEl.hidden = true;
+  surfaceHeaderEl.hidden = true;
+  shellRailEl.hidden = true;
+  taskFormPanelEl.hidden = true;
+  taskFormPanelEl.innerHTML = '';
+  editorEl.innerHTML = '';
+  agendaPanelEl.innerHTML = '';
+  inboxPanelEl.innerHTML = '';
+  syncPanelEl.innerHTML = '';
+  entitlementPanelEl.innerHTML = '';
+  taskSurfaceEl.classList.remove('calendar-surface');
+  taskListEl.dataset.routeKind = 'settings';
+  taskListEl.innerHTML = renderSettingsSurface();
+  workspaceTitleEl.textContent = 'Settings';
+  syncDesktopShell(shellState);
+}
+
 function renderWorkspace() {
   const platformProfile = getDesktopPlatformProfileState();
   const shellState = getShellState(appData);
+  if (shellState.activeTab?.itemType === 'route' && shellState.activeTab?.itemId === 'settings') {
+    isSettingsMode = true;
+    settingsReturnTabId = settingsReturnTabId || 'tab_calendar';
+  }
   const plannerState = buildPlannerState(shellState);
   taskForm = createProjectAwareTaskFormState(taskForm);
 
   shell.className = `desktop-shell ${getShellThemeClassName(shellState.theme)}`;
+  shell.classList.toggle('settings-mode', isSettingsMode);
   shell.dataset.theme = shellState.theme.dataTheme;
   renderDesktopPlatformChrome(platformProfile);
   searchEl.value = search;
   shellSearchInputEl.value = search;
+
+  if (isSettingsMode) {
+    renderSettingsMode(shellState);
+    return;
+  }
+
   renderSidebar(shellState);
   renderTabStrip(shellState);
   renderViewHeader(shellState, plannerState);
@@ -8526,8 +8625,7 @@ taskListEl.addEventListener('click', (event) => {
 
   const settingsAction = target.dataset.settingsAction;
   if (settingsAction === 'back') {
-    setActiveShellRoute('calendar');
-    renderAll();
+    closeSettingsSurface();
     return;
   }
 
