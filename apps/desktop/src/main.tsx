@@ -5766,6 +5766,14 @@ function focusTaskComposer() {
   }
 }
 
+function exitSettingsMode() {
+  if (!isSettingsMode && !settingsReturnTabId) {
+    return;
+  }
+  isSettingsMode = false;
+  settingsReturnTabId = '';
+}
+
 function syncDesktopShell(shellState) {
   const platformProfile = getDesktopPlatformProfileState();
   const syncState = getSyncStateSummary(appData);
@@ -5885,6 +5893,7 @@ function requestShellSearch() {
 }
 
 function requestShellNewTask() {
+  exitSettingsMode();
   const payload = { type: 'task' };
   desktopShellBridge.send('main:openNew', payload);
   desktopShellBridge.emit('appBar:openNew', payload);
@@ -8139,6 +8148,7 @@ function renderTasks(plannerState, shellState) {
 }
 
 function setActiveShellTab(tabId: string) {
+  exitSettingsMode();
   appData = {
     ...appData,
     shell: activateShellTab(appData.shell || {}, tabId)
@@ -8146,6 +8156,7 @@ function setActiveShellTab(tabId: string) {
 }
 
 function setActiveShellView(viewId: string) {
+  exitSettingsMode();
   appData = {
     ...appData,
     shell: activateShellView(appData.shell || {}, viewId)
@@ -8153,6 +8164,9 @@ function setActiveShellView(viewId: string) {
 }
 
 function setActiveShellRoute(routeId: string) {
+  if (routeId !== 'settings') {
+    exitSettingsMode();
+  }
   appData = {
     ...appData,
     shell: activateShellRoute(appData.shell || {}, routeId)
@@ -8160,6 +8174,7 @@ function setActiveShellRoute(routeId: string) {
 }
 
 function addDesktopShellTab(viewId = '') {
+  exitSettingsMode();
   appData = {
     ...appData,
     shell: addShellViewTab(appData.shell || {}, viewId)
@@ -8320,10 +8335,13 @@ function renderSettingsMode(shellState) {
 
 function renderWorkspace() {
   const platformProfile = getDesktopPlatformProfileState();
-  const shellState = getShellState(appData);
-  if (shellState.activeTab?.itemType === 'route' && shellState.activeTab?.itemId === 'settings') {
-    isSettingsMode = true;
-    settingsReturnTabId = settingsReturnTabId || 'tab_calendar';
+  let shellState = getShellState(appData);
+  if (!isSettingsMode && shellState.activeTab?.itemType === 'route' && shellState.activeTab?.itemId === 'settings') {
+    appData = {
+      ...appData,
+      shell: activateShellRoute(appData.shell || {}, 'calendar')
+    };
+    shellState = getShellState(appData);
   }
   const plannerState = buildPlannerState(shellState);
   taskForm = createProjectAwareTaskFormState(taskForm);
