@@ -72,6 +72,7 @@ let backendBusyAction = '';
 let isTaskComposerExpanded = false;
 let isSettingsMode = false;
 let settingsReturnTabId = '';
+let activeSettingsPage = 'general';
 let backendBaseUrlInput = appData.backend?.baseUrl || '';
 let backendAuthTokenInput = appData.backend?.authToken || '';
 let taskForm = createProjectAwareTaskFormState();
@@ -7365,6 +7366,227 @@ function renderSettingsSurface() {
   const profileEmail = sanitizeText(appData.currentUser?.email, DEFAULT_CURRENT_USER_EMAIL);
   const profileName = sanitizeText(appData.currentUser?.name, DEFAULT_CURRENT_USER_NAME);
   const workspaceName = sanitizeText(appData.workspaces?.[0]?.name, 'Private workspace');
+  const pageId = [
+    'general',
+    'profile',
+    'billing',
+    'appearance',
+    'calendar',
+    'notifications',
+    'integrations'
+  ].includes(activeSettingsPage)
+    ? activeSettingsPage
+    : 'general';
+  const navItems = [
+    { id: 'general', icon: 'settings', label: 'General' },
+    { id: 'profile', icon: 'profile', label: 'Profile' },
+    { id: 'billing', icon: 'billing', label: 'Usage & billing' },
+    { id: 'appearance', icon: 'appearance', label: 'Appearance' },
+    { id: 'calendar', icon: 'calendar', label: 'Calendars' },
+    { id: 'notifications', icon: 'notifications', label: 'Notifications' },
+    { id: 'integrations', icon: 'connections', label: 'Integrations' }
+  ];
+  const navMarkup = navItems.map((item) => `
+    <button
+      type="button"
+      class="settings-nav-item ${pageId === item.id ? 'active' : ''}"
+      data-settings-page="${escapeHtml(item.id)}"
+    >
+      <span class="settings-nav-icon">${getShellRouteIconMarkup(item.icon)}</span>
+      <span>${escapeHtml(item.label)}</span>
+    </button>
+  `).join('');
+  const pageMarkupById = {
+    general: `
+      <section class="settings-section" id="settings-general">
+        <header class="settings-section-head">
+          <h2>General</h2>
+          <p>Control how Rabbit opens, saves, and plans by default.</p>
+        </header>
+        <div class="settings-stack">
+          <div class="settings-option settings-option-hero">
+            <div>
+              <strong>Work mode</strong>
+              <span>Use Rabbit for focused planning and task execution.</span>
+            </div>
+            <span class="settings-pill active">Planning</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Default open destination</strong>
+              <span>Choose which page Rabbit opens first.</span>
+            </div>
+            <button type="button" class="settings-select" disabled>Calendar</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Save status</strong>
+              <span>Local and backend save state.</span>
+            </div>
+            <span class="settings-value">${escapeHtml(sync.pendingCount ? `${sync.pendingCount} pending` : 'All saved')}</span>
+          </div>
+        </div>
+      </section>
+    `,
+    profile: `
+      <section class="settings-section" id="settings-profile">
+        <header class="settings-section-head">
+          <h2>Profile</h2>
+          <p>Account identity shown across the workspace.</p>
+        </header>
+        <div class="settings-stack">
+          <div class="settings-profile-row">
+            <span class="settings-avatar">${escapeHtml(profileName.slice(0, 1).toUpperCase())}</span>
+            <div>
+              <strong>${escapeHtml(profileName)}</strong>
+              <span>${escapeHtml(profileEmail)}</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Name</strong>
+              <span>Your visible account name.</span>
+            </div>
+            <span class="settings-value">${escapeHtml(profileName)}</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Email</strong>
+              <span>Used for reminders and workspace access.</span>
+            </div>
+            <span class="settings-value">${escapeHtml(profileEmail)}</span>
+          </div>
+        </div>
+      </section>
+    `,
+    billing: `
+      <section class="settings-section" id="settings-billing">
+        <header class="settings-section-head">
+          <h2>Usage & billing</h2>
+          <p>Plan, seats, renewal, and usage status.</p>
+        </header>
+        <div class="settings-stack">
+          <div class="settings-row">
+            <div>
+              <strong>Current plan</strong>
+              <span>Workspace subscription tier.</span>
+            </div>
+            <span class="settings-pill active">Rabbit Pro</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Seats</strong>
+              <span>People with access to this workspace.</span>
+            </div>
+            <span class="settings-value">1 active</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Renewal</strong>
+              <span>Billing cadence.</span>
+            </div>
+            <span class="settings-value">Monthly</span>
+          </div>
+        </div>
+      </section>
+    `,
+    appearance: `
+      <section class="settings-section" id="settings-appearance">
+        <header class="settings-section-head">
+          <h2>Appearance</h2>
+          <p>Theme and density preferences for the desktop shell.</p>
+        </header>
+        <div class="settings-stack">
+          <div class="settings-row">
+            <div>
+              <strong>Theme</strong>
+              <span>Current shell color mode.</span>
+            </div>
+            <button type="button" class="settings-select" disabled>Dark</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Density</strong>
+              <span>Spacing used by task and calendar views.</span>
+            </div>
+            <button type="button" class="settings-select" disabled>Comfortable</button>
+          </div>
+        </div>
+      </section>
+    `,
+    calendar: `
+      <section class="settings-section" id="settings-calendar">
+        <header class="settings-section-head">
+          <h2>Calendars</h2>
+          <p>Calendar sync and conflict handling.</p>
+        </header>
+        <div class="settings-stack">
+          <div class="settings-row">
+            <div>
+              <strong>Linked calendars</strong>
+              <span>Connected calendar sources.</span>
+            </div>
+            <span class="settings-value">${escapeHtml(String(appData.calendarOverlay?.calendars?.length || 0))} linked</span>
+          </div>
+          <label class="settings-toggle">
+            <span>
+              <strong>Conflict warnings</strong>
+              <small>Show busy-slot warnings in task views.</small>
+            </span>
+            <input type="checkbox" checked disabled />
+          </label>
+        </div>
+      </section>
+    `,
+    notifications: `
+      <section class="settings-section" id="settings-notifications">
+        <header class="settings-section-head">
+          <h2>Notifications</h2>
+          <p>Desktop reminders and planning alerts.</p>
+        </header>
+        <div class="settings-stack">
+          <label class="settings-toggle">
+            <span>
+              <strong>Desktop notifications</strong>
+              <small>Notify when scheduled work is coming up.</small>
+            </span>
+            <input type="checkbox" checked disabled />
+          </label>
+          <label class="settings-toggle">
+            <span>
+              <strong>Daily agenda</strong>
+              <small>Surface a focused plan for the day.</small>
+            </span>
+            <input type="checkbox" checked disabled />
+          </label>
+        </div>
+      </section>
+    `,
+    integrations: `
+      <section class="settings-section" id="settings-integrations">
+        <header class="settings-section-head">
+          <h2>Integrations</h2>
+          <p>Backend and connected workspace services.</p>
+        </header>
+        <div class="settings-stack">
+          <div class="settings-row">
+            <div>
+              <strong>Backend</strong>
+              <span>${escapeHtml(backendPresentation.detail)}</span>
+            </div>
+            <span class="settings-pill ${backendPresentation.badgeClass === 'healthy' ? 'active' : ''}">${escapeHtml(backendPresentation.title)}</span>
+          </div>
+          <div class="settings-row">
+            <div>
+              <strong>Workspace</strong>
+              <span>Default planning workspace.</span>
+            </div>
+            <span class="settings-value">${escapeHtml(workspaceName)}</span>
+          </div>
+        </div>
+      </section>
+    `
+  };
 
   return `
     <section class="settings-surface">
@@ -7374,218 +7596,11 @@ function renderSettingsSurface() {
           <span>Back to app</span>
         </button>
         <nav class="settings-nav-list">
-          <a class="settings-nav-item active" href="#settings-general">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('settings')}</span>
-            <span>General</span>
-          </a>
-          <a class="settings-nav-item" href="#settings-profile">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('profile')}</span>
-            <span>Profile</span>
-          </a>
-          <a class="settings-nav-item" href="#settings-billing">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('billing')}</span>
-            <span>Usage & billing</span>
-          </a>
-          <a class="settings-nav-item" href="#settings-appearance">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('appearance')}</span>
-            <span>Appearance</span>
-          </a>
-          <a class="settings-nav-item" href="#settings-calendar">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('calendar')}</span>
-            <span>Calendars</span>
-          </a>
-          <a class="settings-nav-item" href="#settings-notifications">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('notifications')}</span>
-            <span>Notifications</span>
-          </a>
-          <a class="settings-nav-item" href="#settings-integrations">
-            <span class="settings-nav-icon">${getShellRouteIconMarkup('connections')}</span>
-            <span>Integrations</span>
-          </a>
+          ${navMarkup}
         </nav>
       </aside>
       <div class="settings-page">
-        <section class="settings-section" id="settings-general">
-          <header class="settings-section-head">
-            <h2>General</h2>
-            <p>Control how Rabbit opens, saves, and plans by default.</p>
-          </header>
-          <div class="settings-stack">
-            <div class="settings-option settings-option-hero">
-              <div>
-                <strong>Work mode</strong>
-                <span>Use Rabbit for focused planning and task execution.</span>
-              </div>
-              <span class="settings-pill active">Planning</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Default open destination</strong>
-                <span>Choose which page Rabbit opens first.</span>
-              </div>
-              <button type="button" class="settings-select" disabled>Calendar</button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Save status</strong>
-                <span>Local and backend save state.</span>
-              </div>
-              <span class="settings-value">${escapeHtml(sync.pendingCount ? `${sync.pendingCount} pending` : 'All saved')}</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-section" id="settings-profile">
-          <header class="settings-section-head">
-            <h2>Profile</h2>
-            <p>Account identity shown across the workspace.</p>
-          </header>
-          <div class="settings-stack">
-            <div class="settings-profile-row">
-              <span class="settings-avatar">${escapeHtml(profileName.slice(0, 1).toUpperCase())}</span>
-              <div>
-                <strong>${escapeHtml(profileName)}</strong>
-                <span>${escapeHtml(profileEmail)}</span>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Name</strong>
-                <span>Your visible account name.</span>
-              </div>
-              <span class="settings-value">${escapeHtml(profileName)}</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Email</strong>
-                <span>Used for reminders and workspace access.</span>
-              </div>
-              <span class="settings-value">${escapeHtml(profileEmail)}</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-section" id="settings-billing">
-          <header class="settings-section-head">
-            <h2>Usage & billing</h2>
-            <p>Plan, seats, renewal, and usage status.</p>
-          </header>
-          <div class="settings-stack">
-            <div class="settings-row">
-              <div>
-                <strong>Current plan</strong>
-                <span>Workspace subscription tier.</span>
-              </div>
-              <span class="settings-pill active">Rabbit Pro</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Seats</strong>
-                <span>People with access to this workspace.</span>
-              </div>
-              <span class="settings-value">1 active</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Renewal</strong>
-                <span>Billing cadence.</span>
-              </div>
-              <span class="settings-value">Monthly</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-section" id="settings-appearance">
-          <header class="settings-section-head">
-            <h2>Appearance</h2>
-            <p>Theme and density preferences for the desktop shell.</p>
-          </header>
-          <div class="settings-stack">
-            <div class="settings-row">
-              <div>
-                <strong>Theme</strong>
-                <span>Current shell color mode.</span>
-              </div>
-              <button type="button" class="settings-select" disabled>Dark</button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Density</strong>
-                <span>Spacing used by task and calendar views.</span>
-              </div>
-              <button type="button" class="settings-select" disabled>Comfortable</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-section" id="settings-calendar">
-          <header class="settings-section-head">
-            <h2>Calendars</h2>
-            <p>Calendar sync and conflict handling.</p>
-          </header>
-          <div class="settings-stack">
-            <div class="settings-row">
-              <div>
-                <strong>Linked calendars</strong>
-                <span>Connected calendar sources.</span>
-              </div>
-              <span class="settings-value">${escapeHtml(String(appData.calendarOverlay?.calendars?.length || 0))} linked</span>
-            </div>
-            <label class="settings-toggle">
-              <span>
-                <strong>Conflict warnings</strong>
-                <small>Show busy-slot warnings in task views.</small>
-              </span>
-              <input type="checkbox" checked disabled />
-            </label>
-          </div>
-        </section>
-
-        <section class="settings-section" id="settings-notifications">
-          <header class="settings-section-head">
-            <h2>Notifications</h2>
-            <p>Desktop reminders and planning alerts.</p>
-          </header>
-          <div class="settings-stack">
-            <label class="settings-toggle">
-              <span>
-                <strong>Desktop notifications</strong>
-                <small>Notify when scheduled work is coming up.</small>
-              </span>
-              <input type="checkbox" checked disabled />
-            </label>
-            <label class="settings-toggle">
-              <span>
-                <strong>Daily agenda</strong>
-                <small>Surface a focused plan for the day.</small>
-              </span>
-              <input type="checkbox" checked disabled />
-            </label>
-          </div>
-        </section>
-
-        <section class="settings-section" id="settings-integrations">
-          <header class="settings-section-head">
-            <h2>Integrations</h2>
-            <p>Backend and connected workspace services.</p>
-          </header>
-          <div class="settings-stack">
-            <div class="settings-row">
-              <div>
-                <strong>Backend</strong>
-                <span>${escapeHtml(backendPresentation.detail)}</span>
-              </div>
-              <span class="settings-pill ${backendPresentation.badgeClass === 'healthy' ? 'active' : ''}">${escapeHtml(backendPresentation.title)}</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Workspace</strong>
-                <span>Default planning workspace.</span>
-              </div>
-              <span class="settings-value">${escapeHtml(workspaceName)}</span>
-            </div>
-          </div>
-        </section>
+        ${pageMarkupById[pageId]}
       </div>
     </section>
   `;
@@ -8626,6 +8641,13 @@ taskListEl.addEventListener('click', (event) => {
   const settingsAction = target.dataset.settingsAction;
   if (settingsAction === 'back') {
     closeSettingsSurface();
+    return;
+  }
+
+  const settingsPage = target.dataset.settingsPage;
+  if (settingsPage) {
+    activeSettingsPage = settingsPage;
+    renderAll();
     return;
   }
 
